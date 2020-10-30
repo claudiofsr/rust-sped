@@ -78,13 +78,14 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     // https://stackoverflow.com/questions/51372702/how-do-i-make-a-dispatch-table-in-rust
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_functions.html
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_parameters.html
-    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut HashMap<&str, String>)>::new();
+    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut HashMap<String, String>)>::new();
     dispatch_table.insert("0000", &ler_registro_0000);
     dispatch_table.insert("0110", &ler_registro_0110);
     dispatch_table.insert("0111", &ler_registro_0111);
+    dispatch_table.insert("0140", &ler_registro_0140);
 
-    let mut info_retidas : HashMap<&str, String> = HashMap::new();
-    info_retidas.insert("arquivo_da_efd", arquivo.to_string());
+    let mut info_retidas : HashMap<String, String> = HashMap::new();
+    info_retidas.insert("arquivo_da_efd".to_string(), arquivo.to_string());
 
     // Read the file line by line using the lines() iterator from std::io::BufRead.
     for (index, line) in buffer_read.lines().enumerate() {
@@ -110,7 +111,7 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
             dispatch_table[&registro.as_str()](&registro, &mut valores, &mut info_retidas);
         }
 
-        if linha_num >= 5 || registro == "9999" {
+        if linha_num >= 10 || registro == "9999" {
             break;
         }
     }
@@ -122,18 +123,18 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     Ok(())
 }
 
-fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<&str, String>) {
+fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
     // https://stackoverflow.com/questions/24158114/what-are-the-differences-between-rusts-string-and-str?rq=1
     // Use String if you need owned string data (like passing strings to other threads, or building them at runtime), and use &str if you only need a view of a string.
     // This is identical to the relationship between a vector Vec<T> and a slice &[T], and is similar to the relationship between by-value T and by-reference &T for general types.
     println!("ler_registro_0000 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("CNPJ",    valores["CNPJ"  ].to_string());
-    info_retidas.insert("DT_INI",  valores["DT_INI"].to_string()); // 01042018
-    info_retidas.insert("DT_FIN",  valores["DT_FIN"].to_string());
-    info_retidas.insert("NOME",    valores["NOME"  ].to_string());
+    info_retidas.insert("CNPJ".to_string(),    valores["CNPJ"  ].to_string());
+    info_retidas.insert("DT_INI".to_string(),  valores["DT_INI"].to_string()); // 01042018
+    info_retidas.insert("DT_FIN".to_string(),  valores["DT_FIN"].to_string());
+    info_retidas.insert("NOME".to_string(),    valores["NOME"  ].to_string());
 
     // https://github.com/rust-lang/regex
-    let re = Regex::new(r"(\d{2})(\d{2})(\d{4})").unwrap();
+    let re = Regex::new(r"^(\d{2})(\d{2})(\d{4})$").unwrap();
 
     for caps in re.captures_iter(&valores["DT_INI"]) {
         // Note that all of the unwraps are actually OK for this regex
@@ -148,22 +149,45 @@ fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_r
         pa_do_credito.push_str(&ano); // mesano: 042018
 
         //info_retidas.insert("dia", dia.to_string());
-        info_retidas.insert("mes", mes.to_string());
-        info_retidas.insert("ano", ano.to_string());
-        info_retidas.insert("pa_do_credito", pa_do_credito.to_string());
+        info_retidas.insert("mes".to_string(), mes.to_string());
+        info_retidas.insert("ano".to_string(), ano.to_string());
+        info_retidas.insert("pa_do_credito".to_string(), pa_do_credito.to_string());
 
         println!("dia: {} , mes: {}, ano: {}, pa_do_credito: {}", &dia, &mes, &ano, &pa_do_credito);
     }
+
+    let cnpj = Regex::new(r"^(\d{8})(\d{6})$").unwrap(); // exemplo 22.333.444/0001-55 --> 22333444000155 --> cnpj_base = 22333444
+    for caps in cnpj.captures_iter(&valores["CNPJ"]) {
+        let cnpj_base = caps.get(1).unwrap().as_str();
+        info_retidas.insert("cnpj_base".to_string(), cnpj_base.to_string());
+    }
 }
 
-fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<&str, String>) {
+fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
     println!("ler_registro_0110 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("IND_APRO_CRED",  valores["IND_APRO_CRED"].to_string());
+    info_retidas.insert("IND_APRO_CRED".to_string(),  valores["IND_APRO_CRED"].to_string());
 }
 
-fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<&str, String>) {
+fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
     println!("ler_registro_0111 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("REC_BRU_NCUM_TRIB_MI",  valores["REC_BRU_NCUM_TRIB_MI"].to_string());
+    info_retidas.insert("REC_BRU_NCUM_TRIB_MI".to_string(),  valores["REC_BRU_NCUM_TRIB_MI"].to_string());
+    info_retidas.insert("REC_BRU_NCUM_NT_MI".to_string(),    valores["REC_BRU_NCUM_NT_MI"  ].to_string());
+    info_retidas.insert("REC_BRU_NCUM_EXP".to_string(),      valores["REC_BRU_NCUM_EXP"    ].to_string());
+    info_retidas.insert("REC_BRU_CUM".to_string(),           valores["REC_BRU_CUM"         ].to_string());
+    info_retidas.insert("REC_BRU_TOTAL".to_string(),         valores["REC_BRU_TOTAL"       ].to_string()); 
+}
+
+// Registro 0140: Tabela de Cadastro de Estabelecimentos
+// O Registro 0140 tem por objetivo relacionar e informar os estabelecimentos da pessoa jurídica.
+fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
+    
+    let re_cnpj_de_14_digitos = Regex::new(r"^\d{14}$").unwrap();
+    let cnpj_do_estabelecimento = &valores["CNPJ"];
+    let nome_do_estabelecimento = &valores["NOME"];
+    
+    if re_cnpj_de_14_digitos.is_match(&cnpj_do_estabelecimento) {
+        info_retidas.insert(cnpj_do_estabelecimento.to_string(), nome_do_estabelecimento.to_string());
+    }
 }
 
 // opção <'a> : https://doc.rust-lang.org/stable/rust-by-example/scope/lifetime/explicit.html
