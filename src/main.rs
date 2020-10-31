@@ -84,54 +84,65 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     dispatch_table.insert("0111", &ler_registro_0111);
     dispatch_table.insert("0140", &ler_registro_0140);
 
-    let mut info_retidas : HashMap<String, String> = HashMap::new();
+    let mut info_retidas: HashMap<String, String> = HashMap::new();
     info_retidas.insert("arquivo_da_efd".to_string(), arquivo.to_string());
+
+    let mut tree: HashMap<u8, HashMap<String, String>> = HashMap::new();
+    let mut arquivo_da_efd: HashMap<String, String> = HashMap::new();
+    arquivo_da_efd.insert("arquivo_da_efd".to_string(), arquivo.to_string());
+    tree.insert(0, arquivo_da_efd);
+    println!("tree: {:#?}", tree);
 
     // Read the file line by line using the lines() iterator from std::io::BufRead.
     for (index, line) in buffer_read.lines().enumerate() {
         let campos = line.split("|");
         let mut vec: Vec<String> = campos.map(|s| s.to_owned()).collect(); // vec[1].to_uppercase(): correção do registo c491 --> C491
         let registro = vec[1].to_uppercase(); // type String
-        let linha_num: usize = index + 1;
-        let linha_string = linha_num.to_string();
 
         if !registros_efd.contains_key(&registro.as_str()) {
             println!("\n\t registro {} não definido em mylib.rs \n", &registro);
+            //std::process::exit(1);
         }
 
         let mut valores: HashMap<&str, String> = HashMap::new();
-        valores.insert("linha_da_efd", linha_string);
+        valores.insert("linha_da_efd", (index + 1).to_string());
         valores.insert("nivel", registros_efd[registro.as_str()]["00"].to_string()); // type String to type &str
         valores.insert("REG", registro.clone());
 
-        println!("linha n° {} ; registro {} ; vetor {:?}", linha_num, &registro, vec);
+        println!("linha n° {} ; registro {} ; vetor {:?}", index + 1, &registro, vec);
         obter_valores(&registros_efd, &mut valores, &registro, &mut vec);
 
         if dispatch_table.contains_key(&registro.as_str()) {
             dispatch_table[&registro.as_str()](&registro, &mut valores, &mut info_retidas);
         }
 
-        if linha_num >= 10 || registro == "9999" {
+        if (index + 1) >= 10 || registro == "9999" {
             break;
         }
     }
 
-    for (k, v) in info_retidas {
-        println!("info_retidas[{}] = '{}'", k, v);
-    }
+    //for (k, v) in info_retidas.iter() {
+    //    println!("info_retidas[{}] = '{}'", k, v);
+    //}
+    
+    println!("info_retidas: {:#?}", &info_retidas);
 
     Ok(())
 }
 
 fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
+
+    let nivel: u8 = valores["nivel"].parse().unwrap();
+    println!("nivel = {}", nivel);
+
     // https://stackoverflow.com/questions/24158114/what-are-the-differences-between-rusts-string-and-str?rq=1
     // Use String if you need owned string data (like passing strings to other threads, or building them at runtime), and use &str if you only need a view of a string.
     // This is identical to the relationship between a vector Vec<T> and a slice &[T], and is similar to the relationship between by-value T and by-reference &T for general types.
     println!("ler_registro_0000 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("CNPJ".to_string(),    valores["CNPJ"  ].to_string());
-    info_retidas.insert("DT_INI".to_string(),  valores["DT_INI"].to_string()); // 01042018
-    info_retidas.insert("DT_FIN".to_string(),  valores["DT_FIN"].to_string());
-    info_retidas.insert("NOME".to_string(),    valores["NOME"  ].to_string());
+    info_retidas.insert("CNPJ".to_string(),   valores["CNPJ"  ].to_string());
+    info_retidas.insert("DT_INI".to_string(), valores["DT_INI"].to_string()); // 01042018
+    info_retidas.insert("DT_FIN".to_string(), valores["DT_FIN"].to_string());
+    info_retidas.insert("NOME".to_string(),   valores["NOME"  ].to_string());
 
     // https://github.com/rust-lang/regex
     let re = Regex::new(r"^(\d{2})(\d{2})(\d{4})$").unwrap();
@@ -156,7 +167,7 @@ fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_r
         println!("dia: {} , mes: {}, ano: {}, pa_do_credito: {}", &dia, &mes, &ano, &pa_do_credito);
     }
 
-    let cnpj = Regex::new(r"^(\d{8})(\d{6})$").unwrap(); // exemplo 22.333.444/0001-55 --> 22333444000155 --> cnpj_base = 22333444
+    let cnpj = Regex::new(r"^(\d{8})(\d{6})$").unwrap(); // exemplo 22.333.444/0001-55 --> (22333444)(000155) --> cnpj_base = 22333444
     for caps in cnpj.captures_iter(&valores["CNPJ"]) {
         let cnpj_base = caps.get(1).unwrap().as_str();
         info_retidas.insert("cnpj_base".to_string(), cnpj_base.to_string());
@@ -170,11 +181,11 @@ fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, info_r
 
 fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
     println!("ler_registro_0111 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("REC_BRU_NCUM_TRIB_MI".to_string(),  valores["REC_BRU_NCUM_TRIB_MI"].to_string());
-    info_retidas.insert("REC_BRU_NCUM_NT_MI".to_string(),    valores["REC_BRU_NCUM_NT_MI"  ].to_string());
-    info_retidas.insert("REC_BRU_NCUM_EXP".to_string(),      valores["REC_BRU_NCUM_EXP"    ].to_string());
-    info_retidas.insert("REC_BRU_CUM".to_string(),           valores["REC_BRU_CUM"         ].to_string());
-    info_retidas.insert("REC_BRU_TOTAL".to_string(),         valores["REC_BRU_TOTAL"       ].to_string()); 
+    info_retidas.insert("REC_BRU_NCUM_TRIB_MI".to_string(), valores["REC_BRU_NCUM_TRIB_MI"].to_string());
+    info_retidas.insert("REC_BRU_NCUM_NT_MI".to_string(),   valores["REC_BRU_NCUM_NT_MI"  ].to_string());
+    info_retidas.insert("REC_BRU_NCUM_EXP".to_string(),     valores["REC_BRU_NCUM_EXP"    ].to_string());
+    info_retidas.insert("REC_BRU_CUM".to_string(),          valores["REC_BRU_CUM"         ].to_string());
+    info_retidas.insert("REC_BRU_TOTAL".to_string(),        valores["REC_BRU_TOTAL"       ].to_string()); 
 }
 
 // Registro 0140: Tabela de Cadastro de Estabelecimentos
