@@ -78,20 +78,16 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     // https://stackoverflow.com/questions/51372702/how-do-i-make-a-dispatch-table-in-rust
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_functions.html
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_parameters.html
-    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut HashMap<String, String>)>::new();
+    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut HashMap<u8, HashMap<String, String>>)>::new();
     dispatch_table.insert("0000", &ler_registro_0000);
     dispatch_table.insert("0110", &ler_registro_0110);
     dispatch_table.insert("0111", &ler_registro_0111);
     dispatch_table.insert("0140", &ler_registro_0140);
 
-    let mut info_retidas: HashMap<String, String> = HashMap::new();
-    info_retidas.insert("arquivo_da_efd".to_string(), arquivo.to_string());
-
     let mut tree: HashMap<u8, HashMap<String, String>> = HashMap::new();
-    let mut arquivo_da_efd: HashMap<String, String> = HashMap::new();
-    arquivo_da_efd.insert("arquivo_da_efd".to_string(), arquivo.to_string());
-    tree.insert(0, arquivo_da_efd);
-    println!("tree: {:#?}", tree);
+    let mut info: HashMap<String, String> = HashMap::new();
+    info.insert("arquivo_da_efd".to_string(), arquivo.to_string());
+    tree.insert(0, info);
 
     let multiple_spaces= Regex::new(r"\s{2,}").unwrap();   // substituir dois ou mais espaços por apenas um
     let boundary_spaces= Regex::new(r"\s*\|\s*").unwrap(); // substituir ' | ' por '|'
@@ -118,7 +114,7 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
         obter_valores(&registros_efd, &mut valores, &registro, &mut vec);
 
         if dispatch_table.contains_key(&registro.as_str()) {
-            dispatch_table[&registro.as_str()](&registro, &mut valores, &mut info_retidas);
+            dispatch_table[&registro.as_str()](&registro, &mut valores, &mut tree);
         }
 
         if (index + 1) >= 10 || registro == "9999" {
@@ -126,28 +122,29 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
         }
     }
 
-    //for (k, v) in info_retidas.iter() {
-    //    println!("info_retidas[{}] = '{}'", k, v);
+    //for (k, v) in tree.iter() {
+    //    println!("tree[{}] = '{}'", k, v);
     //}
     
-    println!("info_retidas: {:#?}", &info_retidas);
+    println!("tree: {:#?}", &tree);
 
     Ok(())
 }
 
-fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
-
+fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
-    println!("nivel = {}", nivel);
+    if !tree.contains_key(&nivel) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        tree.insert(nivel, _info);
+    }
 
     // https://stackoverflow.com/questions/24158114/what-are-the-differences-between-rusts-string-and-str?rq=1
     // Use String if you need owned string data (like passing strings to other threads, or building them at runtime), and use &str if you only need a view of a string.
     // This is identical to the relationship between a vector Vec<T> and a slice &[T], and is similar to the relationship between by-value T and by-reference &T for general types.
-    println!("ler_registro_0000 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("CNPJ".to_string(),   valores["CNPJ"  ].to_string());
-    info_retidas.insert("DT_INI".to_string(), valores["DT_INI"].to_string()); // 01042018
-    info_retidas.insert("DT_FIN".to_string(), valores["DT_FIN"].to_string());
-    info_retidas.insert("NOME".to_string(),   valores["NOME"  ].to_string());
+    tree.get_mut(&nivel).unwrap().insert("CNPJ".to_string(),   valores["CNPJ"  ].to_string());
+    tree.get_mut(&nivel).unwrap().insert("DT_INI".to_string(), valores["DT_INI"].to_string()); // 01042018
+    tree.get_mut(&nivel).unwrap().insert("DT_FIN".to_string(), valores["DT_FIN"].to_string());
+    tree.get_mut(&nivel).unwrap().insert("NOME".to_string(),   valores["NOME"  ].to_string());
 
     // https://github.com/rust-lang/regex
     let re = Regex::new(r"^(\d{2})(\d{2})(\d{4})$").unwrap();
@@ -164,10 +161,10 @@ fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_r
         let mut pa_do_credito = mes.to_string();
         pa_do_credito.push_str(&ano); // mesano: 042018
 
-        //info_retidas.insert("dia", dia.to_string());
-        info_retidas.insert("mes".to_string(), mes.to_string());
-        info_retidas.insert("ano".to_string(), ano.to_string());
-        info_retidas.insert("pa_do_credito".to_string(), pa_do_credito.to_string());
+        //tree.get_mut(&nivel).unwrap().insert("dia", dia.to_string());
+        tree.get_mut(&nivel).unwrap().insert("mes".to_string(), mes.to_string());
+        tree.get_mut(&nivel).unwrap().insert("ano".to_string(), ano.to_string());
+        tree.get_mut(&nivel).unwrap().insert("pa_do_credito".to_string(), pa_do_credito.to_string());
 
         println!("dia: {} , mes: {}, ano: {}, pa_do_credito: {}", &dia, &mes, &ano, &pa_do_credito);
     }
@@ -175,34 +172,58 @@ fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, info_r
     let cnpj = Regex::new(r"^(\d{8})(\d{6})$").unwrap(); // exemplo 22.333.444/0001-55 --> (22333444)(000155) --> cnpj_base = 22333444
     for caps in cnpj.captures_iter(&valores["CNPJ"]) {
         let cnpj_base = caps.get(1).unwrap().as_str();
-        info_retidas.insert("cnpj_base".to_string(), cnpj_base.to_string());
+        tree.get_mut(&nivel).unwrap().insert("cnpj_base".to_string(), cnpj_base.to_string());
     }
+
+    println!("ler_registro_0000 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
 }
 
-fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
+fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
+
+    let nivel: u8 = valores["nivel"].parse().unwrap();
+    if !tree.contains_key(&nivel) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        tree.insert(nivel, _info);
+    }
+
+    // https://stackoverflow.com/questions/30414424/how-can-i-update-a-value-in-a-mutable-hashmap
+    // https://doc.rust-lang.org/beta/std/collections/struct.HashMap.html
+    tree.get_mut(&nivel).unwrap().insert("IND_APRO_CRED".to_string(), valores["IND_APRO_CRED"].to_string());
+
     println!("ler_registro_0110 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("IND_APRO_CRED".to_string(),  valores["IND_APRO_CRED"].to_string());
 }
 
-fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
+fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
+    let nivel: u8 = valores["nivel"].parse().unwrap();
+    if !tree.contains_key(&nivel) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        tree.insert(nivel, _info);
+    }
+
+    tree.get_mut(&nivel).unwrap().insert("REC_BRU_NCUM_TRIB_MI".to_string(), valores["REC_BRU_NCUM_TRIB_MI"].to_string());
+    tree.get_mut(&nivel).unwrap().insert("REC_BRU_NCUM_NT_MI".to_string(),   valores["REC_BRU_NCUM_NT_MI"  ].to_string());
+    tree.get_mut(&nivel).unwrap().insert("REC_BRU_NCUM_EXP".to_string(),     valores["REC_BRU_NCUM_EXP"    ].to_string());
+    tree.get_mut(&nivel).unwrap().insert("REC_BRU_CUM".to_string(),          valores["REC_BRU_CUM"         ].to_string());
+    tree.get_mut(&nivel).unwrap().insert("REC_BRU_TOTAL".to_string(),        valores["REC_BRU_TOTAL"       ].to_string());
+
     println!("ler_registro_0111 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
-    info_retidas.insert("REC_BRU_NCUM_TRIB_MI".to_string(), valores["REC_BRU_NCUM_TRIB_MI"].to_string());
-    info_retidas.insert("REC_BRU_NCUM_NT_MI".to_string(),   valores["REC_BRU_NCUM_NT_MI"  ].to_string());
-    info_retidas.insert("REC_BRU_NCUM_EXP".to_string(),     valores["REC_BRU_NCUM_EXP"    ].to_string());
-    info_retidas.insert("REC_BRU_CUM".to_string(),          valores["REC_BRU_CUM"         ].to_string());
-    info_retidas.insert("REC_BRU_TOTAL".to_string(),        valores["REC_BRU_TOTAL"       ].to_string()); 
 }
 
 // Registro 0140: Tabela de Cadastro de Estabelecimentos
 // O Registro 0140 tem por objetivo relacionar e informar os estabelecimentos da pessoa jurídica.
-fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, info_retidas: &mut HashMap<String, String>) {
-    
+fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
+    let nivel: u8 = valores["nivel"].parse().unwrap();
+    if !tree.contains_key(&nivel) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        tree.insert(nivel, _info);
+    }
+
     let re_cnpj_de_14_digitos = Regex::new(r"^\d{14}$").unwrap();
     let cnpj_do_estabelecimento = &valores["CNPJ"];
     let nome_do_estabelecimento = &valores["NOME"];
     
     if re_cnpj_de_14_digitos.is_match(&cnpj_do_estabelecimento) {
-        info_retidas.insert(cnpj_do_estabelecimento.to_string(), nome_do_estabelecimento.to_string());
+        tree.get_mut(&nivel).unwrap().insert(cnpj_do_estabelecimento.to_string(), nome_do_estabelecimento.to_string());
     }
 }
 
