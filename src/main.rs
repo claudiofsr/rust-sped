@@ -93,14 +93,19 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     tree.insert(0, arquivo_da_efd);
     println!("tree: {:#?}", tree);
 
+    let multiple_spaces= Regex::new(r"\s{2,}").unwrap();   // substituir dois ou mais espaços por apenas um
+    let boundary_spaces= Regex::new(r"\s*\|\s*").unwrap(); // substituir ' | ' por '|'
+
     // Read the file line by line using the lines() iterator from std::io::BufRead.
     for (index, line) in buffer_read.lines().enumerate() {
-        let campos = line.split("|");
+        let mut linha = multiple_spaces.replace_all(&line,  " ").to_string();
+                linha = boundary_spaces.replace_all(&linha, "|").to_string();
+        let campos = linha.split("|");
         let mut vec: Vec<String> = campos.map(|s| s.to_owned()).collect(); // vec[1].to_uppercase(): correção do registo c491 --> C491
         let registro = vec[1].to_uppercase(); // type String
 
         if !registros_efd.contains_key(&registro.as_str()) {
-            println!("\n\t registro {} não definido em mylib.rs \n", &registro);
+            println!("\n\t registro '{}' não definido em mylib.rs \n", &registro);
             //std::process::exit(1);
         }
 
