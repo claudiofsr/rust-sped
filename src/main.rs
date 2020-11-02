@@ -23,6 +23,11 @@ use regex::{Regex,Captures};
 //Rayon: https://rustysurfer.me/processing-millions-of-files-in-parallel-with-rust-and-rayon
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
+#[allow(unused_macros)]
+macro_rules! vec_of_strings {
+    ($($x:expr),*) => (vec![$($x.to_string()),*]);
+}
+
 // #[allow(dead_code)]
 fn main() -> Result<(), Error> {
     let start = Instant::now();
@@ -78,14 +83,18 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     // https://stackoverflow.com/questions/51372702/how-do-i-make-a-dispatch-table-in-rust
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_functions.html
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_parameters.html
-    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut BTreeMap<u8, HashMap<String, String>>)>::new();
+    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut BTreeMap<u8, HashMap<String, String>>, &mut BTreeMap<String, HashMap<String, String>>)>::new();
     dispatch_table.insert("0000", &ler_registro_0000);
     dispatch_table.insert("0110", &ler_registro_0110);
     dispatch_table.insert("0111", &ler_registro_0111);
     dispatch_table.insert("0140", &ler_registro_0140);
+    dispatch_table.insert("0150", &ler_registro_0150);
 
     let mut tree: BTreeMap<u8, HashMap<String, String>> = BTreeMap::new();
     insert_info_into_the_tree(&mut tree, 0);
+    tree.get_mut(&0).unwrap().insert("arquivo_da_efd".to_string(), arquivo.to_string());
+
+    let mut participantes: BTreeMap<String, HashMap<String, String>> = BTreeMap::new();
 
     let multiple_spaces= Regex::new(r"\s{2,}").unwrap();   // substituir dois ou mais espaços por apenas um
     let boundary_spaces= Regex::new(r"\s*\|\s*").unwrap(); // substituir ' | ' por '|'
@@ -96,8 +105,9 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
         println!("linha n° {} ; registro {} ; vetor {:?}", index + 1, &registro, &vec);
 
         if !registros_efd.contains_key(&registro.as_str()) {
-            println!("\n\t registro '{}' não definido em mylib.rs \n", &registro);
-            //std::process::exit(1);
+            println!("\nLeitura do arquivo '{}'.", &arquivo);
+            println!("Registro '{}' não definido em mylib.rs \n", &registro);
+            std::process::exit(1);
         }
 
         let mut valores: HashMap<&str, String> = HashMap::new();
@@ -107,7 +117,7 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
         println!("valores: {:#?}", &valores);
 
         if dispatch_table.contains_key(&registro.as_str()) {
-            dispatch_table[&registro.as_str()](&registro, &mut valores, &mut tree);
+            dispatch_table[&registro.as_str()](&registro, &mut valores, &mut tree, &mut participantes);
         }
 
         if (index + 1) >= 10 || registro == "9999" {
@@ -116,7 +126,15 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     }
 
     println!("tree: {:#?}", &tree);
+    println!("participantes: {:#?}", &participantes);
     Ok(())
+}
+
+fn insert_info_into_the_tree (tree: &mut BTreeMap<u8, HashMap<String, String>>, nivel: u8){
+    if !tree.contains_key(&nivel) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        tree.insert(nivel, _info);
+    }
 }
 
 fn parse_line(line: &str, multiple_spaces: &regex::Regex, boundary_spaces: &regex::Regex)-> (std::vec::Vec<std::string::String>, std::string::String) {
@@ -129,14 +147,49 @@ fn parse_line(line: &str, multiple_spaces: &regex::Regex, boundary_spaces: &rege
     (vec, registro)
 }
 
-fn insert_info_into_the_tree (tree: &mut BTreeMap<u8, HashMap<String, String>>, nivel: u8){
-    if !tree.contains_key(&nivel) {
-        let mut _info: HashMap<String, String> = HashMap::new();
-        tree.insert(nivel, _info);
+// opção <'a> : https://doc.rust-lang.org/stable/rust-by-example/scope/lifetime/explicit.html
+#[allow(dead_code)]
+fn obter_valores<'a>(registros_efd: &std::collections::HashMap<&str, std::collections::HashMap<&'a str, &'a str>>, valores: &mut std::collections::HashMap<&'a str, String>, registro: &str, vec: &Vec<String>) {
+
+    let re_val  = Regex::new(r"^VL_|^REC_|^SLD_").unwrap();
+    let re_aliq = Regex::new(r"^ALIQ_").unwrap();
+    let re_num  = Regex::new(r"^[\d,.]+$").unwrap();
+
+    for (index, valor) in vec.iter().enumerate() {
+
+        // index 0: nivel ; index 1: REG registro corrigido para uppercase
+        if index >= 1 && index < (vec.len() - 1) {
+            let idx = format!("{:02}",index); // String
+            let campo = registros_efd[registro][idx.as_str()];
+
+            let mut new_valor = valor.clone();
+            //let mut new_valor = valor.to_owned(); //owned string - this is yours
+
+            if re_val.is_match(campo) && re_num.is_match(&new_valor) {
+                //new_valor = re_val.replace_all(&valor, ".").to_string();
+                new_valor = new_valor.replace(",",".");
+
+                let my_number: f64 = new_valor.trim().parse().unwrap();
+                new_valor = format!("{:0.2}", my_number).to_string();
+            }
+            if re_aliq.is_match(campo) && re_num.is_match(&new_valor) {
+                //new_valor = re_val.replace_all(&valor, ".").to_string();
+                new_valor = new_valor.replace(",",".");
+
+                let my_number: f64 = new_valor.trim().parse().unwrap();
+                new_valor = format!("{:0.4}", my_number).to_string();
+            }
+
+            valores.insert(campo, new_valor.to_string());
+
+            println!("registro {} ; index {:2} ; campo {:20} --> valor '{}'", &registro, &index, &campo, &valor);
+        } else {
+            continue;
+        }
     }
 }
 
-fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
+fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>, _participantes: &mut BTreeMap<String, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
     insert_info_into_the_tree(tree, nivel);
 
@@ -180,7 +233,7 @@ fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, tree: 
     println!("ler_registro_0000 --> registro: {} ; valores = {:?}, nivel = {}", registro, valores["REG"], nivel);
 }
 
-fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
+fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>, _participantes: &mut BTreeMap<String, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
     insert_info_into_the_tree(tree, nivel);
 
@@ -191,7 +244,7 @@ fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, tree: 
     println!("ler_registro_0110 --> registro: {} ; valores = {:?}, nivel = {}", registro, valores["REG"], nivel);
 }
 
-fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
+fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>, _participantes: &mut BTreeMap<String, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
     //let nivel: u8 = 0; // incluir informações importantes no nível 0.
 
@@ -208,7 +261,7 @@ fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, tree: 
 
 // Registro 0140: Tabela de Cadastro de Estabelecimentos
 // O Registro 0140 tem por objetivo relacionar e informar os estabelecimentos da pessoa jurídica.
-fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
+fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>, _participantes: &mut BTreeMap<String, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
     insert_info_into_the_tree(tree, nivel);
 
@@ -223,45 +276,21 @@ fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree:
     println!("ler_registro_0140 --> registro: {} ; valores = {:?}, nivel = {}", _registro, valores["REG"], nivel);
 }
 
-// opção <'a> : https://doc.rust-lang.org/stable/rust-by-example/scope/lifetime/explicit.html
-#[allow(dead_code)]
-fn obter_valores<'a>(registros_efd: &std::collections::HashMap<&str, std::collections::HashMap<&'a str, &'a str>>, valores: &mut std::collections::HashMap<&'a str, String>, registro: &str, vec: &Vec<String>) {
+// Registro 0150: Tabela de Cadastro do Participante
+fn ler_registro_0150(_registro: &str, valores: &mut HashMap<&str, String>, _tree: &mut BTreeMap<u8, HashMap<String, String>>, participantes: &mut BTreeMap<String, HashMap<String, String>>) {
+    let nivel: u8 = valores["nivel"].parse().unwrap();
+    let codigo_do_participante = &valores["COD_PART"];
 
-    let re_val  = Regex::new(r"^VL_|^REC_|^SLD_").unwrap();
-    let re_aliq = Regex::new(r"^ALIQ_").unwrap();
-
-    for (index, valor) in vec.iter().enumerate() {
-
-        // index 0: nivel ; index 1: REG registro corrigido para uppercase
-        if index >= 1 && index < (vec.len() - 1) {
-            let idx = format!("{:02}",index); // String
-            let campo = registros_efd[registro][idx.as_str()];
-
-            let mut new_valor = valor.clone();
-            //let mut new_valor = valor.to_owned(); //owned string - this is yours
-
-            if re_val.is_match(campo) {
-                //new_valor = re_val.replace_all(&valor, ".").to_string();
-                new_valor = new_valor.replace(",",".");
-
-                let my_number: f64 = new_valor.trim().parse().unwrap();
-                new_valor = format!("{:0.2}", my_number).to_string();
-            }
-            if re_aliq.is_match(campo) {
-                //new_valor = re_val.replace_all(&valor, ".").to_string();
-                new_valor = new_valor.replace(",",".");
-
-                let my_number: f64 = new_valor.trim().parse().unwrap();
-                new_valor = format!("{:0.4}", my_number).to_string();
-            }
-
-            valores.insert(campo, new_valor.to_string());
-
-            println!("registro {} ; index {:2} ; campo {:20} --> valor '{}'", &registro, &index, &campo, &valor);
-        } else {
-            continue;
-        }
+    if !participantes.contains_key(&codigo_do_participante.to_string()) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        participantes.insert(codigo_do_participante.to_string(), _info);
     }
+    
+    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("NOME".to_string(), valores["NOME"].to_string());
+    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("CNPJ".to_string(), valores["CNPJ"].to_string());
+    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("CPF".to_string(), valores["CPF"].to_string());
+
+    println!("ler_registro_0150 --> registro: {} ; valores = {:?}, nivel = {}", _registro, valores["REG"], nivel);
 }
 
 fn procurar_arquivos_efd() -> std::vec::Vec<std::string::String> {
