@@ -85,20 +85,15 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     dispatch_table.insert("0140", &ler_registro_0140);
 
     let mut tree: BTreeMap<u8, HashMap<String, String>> = BTreeMap::new();
-    let mut info: HashMap<String, String> = HashMap::new();
-    info.insert("arquivo_da_efd".to_string(), arquivo.to_string());
-    tree.insert(0, info);
+    insert_info_into_the_tree(&mut tree, 0);
 
     let multiple_spaces= Regex::new(r"\s{2,}").unwrap();   // substituir dois ou mais espaços por apenas um
     let boundary_spaces= Regex::new(r"\s*\|\s*").unwrap(); // substituir ' | ' por '|'
 
     // Read the file line by line using the lines() iterator from std::io::BufRead.
     for (index, line) in buffer_read.lines().enumerate() {
-        let mut linha = multiple_spaces.replace_all(&line,  " ").to_string();
-                linha = boundary_spaces.replace_all(&linha, "|").to_string();
-        let campos = linha.split("|");
-        let mut vec: Vec<String> = campos.map(|s| s.to_owned()).collect(); // vec[1].to_uppercase(): correção do registo c491 --> C491
-        let registro = vec[1].to_uppercase(); // type String
+        let (vec, registro) = parse_line(line, &multiple_spaces, &boundary_spaces);
+        println!("linha n° {} ; registro {} ; vetor {:?}", index + 1, &registro, &vec);
 
         if !registros_efd.contains_key(&registro.as_str()) {
             println!("\n\t registro '{}' não definido em mylib.rs \n", &registro);
@@ -108,10 +103,8 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
         let mut valores: HashMap<&str, String> = HashMap::new();
         valores.insert("linha_da_efd", (index + 1).to_string());
         valores.insert("nivel", registros_efd[registro.as_str()]["00"].to_string()); // type String to type &str
-        valores.insert("REG", registro.clone());
-
-        println!("linha n° {} ; registro {} ; vetor {:?}", index + 1, &registro, vec);
-        obter_valores(&registros_efd, &mut valores, &registro, &mut vec);
+        obter_valores(&registros_efd, &mut valores, &registro, &vec);
+        println!("valores: {:#?}", &valores);
 
         if dispatch_table.contains_key(&registro.as_str()) {
             dispatch_table[&registro.as_str()](&registro, &mut valores, &mut tree);
@@ -122,13 +115,18 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
         }
     }
 
-    //for (k, v) in tree.iter() {
-    //    println!("tree[{}] = '{}'", k, v);
-    //}
-    
     println!("tree: {:#?}", &tree);
-
     Ok(())
+}
+
+fn parse_line(line: &str, multiple_spaces: &regex::Regex, boundary_spaces: &regex::Regex)-> (std::vec::Vec<std::string::String>, std::string::String) {
+    let mut linha = multiple_spaces.replace_all(&line,  " ").to_string();
+            linha = boundary_spaces.replace_all(&linha, "|").to_string();
+    let campos = linha.split("|");
+    let mut vec: Vec<String> = campos.map(|s| s.to_owned()).collect(); // vec[1].to_uppercase(): correção do registo c491 --> C491
+    vec[1] = vec[1].to_uppercase(); // type String
+    let registro = vec[1].clone();
+    (vec, registro)
 }
 
 fn insert_info_into_the_tree (tree: &mut BTreeMap<u8, HashMap<String, String>>, nivel: u8){
@@ -227,7 +225,7 @@ fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree:
 
 // opção <'a> : https://doc.rust-lang.org/stable/rust-by-example/scope/lifetime/explicit.html
 #[allow(dead_code)]
-fn obter_valores<'a>(registros_efd: &std::collections::HashMap<&str, std::collections::HashMap<&'a str, &'a str>>, valores: &mut std::collections::HashMap<&'a str, String>, registro: &str, vec: &mut Vec<String>) {
+fn obter_valores<'a>(registros_efd: &std::collections::HashMap<&str, std::collections::HashMap<&'a str, &'a str>>, valores: &mut std::collections::HashMap<&'a str, String>, registro: &str, vec: &Vec<String>) {
 
     let re_val  = Regex::new(r"^VL_|^REC_|^SLD_").unwrap();
     let re_aliq = Regex::new(r"^ALIQ_").unwrap();
@@ -235,7 +233,7 @@ fn obter_valores<'a>(registros_efd: &std::collections::HashMap<&str, std::collec
     for (index, valor) in vec.iter().enumerate() {
 
         // index 0: nivel ; index 1: REG registro corrigido para uppercase
-        if index >= 2 && index < (vec.len() - 1) {
+        if index >= 1 && index < (vec.len() - 1) {
             let idx = format!("{:02}",index); // String
             let campo = registros_efd[registro][idx.as_str()];
 
@@ -264,11 +262,6 @@ fn obter_valores<'a>(registros_efd: &std::collections::HashMap<&str, std::collec
             continue;
         }
     }
-
-    for (k, v) in valores {
-        println!("valores[{}] = '{}'", k, v);
-    }
-
 }
 
 fn procurar_arquivos_efd() -> std::vec::Vec<std::string::String> {
