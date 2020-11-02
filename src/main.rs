@@ -13,7 +13,7 @@ use glob::MatchOptions;
 use encoding_rs::WINDOWS_1252;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 
-use std::collections::HashMap;
+use std::collections::{HashMap,BTreeMap};
 use std::time::Instant;
 
 use regex::{Regex,Captures};
@@ -78,13 +78,13 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     // https://stackoverflow.com/questions/51372702/how-do-i-make-a-dispatch-table-in-rust
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_functions.html
     // https://doc.rust-lang.org/stable/rust-by-example/fn/closures/input_parameters.html
-    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut HashMap<u8, HashMap<String, String>>)>::new();
+    let mut dispatch_table = HashMap::<&str, &dyn Fn(&str, &mut HashMap<&str, String>, &mut BTreeMap<u8, HashMap<String, String>>)>::new();
     dispatch_table.insert("0000", &ler_registro_0000);
     dispatch_table.insert("0110", &ler_registro_0110);
     dispatch_table.insert("0111", &ler_registro_0111);
     dispatch_table.insert("0140", &ler_registro_0140);
 
-    let mut tree: HashMap<u8, HashMap<String, String>> = HashMap::new();
+    let mut tree: BTreeMap<u8, HashMap<String, String>> = BTreeMap::new();
     let mut info: HashMap<String, String> = HashMap::new();
     info.insert("arquivo_da_efd".to_string(), arquivo.to_string());
     tree.insert(0, info);
@@ -131,12 +131,16 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
     Ok(())
 }
 
-fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
-    let nivel: u8 = valores["nivel"].parse().unwrap();
+fn insert_info_into_the_tree (tree: &mut BTreeMap<u8, HashMap<String, String>>, nivel: u8){
     if !tree.contains_key(&nivel) {
         let mut _info: HashMap<String, String> = HashMap::new();
         tree.insert(nivel, _info);
     }
+}
+
+fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
+    let nivel: u8 = valores["nivel"].parse().unwrap();
+    insert_info_into_the_tree(tree, nivel);
 
     // https://stackoverflow.com/questions/24158114/what-are-the-differences-between-rusts-string-and-str?rq=1
     // Use String if you need owned string data (like passing strings to other threads, or building them at runtime), and use &str if you only need a view of a string.
@@ -175,30 +179,25 @@ fn ler_registro_0000(registro: &str, valores: &mut HashMap<&str, String>, tree: 
         tree.get_mut(&nivel).unwrap().insert("cnpj_base".to_string(), cnpj_base.to_string());
     }
 
-    println!("ler_registro_0000 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
+    println!("ler_registro_0000 --> registro: {} ; valores = {:?}, nivel = {}", registro, valores["REG"], nivel);
 }
 
-fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
-
+fn ler_registro_0110(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
-    if !tree.contains_key(&nivel) {
-        let mut _info: HashMap<String, String> = HashMap::new();
-        tree.insert(nivel, _info);
-    }
+    insert_info_into_the_tree(tree, nivel);
 
     // https://stackoverflow.com/questions/30414424/how-can-i-update-a-value-in-a-mutable-hashmap
     // https://doc.rust-lang.org/beta/std/collections/struct.HashMap.html
     tree.get_mut(&nivel).unwrap().insert("IND_APRO_CRED".to_string(), valores["IND_APRO_CRED"].to_string());
 
-    println!("ler_registro_0110 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
+    println!("ler_registro_0110 --> registro: {} ; valores = {:?}, nivel = {}", registro, valores["REG"], nivel);
 }
 
-fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
+fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
-    if !tree.contains_key(&nivel) {
-        let mut _info: HashMap<String, String> = HashMap::new();
-        tree.insert(nivel, _info);
-    }
+    //let nivel: u8 = 0; // incluir informações importantes no nível 0.
+
+    insert_info_into_the_tree(tree, nivel);
 
     tree.get_mut(&nivel).unwrap().insert("REC_BRU_NCUM_TRIB_MI".to_string(), valores["REC_BRU_NCUM_TRIB_MI"].to_string());
     tree.get_mut(&nivel).unwrap().insert("REC_BRU_NCUM_NT_MI".to_string(),   valores["REC_BRU_NCUM_NT_MI"  ].to_string());
@@ -206,17 +205,14 @@ fn ler_registro_0111(registro: &str, valores: &mut HashMap<&str, String>, tree: 
     tree.get_mut(&nivel).unwrap().insert("REC_BRU_CUM".to_string(),          valores["REC_BRU_CUM"         ].to_string());
     tree.get_mut(&nivel).unwrap().insert("REC_BRU_TOTAL".to_string(),        valores["REC_BRU_TOTAL"       ].to_string());
 
-    println!("ler_registro_0111 --> registro: {} ; valores = {:?}", registro, valores["REG"]);
+    println!("ler_registro_0111 --> registro: {} ; valores = {:?}, nivel = {}", registro, valores["REG"], nivel);
 }
 
 // Registro 0140: Tabela de Cadastro de Estabelecimentos
 // O Registro 0140 tem por objetivo relacionar e informar os estabelecimentos da pessoa jurídica.
-fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree: &mut HashMap<u8, HashMap<String, String>>) {
+fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree: &mut BTreeMap<u8, HashMap<String, String>>) {
     let nivel: u8 = valores["nivel"].parse().unwrap();
-    if !tree.contains_key(&nivel) {
-        let mut _info: HashMap<String, String> = HashMap::new();
-        tree.insert(nivel, _info);
-    }
+    insert_info_into_the_tree(tree, nivel);
 
     let re_cnpj_de_14_digitos = Regex::new(r"^\d{14}$").unwrap();
     let cnpj_do_estabelecimento = &valores["CNPJ"];
@@ -225,6 +221,8 @@ fn ler_registro_0140(_registro: &str, valores: &mut HashMap<&str, String>, tree:
     if re_cnpj_de_14_digitos.is_match(&cnpj_do_estabelecimento) {
         tree.get_mut(&nivel).unwrap().insert(cnpj_do_estabelecimento.to_string(), nome_do_estabelecimento.to_string());
     }
+
+    println!("ler_registro_0140 --> registro: {} ; valores = {:?}, nivel = {}", _registro, valores["REG"], nivel);
 }
 
 // opção <'a> : https://doc.rust-lang.org/stable/rust-by-example/scope/lifetime/explicit.html
