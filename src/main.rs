@@ -105,7 +105,8 @@ fn analisar_efd(registros_efd: &std::collections::HashMap<&str, std::collections
         println!("linha n° {} ; registro {} ; vetor {:?}", index + 1, &registro, &vec);
 
         if !registros_efd.contains_key(&registro.as_str()) {
-            println!("\nLeitura do arquivo '{}'.", &arquivo);
+            println!("\nLinha nº {} do arquivo '{}'.", index + 1, &arquivo);
+            println!("Dados {:?}", &vec);
             println!("Registro '{}' não definido em mylib.rs \n", &registro);
             std::process::exit(1);
         }
