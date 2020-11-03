@@ -16,15 +16,14 @@ use encoding_rs_io::DecodeReaderBytesBuilder;
 use std::collections::{HashMap,BTreeMap};
 use std::time::Instant;
 
-use regex::{Regex,Captures};
-
-//use std::thread; // https://doc.rust-lang.org/book/ch16-01-threads.html
+use regex::Regex;
 
 //Rayon: https://rustysurfer.me/processing-millions-of-files-in-parallel-with-rust-and-rayon
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
 #[allow(unused_macros)]
 macro_rules! vec_of_strings {
+    // let v = vec_of_strings!["a", "b", "c"];
     ($($x:expr),*) => (vec![$($x.to_string()),*]);
 }
 
@@ -42,6 +41,7 @@ fn main() -> Result<(), Error> {
         });
     } else {
         println!("Análise em sequência:");
+        //use std::thread; // https://doc.rust-lang.org/book/ch16-01-threads.html
         //thread::spawn(move || {
         for (i, arquivo) in arquivos_efd.iter().enumerate() {
             println!("In position {} we have file {:?}", i + 1, arquivo);
@@ -286,10 +286,31 @@ fn ler_registro_0150(_registro: &str, valores: &mut HashMap<&str, String>, _tree
         let mut _info: HashMap<String, String> = HashMap::new();
         participantes.insert(codigo_do_participante.to_string(), _info);
     }
+
+    let nome_do_participante = &valores["NOME"];
+    let cnpj_do_participante = &valores["CNPJ"];
+    let cpf_do_participante  = &valores["CPF"];
     
-    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("NOME".to_string(), valores["NOME"].to_string());
-    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("CNPJ".to_string(), valores["CNPJ"].to_string());
-    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("CPF".to_string(), valores["CPF"].to_string());
+    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("NOME".to_string(), nome_do_participante.to_string());
+    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("CNPJ".to_string(), cnpj_do_participante.to_string());
+    participantes.get_mut(&codigo_do_participante.to_string()).unwrap().insert("CPF".to_string(),   cpf_do_participante.to_string());
+
+    let chave_cnpj = format!("participante-{}", cnpj_do_participante);
+    let chave_cpf  = format!("participante-{}", cpf_do_participante );
+
+    let re_cnpj_de_14_digitos = Regex::new(r"^\d{14}$").unwrap();
+    let re_cpf_de_11_digitos  = Regex::new(r"^\d{11}$").unwrap();
+
+    if re_cnpj_de_14_digitos.is_match(&cnpj_do_participante) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        participantes.insert(chave_cnpj.to_string(), _info);
+        participantes.get_mut(&chave_cnpj.to_string()).unwrap().insert("NOME".to_string(), nome_do_participante.to_string());
+    }
+    if re_cpf_de_11_digitos.is_match(&cpf_do_participante) {
+        let mut _info: HashMap<String, String> = HashMap::new();
+        participantes.insert(chave_cpf.to_string(), _info);
+        participantes.get_mut(&chave_cpf.to_string()).unwrap().insert("NOME".to_string(), nome_do_participante.to_string());
+    }
 
     println!("ler_registro_0150 --> registro: {} ; valores = {:?}, nivel = {}", _registro, valores["REG"], nivel);
 }
