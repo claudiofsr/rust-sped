@@ -1,8 +1,9 @@
 [package]
 name = "efd_contribuicoes"
-version = "0.1.0"
 authors = ["Claudio F S Rodrigues <claudiofsrodrigues@gmail.com>"]
-edition = "2021" # https://doc.rust-lang.org/nightly/edition-guide/rust-2021/index.html
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.78"
 description = """
 Analisar informações contidas em arquivos de SPED EFD Contribuições
 https://github.com/claudiofsr/rust-sped
