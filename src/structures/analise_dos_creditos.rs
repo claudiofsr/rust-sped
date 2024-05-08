@@ -35,7 +35,7 @@ use crate::{
     month_to_str,
     obter_descricao_da_natureza_da_bc_dos_creditos,
     obter_descricao_do_tipo_de_credito,
-    tipo_de_operacao_to_str,
+    get_tipo_de_operacao,
     verificar_periodo_multiplo,
     DocsFiscais,
     InfoExtension, Mes,
@@ -225,8 +225,8 @@ pub fn serialize_tipo_de_operacao<S>(tipo_de_operacao: &Option<u16>, serializer:
 where
     S: Serializer,
 {
-    let string = display_tipo_de_operacao(tipo_de_operacao);
-    serializer.serialize_str(&string)
+    let opt_string: Option<String> = get_tipo_de_operacao(tipo_de_operacao);
+    serializer.serialize_some(&opt_string)
 }
 
 // https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html
@@ -235,7 +235,7 @@ where
 // at the same time as we’re testing that value for a pattern match.
 pub fn display_tipo_de_operacao(tipo_de_operacao: &Option<u16>) -> String {
     match tipo_de_operacao {
-        value @ Some(1..=7) => tipo_de_operacao_to_str(value).to_string(),
+        value @ Some(1..=7) => get_tipo_de_operacao(value).to_string(),
         _  => "".to_string(),
     }
 }

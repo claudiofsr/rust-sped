@@ -8,9 +8,6 @@ mod sped_registros;
 mod structures;
 mod excel_worksheets;
 
-mod excel_workbook;
-//mod excel_alternative;
-
 pub use self::{
     args::*,
     sped_efd::*,
@@ -25,10 +22,19 @@ pub use self::{
     structures::info::*,
     structures::traits::*,
     excel_worksheets::*,
-
-    excel_workbook::*,
-    //excel_alternative::*,
 };
+
+// https://crates.io/crates/cfg-if
+cfg_if::cfg_if! {
+    if #[cfg(feature = "old")] {
+        mod excel_alternative;
+        pub use excel_alternative::*;
+    } else {
+        // default: "new"
+        mod excel_workbook;
+        pub use excel_workbook::*;
+    }
+}
 
 pub const ZERO: f64 = 0.00000000;
 pub const SMALL_VALUE: f64 = 0.009; // usado em fn despise_small_values; menor que um centavo

@@ -42,12 +42,13 @@ use crate::{
     obter_descricao_da_natureza_da_bc_dos_creditos,
     month_to_str,
     indicador_de_origem_to_str,
-    tipo_de_operacao_to_str,
+    get_tipo_de_operacao,
 };
 
 use claudiofsr_lib::{
     get_style,
     num_digits,
+    OptionExtension,
 };
 
 const FONT_SIZE: f64 = 12.0;
@@ -453,7 +454,7 @@ fn add_row_efd(
 
     let month_name = month_to_str(&colunas.mes);
     let indicador_de_origem = indicador_de_origem_to_str(&colunas.indicador_de_origem);
-    let tipo_de_operacao  = tipo_de_operacao_to_str(&colunas.tipo_de_operacao);
+    let tipo_de_operacao  = get_tipo_de_operacao(&colunas.tipo_de_operacao).to_string();
     let descricao_do_cst  = obter_descricao_do_cst(&colunas.cst);
     let descricao_do_cfop = obter_descricao_do_cfop(&colunas.cfop);
     let descricao_do_tipo_de_credito = obter_descricao_do_tipo_de_credito(&colunas.tipo_de_credito, true);
@@ -468,7 +469,7 @@ fn add_row_efd(
     add_integer_column(row,  6, colunas.ano,                   sheet, width_map, fmt_integer)?;
     add_integer_column(row,  7, colunas.trimestre,             sheet, width_map, fmt_integer)?;
     add_strings_column(row,  8, month_name,                    sheet, width_map, fmt_center)?;
-    add_strings_column(row,  9, tipo_de_operacao,              sheet, width_map, fmt_default)?;
+    add_strings_column(row,  9, &tipo_de_operacao,             sheet, width_map, fmt_default)?;
 
     add_strings_column(row, 10, indicador_de_origem,           sheet, width_map, fmt_default)?;
     add_integer_column(row, 11, colunas.cod_credito,           sheet, width_map, fmt_integer)?;
@@ -603,7 +604,7 @@ fn add_row_nat(
 
     let month_name = month_to_str(&colunas.mes);
     let descricao_tipo_de_credito = obter_descricao_do_tipo_de_credito(&colunas.tipo_de_credito, false);
-    let tipo_de_operacao = tipo_de_operacao_to_str(&colunas.tipo_de_operacao);
+    let tipo_de_operacao = get_tipo_de_operacao(&colunas.tipo_de_operacao).to_string();
     let descricao_da_nat_bc = obter_descricao_da_natureza_da_bc_dos_creditos(&colunas.natureza_bc);
 
     let aliq_pis: String = display_aliquota(&colunas.aliq_pis);
@@ -613,7 +614,7 @@ fn add_row_nat(
     add_integer_column(row,  1, colunas.ano,                sheet, width_map, fmt_integer)?;
     add_integer_column(row,  2, colunas.trimestre,          sheet, width_map, fmt_integer)?;
     add_strings_column(row,  3, month_name,                 sheet, width_map, fmt_center)?;
-    add_strings_column(row,  4, tipo_de_operacao,           sheet, width_map, fmt_default)?;
+    add_strings_column(row,  4, &tipo_de_operacao,          sheet, width_map, fmt_default)?;
     add_strings_column(row,  5, &descricao_tipo_de_credito, sheet, width_map, fmt_center)?;
     add_integer_column(row,  6, colunas.cst,                sheet, width_map, fmt_integer)?;
     add_strings_column(row,  7, &aliq_pis,                  sheet, width_map, fmt_center)?;
