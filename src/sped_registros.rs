@@ -107,7 +107,7 @@ static TIPO_DE_OPERACAO: Lazy<HashMap<Option<u16>, &'static str>> = Lazy::new(||
 });
 
 pub fn get_tipo_de_operacao(num:&Option<u16>) -> Option<String> {
-    TIPO_DE_OPERACAO.get(num).map(|oper| oper.to_string())
+    TIPO_DE_OPERACAO.get(num).map(|&oper| oper.to_string())
 }
 
 /// 4.3.6 - Tabela Código de Tipo de Crédito
