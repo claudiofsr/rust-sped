@@ -1352,7 +1352,7 @@ fn ler_registro_i100(info: &mut Info, valores: HashMap<String, String>) -> Resul
 // Registro M100: Crédito de PIS/Pasep Relativo ao Período
 fn ler_registro_m100(info: &mut Info, valores: HashMap<String, String>) -> Result<(), Box<dyn Error>> {
 
-    info.reg_m100 = valores.clone(); // reter info para posterior uso no reg M105
+    info.reg_m100.clone_from(&valores); // reter info para posterior uso no reg M105
 
     let mut hmap = HashMap::new();
     let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
@@ -1517,7 +1517,7 @@ fn correlacionar_aliquotas_codcred(info: &mut Info, hmap: &mut HashMap<String, S
 /// Registro M500: Crédito de COFINS Relativo ao Período
 fn ler_registro_m500(info: &mut Info, valores: HashMap<String, String>) -> Result<(), Box<dyn Error>> {
 
-    info.reg_m500 = valores.clone(); // reter info para posterior uso no reg M505
+    info.reg_m500.clone_from(&valores); // reter info para posterior uso no reg M505
 
     let mut hmap = HashMap::new();
     let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();

@@ -91,15 +91,19 @@ pub fn indicador_de_origem_to_str(num: &Option<u16>) -> &'static str {
 }
 
 static TIPO_DE_OPERACAO: Lazy<HashMap<Option<u16>, &'static str>> = Lazy::new(|| {
-    HashMap::from([
-        (Some(1), "Entrada"),
-        (Some(2), "Saída"),
-        (Some(3), "Ajuste"),   // "Ajuste de Acréscimo"
-        (Some(4), "Ajuste"),   // "Ajuste de Redução"
-        (Some(5), "Desconto"), // "Desconto da Contribuição Apurada no Próprio Período"
-        (Some(6), "Desconto"), // "Desconto Efetuado em Período Posterior"
-        (Some(7), "Detalhamento"),
-    ])
+    let tuples = [
+        (1, "Entrada"),
+        (2, "Saída"),
+        (3, "Ajuste"),   // "Ajuste de Acréscimo"
+        (4, "Ajuste"),   // "Ajuste de Redução"
+        (5, "Desconto"), // "Desconto da Contribuição Apurada no Próprio Período"
+        (6, "Desconto"), // "Desconto Efetuado em Período Posterior"
+        (7, "Detalhamento"),
+    ];
+
+    let tipos = tuples.map(|(n, operacao)| (Some(n), operacao));
+
+    HashMap::from(tipos)
 });
 
 pub fn tipo_de_operacao_to_str(num:&Option<u16>) -> &'static str {
