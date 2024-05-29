@@ -297,9 +297,9 @@ checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
 
 [[package]]
 name = "claudiofsr_lib"
-version = "0.5.1"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b8cd46dd2481c8253c59b920552c455c957e2fb8c9cf06c0df2531efe08fba9"
+checksum = "d4ebf2f39218ebdf3dfe72c119cdb0491d69cbd4b2be313bacb3114a7844ecf2"
 dependencies = [
  "blake3",
  "chrono",
@@ -568,7 +568,7 @@ dependencies = [
  "glob",
  "ilog",
  "indicatif",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "num_cpus",
  "once_cell",
  "ordered-float",
@@ -875,9 +875,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]

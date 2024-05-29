@@ -49,7 +49,7 @@ encoding_rs_io = "0.1"
 glob = "0.3"
 ilog = "1.0"
 indicatif = {version = "0.17", features = ["rayon"] } # ProgressBar
-itertools = "0.12"
+itertools = "0.13"
 # memmap2 = "0.7"
 num_cpus = "1.16"
 ordered-float = { version = "4.2", features = ["serde"] }
@@ -64,7 +64,7 @@ struct_iterable = "0.1"
 tabled = { version = "0.15", features = ["ansi"] }
 
 [dependencies.claudiofsr_lib]
-version = "0.5"
+version = "0.6"
 # git = "https://github.com/claudiofsr/claudiofsr_lib"
 
 [dependencies.cc]
@@ -136,7 +136,7 @@ opt-level = 1          # Use slightly better optimizations.
 # cargo bench
 # ver resultado em: ... Rust/projects/efd_contribuicoes/target/criterion/report/index.html
 criterion = { version = "0.5", features = ["html_reports"] }
-itertools = "0.12"
+itertools = "0.13"
 plotters = "0.3"
 
 [[bench]]
