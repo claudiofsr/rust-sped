@@ -13,12 +13,14 @@ use efd_contribuicoes::{
     executar_programa,
 };
 
-/**
+/*
     clear && cargo test -- --nocapture
     clear && cargo run -- -h
     clear && cargo run -- -cpr 1 20
     cargo doc --open
+    cargo clippy
     cargo b -r && cargo install --path=.
+    efd_contribuicoes -cpr 1 20
 */
 
 fn main() -> Result<(), Box<dyn Error>> {
