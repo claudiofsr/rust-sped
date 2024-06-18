@@ -3,7 +3,7 @@ name = "efd_contribuicoes"
 authors = ["Claudio F S Rodrigues <claudiofsrodrigues@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.78"
+rust-version = "1.79"
 description = """
 Analisar informações contidas em arquivos de SPED EFD Contribuições
 https://github.com/claudiofsr/rust-sped
@@ -64,7 +64,7 @@ struct_iterable = "0.1"
 tabled = { version = "0.15", features = ["ansi"] }
 
 [dependencies.claudiofsr_lib]
-version = "0.6"
+version = "0.8"
 # git = "https://github.com/claudiofsr/claudiofsr_lib"
 
 [dependencies.cc]
@@ -84,7 +84,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.64"
+version = "0.67"
 features = [ 
     "chrono", 
     "serde",

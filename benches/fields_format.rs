@@ -1,8 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use claudiofsr_lib::{
-    StrExtension,
-    string_to_digits,
-};
+use claudiofsr_lib::StrExtension;
 
 // Testar quais das funções seguintes é a mais rápida
 
@@ -19,7 +16,7 @@ Add to Cargo.toml:
 [dev-dependencies]
 # cargo bench
 # see: ... /projects/.../target/criterion/report/index.html
-criterion = { version = "0.4", features = ["html_reports"] }
+criterion = { version = "0.5", features = ["html_reports"] }
 itertools = "0.12"
 plotters = "0.3"
 
@@ -43,7 +40,7 @@ pub fn format1(fields: &[&str]) -> Vec<String> {
 
     for &field in fields {
         // https://stackoverflow.com/questions/43516351/how-to-convert-a-string-of-digits-into-a-vector-of-digits
-        let digits = string_to_digits(field);
+        let digits = field.to_digits();
 
         // https://stackoverflow.com/questions/30154541/how-do-i-concatenate-strings
         // 14 digits: exemplo CNPJ: 01234567000890 --> 01.234.567/0008-90
