@@ -423,32 +423,17 @@ impl DocsFiscais {
         fields
             .into_iter()
             //.into_par_iter() // rayon: parallel iterator
-            .filter(|(_t, field)| field.contains_only_digits())
+            .filter(|(_t, field)| field.is_ascii_alphanumeric())
             .for_each(|(t, field)| {
-                match (t, field.len()) {
+                match (t, field.chars().count()) {
                     ("cnpj", 14) => {
-                        *field = [
-                            &field[ 0 ..  2], ".",
-                            &field[ 2 ..  5], ".",
-                            &field[ 5 ..  8], "/",
-                            &field[ 8 .. 12], "-",
-                            &field[12 ..   ]
-                        ].concat();
+                        *field = field.format_cnpj();
                     },
                     ("cpf", 11) => {
-                        *field = [
-                            &field[0 .. 3], ".",
-                            &field[3 .. 6], ".",
-                            &field[6 .. 9], "-",
-                            &field[9 ..  ]
-                        ].concat();
+                        *field = field.format_cpf();
                     },
                     ("ncm", 8) => {
-                        *field = [
-                            &field[0 .. 4], ".",
-                            &field[4 .. 6], ".",
-                            &field[6 ..  ]
-                        ].concat();
+                        *field = field.format_ncm();
                     },
                     ("chave", 44) => {
                         *field = [

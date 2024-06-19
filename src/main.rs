@@ -20,7 +20,6 @@ use efd_contribuicoes::{
     cargo doc --open
     cargo clippy
     cargo b -r && cargo install --path=.
-    efd_contribuicoes -cpr 1 20
 */
 
 fn main() -> Result<(), Box<dyn Error>> {
