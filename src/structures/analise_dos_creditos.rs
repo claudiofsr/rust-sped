@@ -933,12 +933,12 @@ fn arredondar_valores_hmap(
 
     for (chaves, valores) in hmap_original {
         let val = Valores {
-            valor_item:       valores.valor_item.round_float(DECIMAL_VALOR as u32),
-            valor_bc:         valores.valor_bc.round_float(DECIMAL_VALOR as u32),
-            valor_rbnc_trib:  valores.valor_rbnc_trib.round_float(DECIMAL_VALOR as u32),
-            valor_rbnc_ntrib: valores.valor_rbnc_ntrib.round_float(DECIMAL_VALOR as u32),
-            valor_rbnc_exp:   valores.valor_rbnc_exp.round_float(DECIMAL_VALOR as u32),
-            valor_rb_cum:     valores.valor_rb_cum.round_float(DECIMAL_VALOR as u32),
+            valor_item:       valores.valor_item.round_float(DECIMAL_VALOR as i64),
+            valor_bc:         valores.valor_bc.round_float(DECIMAL_VALOR as i64),
+            valor_rbnc_trib:  valores.valor_rbnc_trib.round_float(DECIMAL_VALOR as i64),
+            valor_rbnc_ntrib: valores.valor_rbnc_ntrib.round_float(DECIMAL_VALOR as i64),
+            valor_rbnc_exp:   valores.valor_rbnc_exp.round_float(DECIMAL_VALOR as i64),
+            valor_rb_cum:     valores.valor_rb_cum.round_float(DECIMAL_VALOR as i64),
         };
         hmap.insert(chaves.clone(), val);
     }
