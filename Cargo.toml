@@ -84,7 +84,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.68"
+version = "0.69"
 features = [ 
     "chrono", 
     "ryu",
