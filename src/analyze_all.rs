@@ -18,6 +18,7 @@ use crate::{
     DELIMITER_CHAR,
     OUTPUT_DIRECTORY,
     OUTPUT_FILENAME,
+    MyResult,
 };
 
 type Informacoes = (u32, NaiveDate, String, Vec<DocsFiscais>);
@@ -181,6 +182,7 @@ fn consolidar_resultados(
     );
     */
 
+    /*
     // This creates the scope for the threads
     let (result_cst, result_nat) = thread::scope(|s| {
 
@@ -196,6 +198,24 @@ fn consolidar_resultados(
         (Ok(cst), Ok(nat)) => (cst, nat),
         _ => panic!("Falha na Consolidação!"),
     };
+    */
+
+    let mut cst = (String::new(), Vec::new());
+    let mut nat = (String::new(), String::new(), Vec::new());
+
+    // This creates the scope for the threads
+    thread::scope(|s| {
+        s.spawn(|| -> MyResult<()> {
+            cst = consolidacao_cst::consolidar_operacoes_por_cst(database)?;
+            Ok(())
+        });
+
+        s.spawn(|| -> MyResult<()> { 
+            nat = analise_dos_creditos::consolidar_natureza_da_base_de_calculo(database)?;
+            Ok(())
+        });
+    });
+
 
     let (tabela_cst, consolidacao_cst) = cst;
     let (tabela_nat, tabela_rb, consolidacao_nat) = nat;

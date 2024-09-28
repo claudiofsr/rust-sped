@@ -41,7 +41,8 @@ use crate::{
     InfoExtension, Mes,
     Tributos::{Pis, Cofins},
     DECIMAL_ALIQ, DECIMAL_VALOR,
-    SMALL_VALUE, ZERO
+    SMALL_VALUE, ZERO,
+    MyResult,
 };
 
 use claudiofsr_lib::{
@@ -457,7 +458,7 @@ fn display_percentual(valor: &Option<f64>) -> String {
     }
 }
 
-pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> Result<(String, String, Vec<AnaliseDosCreditos>), Box<dyn Error>> {
+pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResult<(String, String, Vec<AnaliseDosCreditos>)> {
 
     let chaves_consolidadas: HashMap<Chaves, Valores> = consolidar_chaves(linhas); // 1 <= CST <= 99
 

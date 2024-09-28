@@ -7,7 +7,6 @@ use rayon::prelude::*;
 use std::{
     hash::Hash,
     //cmp::Reverse,
-    error::Error,
     ops::{Add, AddAssign},
     collections::HashMap,
 };
@@ -35,7 +34,8 @@ use crate::{
     verificar_periodo_multiplo,
     DocsFiscais,
     InfoExtension,
-    ZERO
+    ZERO,
+    MyResult,
 };
 
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Serialize, Deserialize)]
@@ -122,7 +122,7 @@ impl ConsolidacaoCST {
     }
 }
 
-pub fn consolidar_operacoes_por_cst(linhas: &[DocsFiscais]) -> Result<(String, Vec<ConsolidacaoCST>), Box<dyn Error>> {
+pub fn consolidar_operacoes_por_cst(linhas: &[DocsFiscais]) -> MyResult<(String, Vec<ConsolidacaoCST>)> {
 
     let mut resultado: HashMap<Keys, Values> = consolidar_keys(linhas);
     realizar_soma_parcial(&mut resultado);
