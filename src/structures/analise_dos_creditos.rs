@@ -481,6 +481,7 @@ pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResul
 
     //analisar_rateio_dos_creditos(&base_creditos, &receita_bruta_segregada)?;
 
+    /*
     // Usar std::thread nas funções seguintes (estas funções são independentes umas das outras):
     let (result_bcparcial, result_ajustes, result_descontos) = thread::scope(|s| {
 
@@ -498,6 +499,18 @@ pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResul
         (Ok(bcparcial), Ok(ajustes), Ok(descontos)) => (bcparcial, ajustes, descontos),
         _ => panic!("Falha em soma parcial ou alocação de ajustes e descontos!"),
     };
+    */
+
+    let (mut bcparcial, mut ajustes, mut descontos) = (HashMap::new(), HashMap::new(), HashMap::new());
+
+    // Usar std::thread nas funções seguintes (estas funções são independentes umas das outras):
+    thread::scope(|s| {
+        s.spawn(||bcparcial = somar_base_de_calculo_valor_parcial(&base_creditos));
+
+        s.spawn(||ajustes = distribuir_ajustes_rateados(linhas));
+
+        s.spawn(||descontos = distribuir_descontos_rateados(linhas));
+    });
 
     // Merge two HashMaps in Rust
     base_creditos.extend(bcparcial);
