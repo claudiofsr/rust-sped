@@ -1,24 +1,17 @@
-use std::{
-    error::Error,
-    time::Instant,
-    io::Write,
-};
-use chrono::{
-    DateTime,
-    Local
-};
+use chrono::{DateTime, Local};
 use claudiofsr_lib::my_print;
-use efd_contribuicoes::{
-    Arguments,
-    executar_programa,
-};
+use efd_contribuicoes::{executar_programa, Arguments};
+use std::{error::Error, io::Write, time::Instant};
 
 /*
-    clear && cargo test -- --nocapture
-    clear && cargo run -- -h
-    clear && cargo run -- -cpr 1 20
+    cargo test --features old
+    cargo test -- --nocapture
+    cargo run -- -h
+    cargo run --features old -- -cpr 1 20
+    cargo run --example run --features old examples/efd_data_random
     cargo doc --open
     cargo clippy
+    rustfmt src/main.rs
     cargo b -r && cargo install --path=.
     cargo b -r && cargo install --path=. --features old
 */
@@ -39,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let dt_local_now: DateTime<Local> = Local::now();
     writeln!(write, "Data Local: {}", dt_local_now.format("%d/%m/%Y"))?;
-    writeln!(write, "Tempo de Execução Total: {:?}",time.elapsed())?;
+    writeln!(write, "Tempo de Execução Total: {:?}", time.elapsed())?;
 
     let output_file: String = [args.get_app_name(), "-output.txt".to_string()].concat();
     my_print(&write_buffer, output_file)?;
