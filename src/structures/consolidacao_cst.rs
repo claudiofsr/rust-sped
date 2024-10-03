@@ -44,7 +44,7 @@ pub struct Keys {
     pub ano: Option<i32>,
     trimestre: Option<u32>,
     pub mes: Option<u32>,
-    ordem: u16,
+    ordem: Option<u16>,
     pub cst: Option<u16>,
 }
 
@@ -187,7 +187,7 @@ fn get_keys_values(linha: &DocsFiscais) -> (Keys, Values) {
         trimestre: linha.trimestre,
         mes:       linha.mes,
         cnpj_base: linha.estabelecimento_cnpj[0..10].to_string(),
-        ordem:     1,
+        ordem:     Some(1),
         cst:       linha.cst,
     };
 
@@ -199,10 +199,10 @@ fn get_keys_values(linha: &DocsFiscais) -> (Keys, Values) {
     };
 
     match linha.cst {
-        Some( 1 ..= 49) => keys.ordem = 1, // Saídas:   1  <= cst <= 49
-        Some(50 ..= 98) => keys.ordem = 3, // Entradas: 50 <= cst <= 98
-        Some(99)        => keys.ordem = 5,
-        _               => keys.ordem = 6,
+        Some( 1 ..= 49) => keys.ordem = Some(1), // Saídas:   1  <= cst <= 49
+        Some(50 ..= 98) => keys.ordem = Some(3), // Entradas: 50 <= cst <= 98
+        Some(99)        => keys.ordem = Some(5),
+        _               => keys.ordem = None,
     };
 
     (keys, values)
@@ -219,11 +219,11 @@ fn realizar_soma_parcial(resultado: &mut HashMap<Keys, Values>) {
         match chaves.cst {
             Some( 1 ..= 49) => {      // Saídas: 1 <= cst <= 49
                 keys.cst = Some(490); // cst temporário, valor qualquer acima de 100
-                keys.ordem = 2;
+                keys.ordem = Some(2);
             },
             Some(50 ..= 98) => {      // Entradas: 50 <= cst <= 98
                 keys.cst = Some(980); // cst temporário, valor qualquer acima de 100
-                keys.ordem = 4;
+                keys.ordem = Some(4);
             },
             _ => keys.cst = None,
         };
