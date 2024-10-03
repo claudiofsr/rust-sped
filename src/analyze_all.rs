@@ -184,19 +184,28 @@ fn consolidar_resultados(
 
     /*
     // This creates the scope for the threads
-    let (result_cst, result_nat) = thread::scope(|s| {
+    let (rresult_cst, rresult_nat) = thread::scope(|s| {
 
-        let thread_cst = s.spawn(||consolidacao_cst::consolidar_operacoes_por_cst(database).unwrap());
+        let thread_cst = s.spawn(|| {
+            consolidacao_cst::consolidar_operacoes_por_cst(database)
+        });
 
-        let thread_nat = s.spawn(||analise_dos_creditos::consolidar_natureza_da_base_de_calculo(database).unwrap());
+        let thread_nat = s.spawn(|| { 
+            analise_dos_creditos::consolidar_natureza_da_base_de_calculo(database)
+        });
 
         // Wait for background thread to complete
         (thread_cst.join(), thread_nat.join())
     });
 
-    let (cst, nat) = match (result_cst, result_nat) {
-        (Ok(cst), Ok(nat)) => (cst, nat),
-        _ => panic!("Falha na Consolidação!"),
+    let (cst, nat) = match (rresult_cst, rresult_nat) {
+        (Ok(result_cst), Ok(result_nat)) => {
+            match (result_cst, result_nat) {
+            (Ok(cst), Ok(nat)) => (cst, nat),
+            _ => panic!("Falha na Consolidação!"),
+            }
+        },
+        _ => panic!("thread fault!"),
     };
     */
 
@@ -215,7 +224,6 @@ fn consolidar_resultados(
             Ok(())
         });
     });
-
 
     let (tabela_cst, consolidacao_cst) = cst;
     let (tabela_nat, tabela_rb, consolidacao_nat) = nat;
