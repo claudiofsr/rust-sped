@@ -1,4 +1,5 @@
 use csv::StringRecord;
+use claudiofsr_lib::OptionExtension;
 use serde::{Serialize, Deserialize};
 use serde_aux::prelude::serde_introspect;
 use struct_iterable::Iterable;
@@ -34,7 +35,6 @@ use crate::{
     verificar_periodo_multiplo,
     DocsFiscais,
     InfoExtension,
-    ZERO,
     MyResult,
 };
 
@@ -50,20 +50,20 @@ pub struct Keys {
 
 #[derive(Debug, Default, PartialEq, PartialOrd, Copy, Clone, Serialize, Deserialize)]
 struct Values {
-    valor_item: f64,
-    valor_bc: f64,
-    valor_pis: f64,
-    valor_cofins: f64,
+    valor_item: Option<f64>,
+    valor_bc: Option<f64>,
+    valor_pis: Option<f64>,
+    valor_cofins: Option<f64>,
 }
 
 impl Add for Values {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         Self {
-            valor_item:   self.valor_item   + other.valor_item,
-            valor_bc:     self.valor_bc     + other.valor_bc,
-            valor_pis:    self.valor_pis    + other.valor_pis,
-            valor_cofins: self.valor_cofins + other.valor_cofins,
+            valor_item:   self.valor_item.combine_with_sum(other.valor_item),
+            valor_bc:     self.valor_bc.combine_with_sum(other.valor_bc),
+            valor_pis:    self.valor_pis.combine_with_sum(other.valor_pis),
+            valor_cofins: self.valor_cofins.combine_with_sum(other.valor_cofins),
         }
     }
 }
@@ -72,10 +72,10 @@ impl Add for Values {
 /// Executa a operação +=
 impl AddAssign for Values {
     fn add_assign(&mut self, other: Self) {
-        self.valor_item   += other.valor_item;
-        self.valor_bc     += other.valor_bc;
-        self.valor_pis    += other.valor_pis;
-        self.valor_cofins += other.valor_cofins;
+        self.valor_item   = self.valor_item.combine_with_sum(other.valor_item);
+        self.valor_bc     = self.valor_bc.combine_with_sum(other.valor_bc);
+        self.valor_pis    = self.valor_pis.combine_with_sum(other.valor_pis);
+        self.valor_cofins = self.valor_cofins.combine_with_sum(other.valor_cofins);
     }
 }
 
@@ -187,15 +187,15 @@ fn get_keys_values(linha: &DocsFiscais) -> (Keys, Values) {
         trimestre: linha.trimestre,
         mes:       linha.mes,
         cnpj_base: linha.estabelecimento_cnpj[0..10].to_string(),
-        ordem:     Some(1),
+        ordem:     None,
         cst:       linha.cst,
     };
 
     let values = Values {
-        valor_item:   linha.valor_item  .unwrap_or(ZERO),
-        valor_bc:     linha.valor_bc    .unwrap_or(ZERO),
-        valor_pis:    linha.valor_pis   .unwrap_or(ZERO),
-        valor_cofins: linha.valor_cofins.unwrap_or(ZERO),
+        valor_item:   linha.valor_item,
+        valor_bc:     linha.valor_bc,
+        valor_pis:    linha.valor_pis,
+        valor_cofins: linha.valor_cofins,
     };
 
     match linha.cst {
@@ -272,10 +272,10 @@ fn gerar_keysvalues(info_ordenada: &[(Keys, Values)]) -> Vec<ConsolidacaoCST> {
             trimestre:    chaves.trimestre,
             mes:          chaves.mes,
             cst:          chaves.cst,
-            valor_item:   Some(valores.valor_item),
-            valor_bc:     Some(valores.valor_bc),
-            valor_pis:    Some(valores.valor_pis),
-            valor_cofins: Some(valores.valor_cofins),
+            valor_item:   valores.valor_item,
+            valor_bc:     valores.valor_bc,
+            valor_pis:    valores.valor_pis,
+            valor_cofins: valores.valor_cofins,
         };
 
         despise_small_values(&mut line);
