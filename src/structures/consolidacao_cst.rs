@@ -184,13 +184,12 @@ fn consolidar_keys(linhas: &[DocsFiscais]) -> HashMap<Keys, Values> {
 }
 
 fn get_keys_values(linha: &DocsFiscais) -> (Keys, Values) {
-
-    let mut keys = Keys {
+    let keys = Keys {
         ano:       linha.ano,
         trimestre: linha.trimestre,
         mes:       linha.mes,
         cnpj_base: linha.estabelecimento_cnpj[0..10].to_string(),
-        ordem:     None,
+        ordem:     get_ordem(linha.cst),
         cst:       linha.cst,
     };
 
@@ -201,14 +200,16 @@ fn get_keys_values(linha: &DocsFiscais) -> (Keys, Values) {
         valor_cofins: linha.valor_cofins,
     };
 
-    match linha.cst {
-        Some( 1 ..= 49) => keys.ordem = Some(1), // Saídas:   1  <= cst <= 49
-        Some(50 ..= 98) => keys.ordem = Some(3), // Entradas: 50 <= cst <= 98
-        Some(99)        => keys.ordem = Some(5),
-        _               => keys.ordem = None,
-    };
-
     (keys, values)
+}
+
+fn get_ordem(cst: Option<u16>) -> Option<u16> {
+    match cst {
+        Some( 1 ..= 49) => Some(1), // Saídas:   1  <= cst <= 49
+        Some(50 ..= 98) => Some(3), // Entradas: 50 <= cst <= 98
+        Some(99)        => Some(5),
+        _               => None,
+    }
 }
 
 fn realizar_soma_parcial(resultado: &mut HashMap<Keys, Values>) {
