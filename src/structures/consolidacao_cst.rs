@@ -68,14 +68,17 @@ impl Add for Values {
     }
 }
 
-// https://doc.rust-lang.org/std/ops/trait.AddAssign.html
-/// Executa a operação +=
+/// Executar a operação +=
+/// 
+/// <https://doc.rust-lang.org/std/ops/trait.AddAssign.html>
 impl AddAssign for Values {
     fn add_assign(&mut self, other: Self) {
-        self.valor_item   = self.valor_item.combine_with_sum(other.valor_item);
-        self.valor_bc     = self.valor_bc.combine_with_sum(other.valor_bc);
-        self.valor_pis    = self.valor_pis.combine_with_sum(other.valor_pis);
-        self.valor_cofins = self.valor_cofins.combine_with_sum(other.valor_cofins);
+        *self = Self {
+            valor_item:   self.valor_item.combine_with_sum(other.valor_item),
+            valor_bc:     self.valor_bc.combine_with_sum(other.valor_bc),
+            valor_pis:    self.valor_pis.combine_with_sum(other.valor_pis),
+            valor_cofins: self.valor_cofins.combine_with_sum(other.valor_cofins),
+        };
     }
 }
 
