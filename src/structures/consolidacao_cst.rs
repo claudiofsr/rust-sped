@@ -35,7 +35,8 @@ use crate::{
     verificar_periodo_multiplo,
     DocsFiscais,
     InfoExtension,
-    MyResult,
+    MyResult, 
+    ZERO,
 };
 
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Serialize, Deserialize)]
@@ -194,10 +195,10 @@ fn get_keys_values(linha: &DocsFiscais) -> (Keys, Values) {
     };
 
     let values = Values {
-        valor_item:   linha.valor_item,
-        valor_bc:     linha.valor_bc,
-        valor_pis:    linha.valor_pis,
-        valor_cofins: linha.valor_cofins,
+        valor_item:   linha.valor_item.or(Some(ZERO)),
+        valor_bc:     linha.valor_bc.or(Some(ZERO)),
+        valor_pis:    linha.valor_pis.or(Some(ZERO)),
+        valor_cofins: linha.valor_cofins.or(Some(ZERO)),
     };
 
     (keys, values)
@@ -232,15 +233,10 @@ fn realizar_soma_parcial(resultado: &mut HashMap<Keys, Values>) {
             _ => keys.cst = None,
         };
 
-        if keys.cst.is_some() {
-
-            let values_sum = match soma_parcial.get(&keys) {
-                Some(&previous_values) => values + previous_values,
-                None                   => values,
-            };
-
-            soma_parcial.insert(keys, values_sum);
-        }
+        soma_parcial
+            .entry(keys)
+            .and_modify(|previous_value| *previous_value += values)
+            .or_insert(values);
     };
 
     // Merge two HashMaps in Rust
