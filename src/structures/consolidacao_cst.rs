@@ -230,9 +230,10 @@ fn realizar_soma_parcial(resultado: &mut HashMap<Keys, Values>) {
                 keys.cst = Some(980); // cst temporário, valor qualquer acima de 100
                 keys.ordem = Some(4);
             },
-            _ => keys.cst = None,
+            _ => continue,
         };
 
+        // impl Add and AddAssign for Values
         soma_parcial
             .entry(keys)
             .and_modify(|previous_value| *previous_value += values)
