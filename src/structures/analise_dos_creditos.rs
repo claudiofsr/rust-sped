@@ -156,6 +156,20 @@ impl Valores {
         }
         iguais
     }
+
+    fn distribuir_conforme_rateio(&mut self, linha: &DocsFiscais, credito_rateado: Option<f64>) {
+        // De acordo com 4.3.6 – Tabela Código de Tipo de Crédito
+        let cod_rateio: Option<u16> = linha
+            .cod_credito               // valor inteiro entre 101 e 499
+            .map(|value| value / 100); // valor inteiro entre 1 e 4
+
+        match (cod_rateio, credito_rateado) {
+            (Some(1), Some(valor)) => self.valor_rbnc_trib = valor,
+            (Some(2), Some(valor)) => self.valor_rbnc_ntrib = valor,
+            (Some(3), Some(valor)) => self.valor_rbnc_exp = valor,
+            _ => (), // ignorar se o código de rateio não for válido ou crédito rateado não presente
+        }
+    }
 }
 
 /// Análise dos Créditos
@@ -661,30 +675,15 @@ fn distribuir_creditos_rateados(linhas: &[DocsFiscais], base_creditos: &mut Hash
             natureza_bc:      linha.natureza_bc,
         };
 
-        match base_creditos.get(&chaves) {
-            Some(val) => {
-                let mut valores = val.to_owned();
-                distribuir_conforme_rateio(linha, &mut valores, linha.valor_bc);
-                base_creditos.insert(chaves, valores);
-            },
-            None => continue,
-        };
+        // Utilizando base_creditos.entry(), criamos a chave se ela não existir 
+        // e fornecemos um valor padrão com .or_default()
+
+        base_creditos
+            .entry(chaves)
+            //.or_insert_with(Valores::default)
+            .or_default() // Criar entrada se não existir com Valores::default
+            .distribuir_conforme_rateio(linha, linha.valor_bc);
     };
-}
-
-fn distribuir_conforme_rateio(linha: &DocsFiscais, valores: &mut Valores, credito_rateado: Option<f64>) {
-
-    // De acordo com 4.3.6 – Tabela Código de Tipo de Crédito
-    let cod_rateio: Option<u16> = linha
-        .cod_credito               // valor inteiro entre 101 e 499
-        .map(|value| value / 100); // valor inteiro entre 1 e 4
-
-    match (cod_rateio, credito_rateado) {
-        (Some(1), Some(valor)) => valores.valor_rbnc_trib  = valor,
-        (Some(2), Some(valor)) => valores.valor_rbnc_ntrib = valor,
-        (Some(3), Some(valor)) => valores.valor_rbnc_exp   = valor,
-        _  => (),
-    }
 }
 
 /// Obter Receita Bruta segregada por CST para fins de rateio dos créditos
@@ -1082,7 +1081,7 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
             valor_rb_cum:     ZERO,
         };
 
-        distribuir_conforme_rateio(linha, &mut valores, linha.valor_item);
+        valores.distribuir_conforme_rateio(linha, linha.valor_item);
 
         // impl Add and AddAssign for Valores: Soma de Valores
         ajustes
@@ -1146,7 +1145,7 @@ fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valo
             valor_rb_cum:     ZERO,
         };
 
-        distribuir_conforme_rateio(linha, &mut valores, linha.valor_item);
+        valores.distribuir_conforme_rateio(linha, linha.valor_item);
 
         // impl Add and AddAssign for Valores: Soma de Valores
         descontos
