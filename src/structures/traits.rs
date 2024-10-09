@@ -182,8 +182,8 @@ impl AllValues for AnaliseDosCreditos {
 /// Sets all values in `self` to `None` if their absolute value is less than `SMALL_VALUE`.
 ///
 /// <https://stackoverflow.com/questions/73680402/how-to-implement-iterator-for-array-optionf64-n-with-n-elements>
-pub fn despise_small_values<T: AllValues>(values: &mut T) {
-    for value in values.get_all_values() {
+pub fn despise_small_values<T: AllValues>(info: &mut T) {
+    for value in info.get_all_values() {
         if let Some(v) = value {
             if v.abs() < SMALL_VALUE {
                 *value = None;
