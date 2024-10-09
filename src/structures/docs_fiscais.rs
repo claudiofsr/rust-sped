@@ -272,6 +272,11 @@ impl DocsFiscais {
             .collect()
     }
 
+    /// Get CNPJ Base
+    pub fn get_cnpj_base(&self) -> String {
+        self.estabelecimento_cnpj[0..10].to_string()
+    }
+
     #[allow(dead_code)]
     pub fn get_number_of_fields() -> usize {
         // use serde_aux::prelude::serde_introspect;

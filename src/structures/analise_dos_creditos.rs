@@ -627,7 +627,7 @@ pub fn obter_chaves_valores(linha: &DocsFiscais) -> (Chaves, Valores) {
     };
 
     let chaves = Chaves {
-        cnpj_base:        linha.estabelecimento_cnpj[0..10].to_string(),
+        cnpj_base:        linha.get_cnpj_base(),
         ano:              linha.ano,
         trimestre:        linha.trimestre,
         mes:              linha.mes,
@@ -662,7 +662,7 @@ fn distribuir_creditos_rateados(linhas: &[DocsFiscais], base_creditos: &mut Hash
         .filter(|&line| line.tipo_de_operacao == Some(7)) // 7: "Detalhamento"
     {
         let chaves = Chaves {
-            cnpj_base:        linha.estabelecimento_cnpj[0..10].to_string(),
+            cnpj_base:        linha.get_cnpj_base(),
             ano:              linha.ano,
             trimestre:        linha.trimestre,
             mes:              linha.mes,
@@ -675,14 +675,11 @@ fn distribuir_creditos_rateados(linhas: &[DocsFiscais], base_creditos: &mut Hash
             natureza_bc:      linha.natureza_bc,
         };
 
-        // Utilizando base_creditos.entry(), criamos a chave se ela não existir 
-        // e fornecemos um valor padrão com .or_default()
+        // usar base_creditos.get_mut(&chaves) para obter uma referência mutável do valor associado à chave.
 
-        base_creditos
-            .entry(chaves)
-            //.or_insert_with(Valores::default)
-            .or_default() // Criar entrada se não existir com Valores::default
-            .distribuir_conforme_rateio(linha, linha.valor_bc);
+        if let Some(valores) = base_creditos.get_mut(&chaves) {
+            valores.distribuir_conforme_rateio(linha, linha.valor_bc);
+        }
     };
 }
 
@@ -1050,7 +1047,7 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
         .filter(|&linha| operacoes_selecionadas.contains(&linha.tipo_de_operacao)) // 3 ou 4: "Ajuste de ..."
     {
         let mut chaves = Chaves {
-            cnpj_base:        linha.estabelecimento_cnpj[0..10].to_string(),
+            cnpj_base:        linha.get_cnpj_base(),
             ano:              linha.ano,
             trimestre:        linha.trimestre,
             mes:              linha.mes,
@@ -1110,7 +1107,7 @@ fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valo
         .filter(|&linha| operacoes_selecionadas.contains(&linha.tipo_de_operacao)) // 5 ou 6: "Desconto ..."
     {
         let mut chaves = Chaves {
-            cnpj_base:        linha.estabelecimento_cnpj[0..10].to_string(),
+            cnpj_base:        linha.get_cnpj_base(),
             ano:              linha.ano,
             trimestre:        linha.trimestre,
             mes:              linha.mes,

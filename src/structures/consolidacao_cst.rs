@@ -189,7 +189,7 @@ fn get_keys_values(linha: &DocsFiscais) -> (Keys, Values) {
         ano:       linha.ano,
         trimestre: linha.trimestre,
         mes:       linha.mes,
-        cnpj_base: linha.estabelecimento_cnpj[0..10].to_string(),
+        cnpj_base: linha.get_cnpj_base(),
         ordem:     get_ordem(linha.cst),
         cst:       linha.cst,
     };
