@@ -101,6 +101,7 @@ pub struct ConsolidacaoCST {
     #[serde( rename = "Código de Situação Tributária (CST)", serialize_with = "serialize_cst")]
     #[tabled(rename = "CST", display_with = "display_cst")]
     pub cst: Option<u16>,
+    
     #[serde( rename = "Valor Total do Item")] // serialize_with = "serialize_f64"
     #[tabled(rename = "Valor Total do Item", display_with = "display_f64")]
     pub valor_item: Option<f64>,

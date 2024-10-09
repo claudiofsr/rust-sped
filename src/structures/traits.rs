@@ -4,7 +4,7 @@ use crate::{
     structures::analise_dos_creditos::Chaves,
     structures::consolidacao_cst::Keys,
     AnaliseDosCreditos, ConsolidacaoCST,
-    SMALL_VALUE, ZERO
+    SMALL_VALUE,
 };
 
 // --- Start: Definir traits para Ano, Mes, CST e CNPJBase ---
@@ -149,12 +149,15 @@ For this, I must implement an iterator that captures only the desired N fields f
  */
 
 // --- AllValues --- //
+
+/// Trait for types that have all their values as `Option<f64>`.
 pub trait AllValues {
-    fn all_values(&mut self) -> Vec<&mut Option<f64>>;
+    /// Returns a vector of references to the `Option<f64>` values.
+    fn get_all_values(&mut self) -> Vec<&mut Option<f64>>;
 }
 
 impl AllValues for ConsolidacaoCST {
-    fn all_values(&mut self) -> Vec<&mut Option<f64>> {
+    fn get_all_values(&mut self) -> Vec<&mut Option<f64>> {
         vec![
             &mut self.valor_item,
             &mut self.valor_bc,
@@ -165,7 +168,7 @@ impl AllValues for ConsolidacaoCST {
 }
 
 impl AllValues for AnaliseDosCreditos {
-    fn all_values(&mut self) -> Vec<&mut Option<f64>> {
+    fn get_all_values(&mut self) -> Vec<&mut Option<f64>> {
         vec![
             &mut self.valor_bc,
             &mut self.valor_rbnc_trib,
@@ -176,11 +179,15 @@ impl AllValues for AnaliseDosCreditos {
     }
 }
 
-// https://stackoverflow.com/questions/73680402/how-to-implement-iterator-for-array-optionf64-n-with-n-elements
-pub fn despise_small_values<T: AllValues>(keysvalues: &mut T) {
-    for value in keysvalues.all_values() {
-        if value.unwrap_or(ZERO).abs() < SMALL_VALUE {
-            *value = None;
+/// Sets all values in `self` to `None` if their absolute value is less than `SMALL_VALUE`.
+///
+/// <https://stackoverflow.com/questions/73680402/how-to-implement-iterator-for-array-optionf64-n-with-n-elements>
+pub fn despise_small_values<T: AllValues>(values: &mut T) {
+    for value in values.get_all_values() {
+        if let Some(v) = value {
+            if v.abs() < SMALL_VALUE {
+                *value = None;
+            }
         }
     }
 }
