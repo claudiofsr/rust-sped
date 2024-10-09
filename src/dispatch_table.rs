@@ -147,11 +147,11 @@ fn ler_registro_0000(info: &mut Info, valores: HashMap<String, String>) -> Resul
     // https://stackoverflow.com/questions/44575380/is-there-any-way-to-insert-multiple-entries-into-a-hashmap-at-once-in-rust
     // Insert multiple pairs into a HashMap at once:
     let pairs: [(String, String); 4] = [
-        ("NOME".to_string(),   valores["NOME"].to_string()),
-        ("CNPJ".to_string(),   valores["CNPJ"].to_string()),
-        ("DT_INI".to_string(), valores["DT_INI"].to_string()),
-        ("DT_FIN".to_string(), valores["DT_FIN"].to_string()),
-    ];
+        ("NOME",   &valores["NOME"]),
+        ("CNPJ",   &valores["CNPJ"]),
+        ("DT_INI", &valores["DT_INI"]),
+        ("DT_FIN", &valores["DT_FIN"]),
+    ].map(|(k, v)| (k.to_string(), v.to_string()));
 
     info.global.extend(pairs);
 
@@ -165,12 +165,12 @@ fn ler_registro_0110(info: &mut Info, valores: HashMap<String, String>) -> Resul
 
 fn ler_registro_0111(info: &mut Info, valores: HashMap<String, String>) -> Result<(), Box<dyn Error>> {
     let pairs: [(String, String); 5] = [
-        ("REC_BRU_NCUM_TRIB_MI".to_string(), valores["REC_BRU_NCUM_TRIB_MI"].to_string()),
-        ("REC_BRU_NCUM_NT_MI".to_string(),   valores["REC_BRU_NCUM_NT_MI"].to_string()),
-        ("REC_BRU_NCUM_EXP".to_string(),     valores["REC_BRU_NCUM_EXP"].to_string()),
-        ("REC_BRU_CUM".to_string(),          valores["REC_BRU_CUM"].to_string()),
-        ("REC_BRU_TOTAL".to_string(),        valores["REC_BRU_TOTAL"].to_string()),
-    ];
+        ("REC_BRU_NCUM_TRIB_MI", &valores["REC_BRU_NCUM_TRIB_MI"]),
+        ("REC_BRU_NCUM_NT_MI",   &valores["REC_BRU_NCUM_NT_MI"]),
+        ("REC_BRU_NCUM_EXP",     &valores["REC_BRU_NCUM_EXP"]),
+        ("REC_BRU_CUM",          &valores["REC_BRU_CUM"]),
+        ("REC_BRU_TOTAL",        &valores["REC_BRU_TOTAL"]),
+    ].map(|(k, v)| (k.to_string(), v.to_string()));
 
     info.global.extend(pairs);
     Ok(())
@@ -198,10 +198,10 @@ fn ler_registro_0150(info: &mut Info, valores: HashMap<String, String>) -> Resul
     let cpf_do_participante  = valores["CPF"].to_string();
 
     let pairs: [(String, String); 3] = [
-        ("NOME".to_string(), nome_do_participante.clone()),
-        ("CNPJ".to_string(), cnpj_do_participante.clone()),
-        ("CPF".to_string(),  cpf_do_participante.clone()),
-    ];
+        ("NOME", &nome_do_participante),
+        ("CNPJ", &cnpj_do_participante),
+        ("CPF",  &cpf_do_participante),
+    ].map(|(k, v)| (k.to_string(), v.to_string()));
 
     info.participantes.entry(codigo_do_participante).or_default().extend(pairs);
 
@@ -234,12 +234,12 @@ fn ler_registro_0200(info: &mut Info, valores: HashMap<String, String>) -> Resul
     if !cod_item.is_empty() {
 
         let pairs: [(String, String); 5] = [
-            ("DESCR_ITEM".to_string(), valores["DESCR_ITEM"].to_string()),
-            ("TIPO_ITEM".to_string(),  valores["TIPO_ITEM"].to_string()),
-            ("COD_NCM".to_string(),    valores["COD_NCM"].to_string()),
-            ("COD_GEN".to_string(),    valores["COD_GEN"].to_string()),
-            ("COD_LST".to_string(),    valores["COD_LST"].to_string()),
-        ];
+            ("DESCR_ITEM", &valores["DESCR_ITEM"]),
+            ("TIPO_ITEM",  &valores["TIPO_ITEM"]),
+            ("COD_NCM",    &valores["COD_NCM"]),
+            ("COD_GEN",    &valores["COD_GEN"]),
+            ("COD_LST",    &valores["COD_LST"]),
+        ].map(|(k, v)| (k.to_string(), v.to_string()));
 
         info.produtos.entry(cod_item).or_default().extend(pairs);
     }
@@ -341,11 +341,11 @@ fn ler_registro_a170(info: &mut Info, valores: HashMap<String, String>) -> Resul
     let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
-    let pairs = [
-        ("CHV_NFE".to_string(), info.reg_a100["CHV_NFSE"].to_string()),
-        ( "DT_DOC".to_string(), info.reg_a100["DT_DOC"].to_string()),
-        ( "dt_lan".to_string(), info.reg_a100["DT_EXE_SERV"].to_string()),
-    ];
+    let pairs: [(String, String); 3] = [
+        ("CHV_NFE", &info.reg_a100["CHV_NFSE"]),
+        ( "DT_DOC", &info.reg_a100["DT_DOC"]),
+        ( "dt_lan", &info.reg_a100["DT_EXE_SERV"]),
+    ].map(|(k, v)| (k.to_string(), v.to_string()));
 
     let mut hmap = HashMap::from(pairs);
 
