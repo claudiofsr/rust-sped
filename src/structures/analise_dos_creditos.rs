@@ -1526,7 +1526,7 @@ fn calcular_rb_cumulativa(val: &Valores) -> f64 {
 
     let mut rec_bruta_cumulativa = val.valor_bc - rec_bruta_nao_cumulativa;
 
-    if rec_bruta_cumulativa < 1.0 {
+    if rec_bruta_cumulativa < 0.01 {
         rec_bruta_cumulativa = ZERO;
     }
 
