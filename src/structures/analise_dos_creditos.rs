@@ -577,7 +577,6 @@ into a single hashmap.
 <https://stackoverflow.com/questions/57641821/rayon-fold-into-a-hashmap>
 */
 fn consolidar_chaves(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
-
     let map_reduce: HashMap<Chaves, Valores> = lines
         .into_par_iter() // rayon: parallel iterator
         .filter(|&line| line.entrada_de_credito() || line.saida_de_receita_bruta())
@@ -592,7 +591,6 @@ fn consolidar_chaves(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
             hashmap_accumulator
         })
         .reduce(HashMap::new, |mut hashmap_a, hashmap_b| {
-
             hashmap_b.into_iter().for_each(|(key_b, value_b)| {
                 hashmap_a
                     .entry(key_b)
