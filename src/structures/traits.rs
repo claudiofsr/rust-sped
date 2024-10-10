@@ -151,7 +151,7 @@ For this, I must implement an iterator that captures only the desired N fields f
 // --- AllValues --- //
 
 /// Trait for types that have all their values as `Option<f64>`.
-pub trait AllValues {
+trait AllValues {
     /// Returns a vector of references to the `Option<f64>` values.
     fn get_all_values(&mut self) -> Vec<&mut Option<f64>>;
 }
@@ -179,14 +179,21 @@ impl AllValues for AnaliseDosCreditos {
     }
 }
 
-/// Sets all values in `self` to `None` if their absolute value is less than `SMALL_VALUE`.
-///
-/// <https://stackoverflow.com/questions/73680402/how-to-implement-iterator-for-array-optionf64-n-with-n-elements>
-pub fn despise_small_values<T: AllValues>(info: &mut T) {
-    for value in info.get_all_values() {
-        if let Some(v) = value {
-            if v.abs() < SMALL_VALUE {
-                *value = None;
+/// Despise small values
+pub trait Despise {
+    /// Sets all values in `self` to `None` if their absolute value is less than `SMALL_VALUE`.
+    ///
+    /// <https://stackoverflow.com/questions/73680402/how-to-implement-iterator-for-array-optionf64-n-with-n-elements>
+    fn despise_small_values(&mut self);
+}
+
+impl<T: AllValues> Despise for T {
+    fn despise_small_values(&mut self) {
+        for value in self.get_all_values() {
+            if let Some(v) = value {
+                if v.abs() < SMALL_VALUE {
+                    *value = None;
+                }
             }
         }
     }

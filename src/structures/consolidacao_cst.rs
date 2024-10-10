@@ -24,19 +24,10 @@ use tabled::{
 };
 
 use crate::{
-    despise_small_values,
-    display_cst,
-    display_f64,
-    display_mes,
-    display_value,
-    realizar_somas_trimestrais,
-    serialize_cst,
-    serialize_mes,
-    verificar_periodo_multiplo,
-    DocsFiscais,
-    InfoExtension,
-    MyResult, 
-    ZERO,
+    display_cst, display_f64, display_mes, display_value, 
+    realizar_somas_trimestrais, serialize_cst, serialize_mes, 
+    verificar_periodo_multiplo, Despise, DocsFiscais, 
+    InfoExtension, MyResult, ZERO
 };
 
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Serialize, Deserialize)]
@@ -280,7 +271,7 @@ fn gerar_keysvalues(info_ordenada: &[(Keys, Values)]) -> Vec<ConsolidacaoCST> {
             valor_cofins: valores.valor_cofins,
         };
 
-        despise_small_values(&mut line);
+        line.despise_small_values();
 
         lines.push(line);
     }
@@ -346,7 +337,7 @@ mod tests {
 
         println!("line_a: {line_a:?}");
 
-        despise_small_values(&mut line_a);
+        line_a.despise_small_values();
 
         let line_b = ConsolidacaoCST {
             cnpj_base:    "12.345.678".to_string(),

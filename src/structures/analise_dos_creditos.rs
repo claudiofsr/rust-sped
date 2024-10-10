@@ -31,18 +31,10 @@ use tabled::{
 };
 
 use crate::{
-    despise_small_values,
-    month_to_str,
-    obter_descricao_da_natureza_da_bc_dos_creditos,
-    obter_descricao_do_tipo_de_credito,
-    get_tipo_de_operacao,
-    verificar_periodo_multiplo,
-    DocsFiscais,
-    InfoExtension, Mes,
-    Tributos::{Pis, Cofins},
-    DECIMAL_ALIQ, DECIMAL_VALOR,
-    SMALL_VALUE, ZERO,
-    MyResult,
+    get_tipo_de_operacao, month_to_str, 
+    obter_descricao_da_natureza_da_bc_dos_creditos, obter_descricao_do_tipo_de_credito, 
+    verificar_periodo_multiplo, Despise, DocsFiscais, InfoExtension, Mes, 
+    MyResult, Tributos::{Cofins, Pis}, DECIMAL_ALIQ, DECIMAL_VALOR, SMALL_VALUE, ZERO
 };
 
 use claudiofsr_lib::{
@@ -1515,7 +1507,7 @@ fn get_analises(info_ordenada: &[(Chaves, Valores)]) -> Vec<AnaliseDosCreditos> 
             valor_rb_cum:     Some(receita_bruta_cumulativa),
         };
 
-        despise_small_values(&mut line);
+        line.despise_small_values();
 
         lines.push(line);
     }
