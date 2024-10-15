@@ -1,0 +1,171 @@
+[package]
+name = "efd_contribuicoes"
+authors = ["Claudio F S Rodrigues <claudiofsrodrigues@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+description = """
+Analisar informações contidas em arquivos de SPED EFD Contribuições
+https://github.com/claudiofsr/rust-sped
+"""
+documentation = "https://github.com/claudiofsr/rust-sped"
+homepage = "https://github.com/claudiofsr/rust-sped"
+repository = "https://github.com/claudiofsr/rust-sped"
+keywords = [
+    "SPED",
+    "EFD Contribuições",
+    "Consolidação das Operações por CST",
+    "Natureza da Base de Cálculo dos Créditos"
+]
+categories = ["command-line-utilities", "text-processing"]
+include = [
+    "src/*.rs",
+    "benches/*.rs",
+    "examples/*.rs",
+    "Cargo.toml",
+    "LICENSE",
+    "README.md"
+]
+license = "BSD-3-Clause"
+readme = "README.md"
+
+# [badges]
+# travis-ci = { repository = "claudiofsr/rust-sped" }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# Verifique e corrija seu código com o comando:
+# cargo clippy
+
+[dependencies]
+anstyle = "1.0" # used by clap color
+blake3 = { version = "1.5", features = ["rayon"] }
+clap_complete = "4.5"
+cfg-if = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+csv = "1.3"
+colored = "2.1"
+encoding_rs = "0.8"
+encoding_rs_io = "0.1"
+glob = "0.3"
+ilog = "1.0"
+indicatif = {version = "0.17", features = ["rayon"] } # ProgressBar
+itertools = "0.13"
+# memmap2 = "0.7"
+num_cpus = "1.16"
+ordered-float = { version = "4.3", features = ["serde"] }
+rand = "0.8"
+rayon = "1.10"
+regex = "1.11"
+serde = { version = "1.0", features = ["derive"] }
+serde_derive = "1.0"
+serde-aux = "4.5"
+struct_iterable = "0.1"
+tabled = { version = "0.16", features = ["ansi"] }
+
+[dependencies.claudiofsr_lib]
+version = "0.12"
+# git = "https://github.com/claudiofsr/claudiofsr_lib"
+
+[dependencies.cc]
+version = "1.1"
+features = [
+    "parallel"
+]
+
+[dependencies.clap]
+version = "4.5"
+features = [
+    "derive",
+    "color",
+    "env",
+    "help",
+    "wrap_help",
+]
+
+[dependencies.rust_xlsxwriter]
+version = "0.79"
+features = [ 
+    "chrono", 
+    "ryu",
+    "serde",
+    "zlib",
+]
+
+[features]
+default = ["new"]
+# default = ["old"]
+
+old = [] # mod excel_alternative
+new = [] # mod excel_workbook
+prefetch = [] # see binary_search.rs
+
+# Mutually exclusive features: new (default) or old.
+# To use old features:
+# cargo clippy --features old
+# cargo test --features old
+# cargo run --features old -- -f
+# cargo run --features old -- -r 1 20
+# cargo b -r && cargo install --path=. --features old
+
+# Make your Rust Binaries TINY!
+# https://www.youtube.com/watch?v=b2qe3L4BX-Y
+# cargo install cargo-bloat
+# Get a list of the biggest functions in the release build:
+# cargo bloat --release -n 20
+# Get a list of the biggest dependencies in the release build:
+# cargo bloat --release --crates -n 20
+# Get a list of crates that took longest to compile:
+# cargo bloat --time -j 1
+
+[profile.release]
+# https://doc.rust-lang.org/cargo/reference/profiles.html
+strip = true           # Automatically strip symbols from the binary
+incremental = true     # Save information to disk, improving re-compile times.
+lto = true             # Enable link time optimization
+opt-level = 3          # all optimizations
+overflow-checks = true # When overflow-checks are enabled, a panic will occur on overflow.
+# codegen-units = 1    # Use a single codegen for size optimization
+# panic = "abort"      # Remove traceback information
+
+[profile.dev]
+opt-level = 1          # Use slightly better optimizations.
+
+# On Manjaro Linux, install with: pacman -S mingw-w64-gcc
+# rustup target list
+# After downloading the target with `rustup target add x86_64-pc-windows-gnu`
+# cargo b -r --target x86_64-unknown-linux-gnu --target x86_64-pc-windows-gnu
+
+# cargo run --example run --features old examples/efd_data_random
+[[example]]
+name = "run"
+required-features = [ "old" ]
+
+[dev-dependencies]
+# cargo bench
+# ver resultado em: ... Rust/projects/efd_contribuicoes/target/criterion/report/index.html
+criterion = { version = "0.5", features = ["html_reports"] }
+plotters = "0.3"
+
+[[bench]]
+name = "fields_format"
+harness = false
+
+[[bench]]
+name = "remove_white_space"
+harness = false
+
+[[bench]]
+name = "select_first_digits"
+harness = false
+
+[[bench]]
+name = "split_lines"
+harness = false
+
+[[bench]]
+name = "binary_search"
+harness = false
+
+[[bench]]
+name = "group_by"
+harness = false
