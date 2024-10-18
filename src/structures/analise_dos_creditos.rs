@@ -128,26 +128,35 @@ impl Mul<f64> for Valores {
 }
 
 impl Valores {
-    /// Valores aproximadamente iguais
-    pub fn aproximadamente_iguais(&self, other: &Self, delta: f64) -> bool {
-        let valores: Vec<(f64, f64)> = vec![
-            (self.valor_item,       other.valor_item),
-            (self.valor_bc,         other.valor_bc),
-            (self.valor_rbnc_trib,  other.valor_rbnc_trib),
-            (self.valor_rbnc_ntrib, other.valor_rbnc_ntrib),
-            (self.valor_rbnc_exp,   other.valor_rbnc_exp),
-            (self.valor_rb_cum,     other.valor_rb_cum),
-        ];
-        let mut iguais = true;
-        for (a, b) in valores {
-            if (a - b).abs() > delta {
-                iguais = false;
-                break;
-            }
-        }
-        iguais
+    /// Obter valores
+    fn get_values(self) -> Vec<f64> {
+        vec![
+            self.valor_item,
+            self.valor_bc,
+            self.valor_rbnc_trib,
+            self.valor_rbnc_ntrib,
+            self.valor_rbnc_exp,
+            self.valor_rb_cum,
+        ]
     }
 
+    /// Verificar se os valores são aproximadamente iguais.
+    ///
+    /// # Parameters
+    /// - `other`: o outro objeto do qual você está comparando
+    /// - `delta`: a tolerância de erro permitida
+    ///
+    /// # Returns
+    /// `true` se os valores forem aproximadamente iguais, `false` caso contrário
+    pub fn aproximadamente_iguais(&self, other: &Self, delta: f64) -> bool {
+        self
+            .get_values()
+            .iter()
+            .zip(other.get_values().iter())
+            .all(|(a, b)| (a - b).abs() <= delta)
+    }
+
+    /// Distribui os valores de acordo com o rateio.
     fn distribuir_conforme_rateio(&mut self, linha: &DocsFiscais, credito_rateado: Option<f64>) {
         // De acordo com 4.3.6 – Tabela Código de Tipo de Crédito
         let cod_rateio: Option<u16> = linha
