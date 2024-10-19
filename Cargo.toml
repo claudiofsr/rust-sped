@@ -124,8 +124,8 @@ incremental = true     # Save information to disk, improving re-compile times.
 lto = true             # Enable link time optimization
 opt-level = 3          # all optimizations
 overflow-checks = true # When overflow-checks are enabled, a panic will occur on overflow.
-# codegen-units = 1    # Use a single codegen for size optimization
-# panic = "abort"      # Remove traceback information
+codegen-units = 1      # Use a single codegen for size optimization
+panic = "abort"        # Remove traceback information
 
 [profile.dev]
 opt-level = 1          # Use slightly better optimizations.
