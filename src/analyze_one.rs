@@ -101,9 +101,7 @@ fn get_file_info(
     let file_number = index + 1;
     let num_len = num_digits(total); // total.to_string().len()
 
-    let mut info = Info::default();
-    info.global.insert("arquivo_efd".to_string(), arquivo.display().to_string());
-
+    let mut info = Info::new(arquivo);
     let progressbar: ProgressBar = get_progressbar(multiprogressbar, index, arquivo)?;
 
     let mut empty_msg: bool = true;

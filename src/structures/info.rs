@@ -1,11 +1,11 @@
 use chrono::NaiveDate;
 use serde::{Serialize, Deserialize};
 use std::{
-    fmt,
     collections::{
-        HashMap,
-        BTreeMap,
-    },
+        BTreeMap, HashMap
+    }, 
+    fmt, 
+    path::Path
 };
 
 /**
@@ -68,6 +68,14 @@ pub struct Info {
 }
 
 impl Info {
+    /// Get new value
+    pub fn new(arquivo: &Path) -> Info {
+        let mut info = Info::default();
+        info.global.insert("arquivo_efd".to_string(), arquivo.display().to_string());
+
+        info
+    }
+
     /// Selecionar o nome mais frequente para um dado cnpj
     pub fn obter_nome_do_cnpj_base(&self) -> HashMap<String, String> {
         get_the_most_frequent_value(&self.nome_do_cnpj)
