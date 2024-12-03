@@ -1,0 +1,44 @@
+
+use builtin;
+use str;
+
+set edit:completion:arg-completer[efd_contribuicoes] = {|@words|
+    fn spaces {|n|
+        builtin:repeat $n ' ' | str:join ''
+    }
+    fn cand {|text desc|
+        edit:complex-candidate $text &display=$text' '(spaces (- 14 (wcswidth $text)))$desc
+    }
+    var command = 'efd_contribuicoes'
+    for word $words[1..-1] {
+        if (str:has-prefix $word '-') {
+            break
+        }
+        set command = $command';'$word
+    }
+    var completions = [
+        &'efd_contribuicoes'= {
+            cand -a 'a'
+            cand --all-files 'all-files'
+            cand -g 'If provided, outputs the completion file for given shell'
+            cand --generate 'If provided, outputs the completion file for given shell'
+            cand -r 'Select SPED EFD files to analyze by specifying the range.'
+            cand --range 'Select SPED EFD files to analyze by specifying the range.'
+            cand -c 'Clear the terminal screen before presenting the analysis of EFD files'
+            cand --clear_terminal 'Clear the terminal screen before presenting the analysis of EFD files'
+            cand -e 'Delete output operations items from Excel and CSV files.'
+            cand --excluir-saidas 'Delete output operations items from Excel and CSV files.'
+            cand -f 'Find SPED EFD files'
+            cand --find 'Find SPED EFD files'
+            cand -o 'Retain only credit entries (CST 50 .. 66)'
+            cand --operacoes-de-creditos 'Retain only credit entries (CST 50 .. 66)'
+            cand -p 'Print CSV (Comma Separated Values) file.'
+            cand --print-csv 'Print CSV (Comma Separated Values) file.'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+    ]
+    $completions[$command]
+}
