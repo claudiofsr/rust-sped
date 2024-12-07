@@ -83,7 +83,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.79"
+version = "0.80"
 features = [ 
     # "constant_memory",
     "chrono", 
