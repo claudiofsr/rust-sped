@@ -410,7 +410,7 @@ pub fn parse_file_info(info: &mut Info) -> Result<Vec<DocsFiscais>, Box<dyn Erro
                 */
 
                 // Obter o Período de Apuração do campo PER_APU_CRED no caso dos Registros 1100 e 1500
-                let periodo_de_apuracao = obter_periodo_de_apuracao(info.pa, hashmap);
+                let periodo_de_apuracao = Some(obter_periodo_de_apuracao(info.pa, hashmap)?);
 
                 let estab_cnpj = hashmap.get("estab_cnpj").ok_or(EFDError::InvalidCNPJ(
                     arquivo_efd.to_string(),
@@ -667,29 +667,32 @@ pub fn parse_file_info(info: &mut Info) -> Result<Vec<DocsFiscais>, Box<dyn Erro
 fn obter_periodo_de_apuracao(
     periodo_de_apuracao_da_efd: Option<NaiveDate>,
     hashmap: &HashMap<String, String>,
-) -> Option<NaiveDate> {
+) -> Result<NaiveDate, Box<dyn Error>> {
     // Obter o Período de Apuração do campo PER_APU_CRED no caso dos Registros 1100 e 1500
     match hashmap.get("PER_APU_CRED") {
         Some(pa_origem) => {
-            if pa_origem.contains_num_digits(6) {
-                // PER_APU_CRED : Período de Apuração de Origem do Crédito, formato: MMYYYY
+            // PER_APU_CRED : Período de Apuração de Origem do Crédito, formato: MMYYYY
+            let mmyyyy = pa_origem.trim().parse::<u32>().map_err(|e| {
+                let msg_1 = "Erro ao executar a função: fn obter_periodo_de_apuracao()\n";
+                let msg_2 = "Esperado um número inteiro com 6 dígitos!\n";
+                let msg = [msg_1, msg_2].concat();
+                EFDError::ParseIntError(e, msg)
+            })?;
 
-                let mmyyyy = pa_origem.parse::<u32>().expect(
-                    "
-                    fn obter_periodo_de_apuracao()\n\
-                    Esperado um número inteiro com 6 dígitos!\n\
-                    ",
-                );
+            let month = mmyyyy / 10_000;
+            let year = mmyyyy % 10_000;
 
-                let month = mmyyyy / 10_000;
-                let year = mmyyyy % 10_000;
-
-                NaiveDate::from_ymd_opt(year as i32, month, 1)
-            } else {
-                None
+            if !(1..=12).contains(&month) || year < 1900 {
+                eprintln!("fn obter_periodo_de_apuracao()");
+                eprintln!("ano: {year}");
+                eprintln!("mês: {month}");
             }
+
+            //Ok(NaiveDate::parse_from_str(&mmyyyy.to_string(), "%-m%Y")?)
+
+            NaiveDate::from_ymd_opt(year as i32, month, 1).ok_or(EFDError::InvalidPA.into())
         }
-        None => periodo_de_apuracao_da_efd,
+        None => periodo_de_apuracao_da_efd.ok_or(EFDError::InvalidPA.into()),
     }
 }
 

@@ -16,6 +16,8 @@ pub enum EFDError {
 
     InvalidStyle,
 
+    InvalidPA,
+
     // We will defer to the parse error implementation for their error.
     // Supplying extra info requires adding more data to the type.
     // <https://doc.rust-lang.org/rust-by-example/error/multiple_error_types/wrap_error.html>
@@ -59,6 +61,7 @@ impl std::fmt::Display for EFDError {
                 "
             ),
             EFDError::InvalidStyle => writeln!(f, "Invalid Style!"),
+            EFDError::InvalidPA => writeln!(f, "Período de Apuração Inválido!"),
             EFDError::ParseFloatError(error) => writeln!(
                 f,
                 "
