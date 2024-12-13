@@ -53,22 +53,19 @@ impl ExtraProperties for &str {
     }
 
     fn select_first_digits_map_while(self) -> String {
-        self
-        .chars()
-        .map_while(|x| x.is_ascii_digit().then_some(x))
-        .collect::<String>()
+        self.chars()
+            .map_while(|x| x.is_ascii_digit().then_some(x))
+            .collect::<String>()
     }
 
     fn select_first_digits_take_while(self) -> String {
-        self
-        .chars()
-        .take_while(|x| x.is_ascii_digit())
-        .collect::<String>()
+        self.chars()
+            .take_while(|x| x.is_ascii_digit())
+            .collect::<String>()
     }
 }
 
 fn benchmark(c: &mut Criterion) {
-
     let strings: &str = "1191-clá";
 
     let mut group = c.benchmark_group("Filtrar Primeiros Dígitos");
@@ -77,10 +74,15 @@ fn benchmark(c: &mut Criterion) {
     group.measurement_time(std::time::Duration::from_secs(20));
     group.sample_size(5_000);
 
-    group.bench_function("retain",     |b| b.iter(|| black_box(strings.select_first_digits_retain())     ));
-    group.bench_function("map_while",  |b| b.iter(|| black_box(strings.select_first_digits_map_while())  ));
-    group.bench_function("take_while", |b| b.iter(|| black_box(strings.select_first_digits_take_while()) ));
-
+    group.bench_function("retain", |b| {
+        b.iter(|| black_box(strings.select_first_digits_retain()))
+    });
+    group.bench_function("map_while", |b| {
+        b.iter(|| black_box(strings.select_first_digits_map_while()))
+    });
+    group.bench_function("take_while", |b| {
+        b.iter(|| black_box(strings.select_first_digits_take_while()))
+    });
 
     group.finish();
 }

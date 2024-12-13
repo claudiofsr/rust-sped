@@ -1,29 +1,12 @@
 use rayon::prelude::*;
 
-use rand::{
-    Rng,
-    distributions::Uniform,
-};
+use rand::{distributions::Uniform, Rng};
 
-use std::{
-    thread,
-    sync::Mutex,
-    collections::HashMap,
-};
+use std::{collections::HashMap, sync::Mutex, thread};
 
-use criterion::{
-    black_box, 
-    criterion_group, 
-    criterion_main, 
-    Criterion,
-};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use efd_contribuicoes::{
-    DocsFiscais,
-    Chaves,
-    Valores, 
-    obter_chaves_valores,
-};
+use efd_contribuicoes::{obter_chaves_valores, Chaves, DocsFiscais, Valores};
 
 // Testar quais das funções seguintes é a mais rápida
 
@@ -77,7 +60,7 @@ fn consolidar_chaves_v1(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
 }
 
 /// Group By Parallel Mode
-/// 
+///
 /// Rayon with a mutex to ensure that the HashMap is not
 /// accessed by multiple threads at the same time.
 fn consolidar_chaves_v2(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
@@ -107,7 +90,7 @@ Método adotado: MapReduce.
 MapReduce é um modelo de programação desenhado para processar grandes volumes de
 dados em paralelo, dividindo o trabalho em um conjunto de tarefas independentes.
 
-The parallel fold first breaks up your list into sublists, and hence yields up 
+The parallel fold first breaks up your list into sublists, and hence yields up
 multiple HashMaps.
 
 Fold versus reduce
@@ -115,30 +98,28 @@ Fold versus reduce
 The fold() and reduce() methods each take an identity element and a combining function,
 but they operate rather differently.
 
-When you use reduce(), your reduction function is sometimes called with values that were 
-never part of your original parallel iterator (for example, both the left and right might 
+When you use reduce(), your reduction function is sometimes called with values that were
+never part of your original parallel iterator (for example, both the left and right might
 be a partial sum).
 
 With fold(), in contrast, the left value in the fold function is always the accumulator,
 and the right value is always from your original sequence.
 
-Now fold will process groups of hashmap, and we only make one hashmap per group. 
-We should wind up with some hashmap number roughly proportional to the number of CPUs you have 
+Now fold will process groups of hashmap, and we only make one hashmap per group.
+We should wind up with some hashmap number roughly proportional to the number of CPUs you have
 (it will ultimately depend on how busy your processors are).
 
-Note that we still need to do a reduce afterwards to combine those groups of hashmaps 
+Note that we still need to do a reduce afterwards to combine those groups of hashmaps
 into a single hashmap.
 
 <https://stackoverflow.com/questions/57641821/rayon-fold-into-a-hashmap>
 */
 fn consolidar_chaves_v3(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
-
     let map_reduce: HashMap<Chaves, Valores> = lines
         .into_par_iter() // rayon: parallel iterator
         .filter(|&line| line.entrada_de_credito() || line.saida_de_receita_bruta())
         .map(obter_chaves_valores)
         .fold(HashMap::new, |mut hashmap_accumulator, (key, value)| {
-
             // impl Add and AddAssign for Valores: Soma de Valores
             hashmap_accumulator
                 .entry(key)
@@ -148,14 +129,12 @@ fn consolidar_chaves_v3(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
             hashmap_accumulator
         })
         .reduce(HashMap::new, |mut hashmap_a, hashmap_b| {
-
             hashmap_b.into_iter().for_each(|(key_b, value_b)| {
                 // impl Add and AddAssign for Valores: Soma de Valores
                 hashmap_a
                     .entry(key_b)
                     .and_modify(|previous_value| *previous_value += value_b)
                     .or_insert(value_b);
-
             });
 
             hashmap_a
@@ -165,9 +144,9 @@ fn consolidar_chaves_v3(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
 }
 
 /// Map Reduce
-/// 
+///
 /// Group By Parallel Mode
-/// 
+///
 /// https://doc.rust-lang.org/stable/rust-by-example/std_misc/threads/testcase_mapreduce.html
 fn consolidar_chaves_v4(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
     let max_size: usize = 1 + lines.len() / num_cpus::get();
@@ -183,7 +162,7 @@ fn consolidar_chaves_v4(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
                     .iter()
                     .filter(|&line| line.entrada_de_credito() || line.saida_de_receita_bruta())
                     .map(obter_chaves_valores)
-                    .for_each(|(key, value)|{
+                    .for_each(|(key, value)| {
                         // impl Add and AddAssign for Valores: Soma de Valores
                         hashmap
                             .entry(key)
@@ -204,7 +183,7 @@ fn consolidar_chaves_v4(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
 
     //println!("results.len(): {}", results.len());
 
-    let mut hashmap: HashMap<Chaves, Valores>  = HashMap::new();
+    let mut hashmap: HashMap<Chaves, Valores> = HashMap::new();
 
     for result in results {
         match result {
@@ -215,11 +194,11 @@ fn consolidar_chaves_v4(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
                         .and_modify(|previous_value| *previous_value += value)
                         .or_insert(value);
                 }
-            },
+            }
             Err(error) => {
                 eprintln!("fn consolidar_chaves_v4()");
                 panic!("Error: thread panics! {error:?}");
-            },
+            }
         }
     }
 
@@ -227,33 +206,31 @@ fn consolidar_chaves_v4(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-
     // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/randomness.html
     let mut rng = rand::thread_rng();
     let range_cst = Uniform::new(40, 70); // 14 cst válidos
-    let range_nat = Uniform::new(0, 20);  // 18 natureza_bc válidos
+    let range_nat = Uniform::new(0, 20); // 18 natureza_bc válidos
 
     let mut data: Vec<Vec<DocsFiscais>> = Vec::new();
 
     // Pick a random element from a list
     // https://programming-idioms.org/idiom/11/pick-a-random-element-from-a-list
     let list = [
-         10_000,  20_000,  50_000,  80_000, 100_000, 
-        150_000, 200_000, 400_000, 500_000, 800_000,
+        10_000, 20_000, 50_000, 80_000, 100_000, 150_000, 200_000, 400_000, 500_000, 800_000,
     ];
     let choice = list[rng.gen_range(0..list.len())];
     println!("choice: {choice}");
 
     for number_of_lines in list {
-
         let mut all_lines: Vec<DocsFiscais> = Vec::new();
 
         for index in 1..=number_of_lines {
-
             let cst = rng.sample(range_cst);
             let nat = rng.sample(range_nat);
 
-            let mut colunas = DocsFiscais {..Default::default()};
+            let mut colunas = DocsFiscais {
+                ..Default::default()
+            };
 
             colunas.linhas = index;
             colunas.estabelecimento_cnpj = "01234567000890".to_string();
@@ -268,7 +245,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             colunas.natureza_bc = Some(nat);
             colunas.cod_ncm = "01234567".to_string();
             colunas.valor_item = Some(20.0000);
-            colunas.valor_bc =   Some(10.0000);
+            colunas.valor_bc = Some(10.0000);
 
             all_lines.push(colunas);
         }
@@ -284,7 +261,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         if number_of_lines == 500_000 {
             // max chaves_consolidadas_v1.len() = 18 * 14 = 252
-            println!("chaves_consolidadas_v1: {chaves_consolidadas_v1:#?} ; len: {}\n", chaves_consolidadas_v1.len());
+            println!(
+                "chaves_consolidadas_v1: {chaves_consolidadas_v1:#?} ; len: {}\n",
+                chaves_consolidadas_v1.len()
+            );
         }
 
         data.push(all_lines);
@@ -296,10 +276,18 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.measurement_time(std::time::Duration::from_secs(120));
     group.sample_size(5_000);
 
-    group.bench_function("consolidar_chaves_v1", |b| b.iter(|| black_box( data.iter().map(|all_lines| consolidar_chaves_v1(all_lines)) )));
-    group.bench_function("consolidar_chaves_v2", |b| b.iter(|| black_box( data.iter().map(|all_lines| consolidar_chaves_v2(all_lines)) )));
-    group.bench_function("consolidar_chaves_v3", |b| b.iter(|| black_box( data.iter().map(|all_lines| consolidar_chaves_v3(all_lines)) )));
-    group.bench_function("consolidar_chaves_v4", |b| b.iter(|| black_box( data.iter().map(|all_lines| consolidar_chaves_v4(all_lines)) )));
+    group.bench_function("consolidar_chaves_v1", |b| {
+        b.iter(|| black_box(data.iter().map(|all_lines| consolidar_chaves_v1(all_lines))))
+    });
+    group.bench_function("consolidar_chaves_v2", |b| {
+        b.iter(|| black_box(data.iter().map(|all_lines| consolidar_chaves_v2(all_lines))))
+    });
+    group.bench_function("consolidar_chaves_v3", |b| {
+        b.iter(|| black_box(data.iter().map(|all_lines| consolidar_chaves_v3(all_lines))))
+    });
+    group.bench_function("consolidar_chaves_v4", |b| {
+        b.iter(|| black_box(data.iter().map(|all_lines| consolidar_chaves_v4(all_lines))))
+    });
 
     group.finish();
 }

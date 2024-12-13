@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use claudiofsr_lib::{get_style, match_cast, StrExtension};
-use indicatif::{ProgressBar, MultiProgress};
+use indicatif::{MultiProgress, ProgressBar};
 use itertools::{self, Itertools};
 use rust_xlsxwriter::{
     //Color,
@@ -9,22 +9,17 @@ use rust_xlsxwriter::{
     Table,
     Worksheet,
 };
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_aux::prelude::serde_introspect;
-use struct_iterable::Iterable;
 use std::collections::HashMap;
+use struct_iterable::Iterable;
 
 // use rayon::prelude::*;
 
 use crate::{
-    display_cst,
-    display_natureza,
-    display_tipo_de_operacao,
-    indicador_de_origem_to_str,
-    obter_descricao_do_tipo_de_credito,
-    MyResult,
-    REGEX_ALIQ, REGEX_CENTER,
-    REGEX_DATE, REGEX_VALUE,
+    display_cst, display_natureza, display_tipo_de_operacao, indicador_de_origem_to_str,
+    obter_descricao_do_tipo_de_credito, MyResult, REGEX_ALIQ, REGEX_CENTER, REGEX_DATE,
+    REGEX_VALUE,
 };
 
 const FONT_SIZE: f64 = 11.0;
@@ -38,7 +33,6 @@ const ADJUSTMENT: f64 = 1.2;
 ///
 /// <https://doc.rust-lang.org/book/ch10-02-traits.html#default-implementations>
 pub trait InfoExtension {
-
     /**
     Gets the serialization names for structs and enums.
 
@@ -48,7 +42,7 @@ pub trait InfoExtension {
     */
     fn get_headers<'de>() -> &'static [&'static str]
     where
-        Self: Deserialize<'de>
+        Self: Deserialize<'de>,
     {
         serde_introspect::<Self>()
     }
@@ -66,16 +60,14 @@ pub fn get_worksheets<'de, T>(
     index: usize,
 ) -> MyResult<Vec<Worksheet>>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable // + Sync + Send
+    T: Serialize + Deserialize<'de> + InfoExtension + Iterable, // + Sync + Send
 {
     if lines.is_empty() {
         return Ok(Vec::new());
     }
 
-    let progressbar: ProgressBar = multiprogressbar.insert(
-        index,
-        ProgressBar::new(lines.len().try_into()?)
-    );
+    let progressbar: ProgressBar =
+        multiprogressbar.insert(index, ProgressBar::new(lines.len().try_into()?));
     let style = get_style(0, 0, 35)?;
     progressbar.set_style(style);
 
@@ -109,7 +101,7 @@ fn get_worksheet<'de, T>(
     progressbar: &ProgressBar,
 ) -> MyResult<Worksheet>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable // + Sync + Send
+    T: Serialize + Deserialize<'de> + InfoExtension + Iterable, // + Sync + Send
 {
     let column_names: &[&str] = T::get_headers(); // <-- InfoExtension
     let column_number: u16 = column_names.len().try_into()?;
@@ -135,9 +127,7 @@ where
 
     // Create and configure a new table.
     // Why LibreOffice Calc not recognize the table styles?
-    let table = Table::new()
-        .set_autofilter(true)
-        .set_total_row(false);
+    let table = Table::new().set_autofilter(true).set_total_row(false);
 
     // Add the table to the worksheet.
     worksheet.add_table(0, 0, row_number, column_number - 1, &table)?;
@@ -166,7 +156,6 @@ where
 
 /// Add some formats to use with the serialization data.
 fn create_formats() -> HashMap<&'static str, Format> {
-
     let fmt_default: Format = Format::new()
         .set_align(FormatAlign::VerticalCenter)
         .set_font_size(FONT_SIZE);
@@ -202,18 +191,18 @@ fn create_formats() -> HashMap<&'static str, Format> {
 
     HashMap::from([
         ("default", fmt_default),
-        ("header",  fmt_header),
-        ("center",  fmt_center),
-        ("value",   fmt_value),
-        ("aliq",    fmt_aliq),
-        ("date",    fmt_date),
+        ("header", fmt_header),
+        ("center", fmt_center),
+        ("value", fmt_value),
+        ("aliq", fmt_aliq),
+        ("date", fmt_date),
     ])
 }
 
 /// Format columns by names using regex
-/// 
+///
 /// and
-/// 
+///
 /// Format lines by T Struct analysis.
 fn format_lines_and_columns<'de, T>(
     worksheet: &mut Worksheet,
@@ -222,7 +211,7 @@ fn format_lines_and_columns<'de, T>(
     fmt: &HashMap<&str, Format>,
 ) -> MyResult<()>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable // + Sync + Send
+    T: Serialize + Deserialize<'de> + InfoExtension + Iterable, // + Sync + Send
 {
     // Format columns by names using regex.
     'col: for (index, &col_name) in column_names.iter().enumerate() {
@@ -239,13 +228,13 @@ where
                 continue 'col;
             };
         }
-        
+
         if let Some(format) = fmt.get("default") {
             worksheet.set_column_format(column_number, format)?;
         }
     }
 
-    /*    
+    /*
     //let color_header: u32 = u32::from_str_radix("c5d9f1", 16)?;
     let color_bcsoma: u32 = u32::from_str_radix("bfbfbf", 16)?;
     //let color_descon: u32 = u32::from_str_radix("fff2cc", 16)?;
@@ -273,7 +262,7 @@ where
                 .enumerate()
                 .try_for_each( |(index, (field_name, field_value))| -> MyResult<()> {
                     let column_number: u16 = index.try_into()?;
-                    
+
                     match (field_name, field_value.downcast_ref::<Option<u16>>()) {
                         // BG Color: Base de Cálculo dos Créditos - Alíquota Básica (Soma)
                         ("natureza_bc", Some(Some(101..=199|300))) => {
@@ -299,13 +288,9 @@ where
 }
 
 /// Iterate over all data and find the max data width for each column.
-fn auto_fit<'de, T>(
-    worksheet: &mut Worksheet,
-    lines: &[T],
-    column_names: &[&str],
-) -> MyResult<()>
+fn auto_fit<'de, T>(worksheet: &mut Worksheet, lines: &[T], column_names: &[&str]) -> MyResult<()>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable // + Sync + Send
+    T: Serialize + Deserialize<'de> + InfoExtension + Iterable, // + Sync + Send
 {
     // HashMap<col index, col width>:
     let mut max_length: HashMap<usize, usize> = HashMap::new();
@@ -324,9 +309,7 @@ where
     lines
         .iter()
         //.into_par_iter() // rayon parallel iterator
-        .for_each(|line| {
-            get_length_of_column_values(line, &mut max_length)
-        });
+        .for_each(|line| get_length_of_column_values(line, &mut max_length));
 
     for (index, len) in max_length {
         let width = WIDTH_MAX.min(len);
@@ -344,13 +327,12 @@ where
 /// <https://crates.io/crates/struct_iterable>
 fn get_length_of_column_values<'de, T>(line: &T, max_length: &mut HashMap<usize, usize>)
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable
+    T: Serialize + Deserialize<'de> + InfoExtension + Iterable,
 {
     // let type_name = std::any::type_name::<T>();
-    line
-        .iter()
+    line.iter()
         .enumerate()
-        .for_each( |(index, (field_name, field_value))| {
+        .for_each(|(index, (field_name, field_value))| {
             // Get the length of field_value: &dyn Any.
             // <https://doc.rust-lang.org/beta/core/any/index.html>
 
@@ -412,7 +394,8 @@ where
                     // use itertools;
                     Some(val.iter().join(", ").chars_count())
                 },
-            }).unwrap_or(format!("{field_value:?}").chars_count());
+            })
+            .unwrap_or(format!("{field_value:?}").chars_count());
 
             let length: usize = *max_length.get(&index).unwrap_or(&0);
 

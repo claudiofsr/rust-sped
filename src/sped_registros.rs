@@ -1,25 +1,21 @@
 use std::{
-    collections::{HashMap, HashSet}, 
+    collections::{HashMap, HashSet},
     sync::LazyLock,
 };
 
-use crate::{
-    DECIMAL_ALIQ,
-    ALIQ_BASICA_PIS,
-    ALIQ_BASICA_COF,
-};
+use crate::{ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DECIMAL_ALIQ};
 
 static NOME_DO_MES: LazyLock<HashMap<Option<u32>, &'static str>> = LazyLock::new(|| {
     let tuples = [
-        ( 1, "janeiro"),
-        ( 2, "fevereiro"),
-        ( 3, "março"),
-        ( 4, "abril"),
-        ( 5, "maio"),
-        ( 6, "junho"),
-        ( 7, "julho"),
-        ( 8, "agosto"),
-        ( 9, "setembro"),
+        (1, "janeiro"),
+        (2, "fevereiro"),
+        (3, "março"),
+        (4, "abril"),
+        (5, "maio"),
+        (6, "junho"),
+        (7, "julho"),
+        (8, "agosto"),
+        (9, "setembro"),
         (10, "outubro"),
         (11, "novembro"),
         (12, "dezembro"),
@@ -32,7 +28,6 @@ static NOME_DO_MES: LazyLock<HashMap<Option<u32>, &'static str>> = LazyLock::new
 
 /// Convert month number to month name
 pub fn month_to_str(num: &Option<u32>) -> &'static str {
-
     let mes_nome = match NOME_DO_MES.get(num) {
         Some(mes) => mes,
         None => "",
@@ -43,18 +38,18 @@ pub fn month_to_str(num: &Option<u32>) -> &'static str {
 
 static NUMERO_DO_MES: LazyLock<HashMap<&'static str, Option<u32>>> = LazyLock::new(|| {
     let tuples = [
-        ( "janeiro", 1),
-        ( "fevereiro", 2),
-        ( "março", 3),
-        ( "abril", 4),
-        ( "maio", 5),
-        ( "junho", 6),
-        ( "julho", 7),
-        ( "agosto", 8),
-        ( "setembro", 9),
-        ( "outubro", 10),
-        ( "novembro", 11),
-        ( "dezembro", 12),
+        ("janeiro", 1),
+        ("fevereiro", 2),
+        ("março", 3),
+        ("abril", 4),
+        ("maio", 5),
+        ("junho", 6),
+        ("julho", 7),
+        ("agosto", 8),
+        ("setembro", 9),
+        ("outubro", 10),
+        ("novembro", 11),
+        ("dezembro", 12),
     ];
 
     let meses = tuples.map(|(mes, n)| (mes, Some(n)));
@@ -77,7 +72,6 @@ static INDICADOR_DE_ORIGEM: LazyLock<HashMap<Option<u16>, &'static str>> = LazyL
 });
 
 pub fn indicador_de_origem_to_str(num: &Option<u16>) -> &'static str {
-
     let origem = match INDICADOR_DE_ORIGEM.get(num) {
         Some(nome) => nome,
         None => "",
@@ -102,23 +96,29 @@ static TIPO_DE_OPERACAO: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock
     HashMap::from(tipos)
 });
 
-pub fn get_tipo_de_operacao(num:&Option<u16>) -> Option<String> {
+pub fn get_tipo_de_operacao(num: &Option<u16>) -> Option<String> {
     TIPO_DE_OPERACAO.get(num).map(|&oper| oper.to_string())
 }
 
 /// 4.3.6 - Tabela Código de Tipo de Crédito
-pub static DESCRICAO_DO_TIPO_DE_RATEIO: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(|| {
-    HashMap::from([
-        (Some(1), "Receita Bruta Não Cumulativa: Tributada no Mercado Interno"),
-        (Some(2), "Receita Bruta Não Cumulativa: Não Tributada no Mercado Interno"),
-        (Some(3), "Receita Bruta Não Cumulativa: de Exportação"),
-        (Some(4), "Receita Bruta Cumulativa"),
-    ])
-});
+pub static DESCRICAO_DO_TIPO_DE_RATEIO: LazyLock<HashMap<Option<u16>, &'static str>> =
+    LazyLock::new(|| {
+        HashMap::from([
+            (
+                Some(1),
+                "Receita Bruta Não Cumulativa: Tributada no Mercado Interno",
+            ),
+            (
+                Some(2),
+                "Receita Bruta Não Cumulativa: Não Tributada no Mercado Interno",
+            ),
+            (Some(3), "Receita Bruta Não Cumulativa: de Exportação"),
+            (Some(4), "Receita Bruta Cumulativa"),
+        ])
+    });
 
 #[allow(dead_code)]
 pub fn obter_tipo_de_rateio(cod: &Option<u16>) -> String {
-
     let rateio_descricao = match DESCRICAO_DO_TIPO_DE_RATEIO.get(cod) {
         Some(&descricao) => format!("{} - {}", cod.unwrap(), descricao),
         None => "".to_string(),
@@ -135,9 +135,8 @@ pub fn obter_tipo_de_rateio(cod: &Option<u16>) -> String {
 /// Código de tipo de crédito, com o encerramento de vigência dos
 /// códigos 199, 299 e 399 (Outros) a ocorrer a partir de 31/03/2023.
 pub const CODIGO_TIPO_DE_CREDITO: [u16; 28] = [
-    101, 102, 103, 104, 105, 106, 107, 108, 109, 199,
-    201, 202, 203, 204, 205, 206, 207, 208,      299,
-    301, 302, 303, 304, 305, 306, 307, 308,      399,
+    101, 102, 103, 104, 105, 106, 107, 108, 109, 199, 201, 202, 203, 204, 205, 206, 207, 208, 299,
+    301, 302, 303, 304, 305, 306, 307, 308, 399,
 ];
 
 pub fn registros_de_operacoes(text: &str) -> bool {
@@ -145,7 +144,7 @@ pub fn registros_de_operacoes(text: &str) -> bool {
     // Bloco M contém registros de apurações
 
     let first_char: Option<char> = text.chars().next();
-    let test1: bool = matches!(first_char, Some('A' ..= 'I'));
+    let test1: bool = matches!(first_char, Some('A'..='I'));
     let test2: bool = text[1..].parse::<u32>().is_ok();
     test1 && test2
 }
@@ -170,7 +169,6 @@ static TIPOS_DOS_ITENS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock
 });
 
 pub fn obter_tipo_do_item(codigo: &str) -> String {
-
     let tipo_do_item = match TIPOS_DOS_ITENS.get(codigo) {
         Some(&tipo) => [codigo, " - ", tipo].concat(),
         None => "".to_string(),
@@ -193,7 +191,6 @@ static GRUPO_DE_CONTAS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock
 });
 
 pub fn obter_grupo_de_contas(codigo: &str) -> String {
-
     let grupo_de_contas = match GRUPO_DE_CONTAS.get(codigo) {
         Some(&contas) => [codigo, " - ", contas].concat(),
         None => "".to_string(),
@@ -206,16 +203,16 @@ static CORRELACAO_DE_ALIQUOTAS: LazyLock<HashMap<&'static str, f64>> = LazyLock:
     // Aliq COFINS --> Aliq PIS/PASEP
     HashMap::from([
         // if DECIMAL_ALIQ = 4
-        ( "0.0000", 1.6500), // caso de Alíquotas Diferenciadas
-        ( "0.7600", 0.1650),
-        ( "1.5200", 0.3300),
-        ( "2.6600", 0.5775),
-        ( "3.8000", 0.8250),
-        ( "4.5600", 0.9900),
-        ( "6.0800", 1.3200),
-        ( "7.6000", 1.6500),
-        ( "8.5400", 1.8600), // venda pelo atacadista ao varejista ou ao consumidor final
-        ( "9.6500", 2.1000),
+        ("0.0000", 1.6500), // caso de Alíquotas Diferenciadas
+        ("0.7600", 0.1650),
+        ("1.5200", 0.3300),
+        ("2.6600", 0.5775),
+        ("3.8000", 0.8250),
+        ("4.5600", 0.9900),
+        ("6.0800", 1.3200),
+        ("7.6000", 1.6500),
+        ("8.5400", 1.8600), // venda pelo atacadista ao varejista ou ao consumidor final
+        ("9.6500", 2.1000),
         ("10.6800", 2.3200),
         ("10.8000", 2.3000),
         ("14.3700", 2.1000),
@@ -223,69 +220,77 @@ static CORRELACAO_DE_ALIQUOTAS: LazyLock<HashMap<&'static str, f64>> = LazyLock:
 });
 
 pub fn obter_aliquota_correlacionada_de_pis(aliq_cofins: &str) -> Option<String> {
-
     match CORRELACAO_DE_ALIQUOTAS.get(&aliq_cofins) {
         Some(&aliq_pis) => {
             // println!("aliq_cof: {aliq_cof} --> aliq_cofins: {aliq_cofins} relacionada aliquota_de_pis: {aliquota_de_pis}");
             let aliquota_de_pis = format!("{aliq_pis:0.DECIMAL_ALIQ$}");
             Some(aliquota_de_pis)
-        },
+        }
         None => {
             eprintln!("sped_registros.rs");
             eprintln!("fn obter_aliquota_correlacionada_de_pis()");
             eprintln!("Não foi possível obter diretamente a alíquota de PIS/PASEP relacionada à alíquota de COFINS: {aliq_cofins}");
             eprintln!("A correlação entre as alíquotas de PIS/PASEP e COFINS será obtida da função correlacionar_aliquotas_codcred em dispatch_table.rs.\n");
             None
-        },
+        }
     }
 }
 
-static MODELOS_DOCUMENTOS_FISCAIS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
-    // 4.1.1- Tabela Modelos de Documentos Fiscais
-    HashMap::from([
-        ("01", "Nota Fiscal"),
-        ("1B", "Nota Fiscal Avulsa"),
-        ("02", "Nota Fiscal de Venda a Consumidor"),
-        ("2D", "Cupom Fiscal emitido por ECF"),
-        ("2E", "Bilhete de Passagem emitido por ECF"),
-        ("04", "Nota Fiscal de Produtor"),
-        ("06", "Nota Fiscal / Conta de Energia Elétrica"),
-        ("07", "Nota Fiscal de Serviço de Transporte"),
-        ("08", "Conhecimento de Transporte Rodoviário de Cargas"),
-        ("8B", "Conhecimento de Transporte de Cargas Avulso"),
-        ("09", "Conhecimento de Transporte Aquaviário de Cargas"),
-        ("10", "Conhecimento Aéreo"),
-        ("11", "Conhecimento de Transporte Ferroviário de Cargas"),
-        ("13", "Bilhete de Passagem Rodoviário"),
-        ("14", "Bilhete de Passagem Aquaviário"),
-        ("15", "Bilhete de Passagem e Nota de Bagagem"),
-        ("17", "Despacho de Transporte"),
-        ("16", "Bilhete de Passagem Ferroviário"),
-        ("18", "Resumo de Movimento Diário"),
-        ("20", "Ordem de Coleta de Cargas"),
-        ("21", "Nota Fiscal de Serviço de Comunicação"),
-        ("22", "Nota Fiscal de Serviço de Telecomunicação"),
-        ("23", "GNRE"),
-        ("24", "Autorização de Carregamento e Transporte"),
-        ("25", "Manifesto de Carga"),
-        ("26", "Conhecimento de Transporte Multimodal de Cargas"),
-        ("27", "Nota Fiscal de Transporte Ferroviário de Cargas"),
-        ("28", "Nota Fiscal / Conta de Fornecimento de Gás Canalizado"),
-        ("29", "Nota Fiscal / Conta de Fornecimento de Água Canalizada"),
-        ("30", "Bilhete / Recibo do Passageiro"),
-        ("55", "Nota Fiscal Eletrônica: NF-e"),
-        ("57", "Conhecimento de Transporte Eletrônico: CT-e"),
-        ("59", "Cupom Fiscal Eletrônico: CF-e (CF-e-SAT)"),
-        ("60", "Cupom Fiscal Eletrônico: CF-e-ECF"),
-        ("63", "Bilhete de Passagem Eletrônico: BP-e"),
-        ("65", "Nota Fiscal Eletrônica ao Consumidor Final: NFC-e"),
-        ("66", "Nota Fiscal de Energia Elétrica Eletrônica: NF3e"),
-        ("67", "Conhecimento de Transporte Eletrônico para Outros Serviços: CT-e OS"),
-    ])
-});
+static MODELOS_DOCUMENTOS_FISCAIS: LazyLock<HashMap<&'static str, &'static str>> =
+    LazyLock::new(|| {
+        // 4.1.1- Tabela Modelos de Documentos Fiscais
+        HashMap::from([
+            ("01", "Nota Fiscal"),
+            ("1B", "Nota Fiscal Avulsa"),
+            ("02", "Nota Fiscal de Venda a Consumidor"),
+            ("2D", "Cupom Fiscal emitido por ECF"),
+            ("2E", "Bilhete de Passagem emitido por ECF"),
+            ("04", "Nota Fiscal de Produtor"),
+            ("06", "Nota Fiscal / Conta de Energia Elétrica"),
+            ("07", "Nota Fiscal de Serviço de Transporte"),
+            ("08", "Conhecimento de Transporte Rodoviário de Cargas"),
+            ("8B", "Conhecimento de Transporte de Cargas Avulso"),
+            ("09", "Conhecimento de Transporte Aquaviário de Cargas"),
+            ("10", "Conhecimento Aéreo"),
+            ("11", "Conhecimento de Transporte Ferroviário de Cargas"),
+            ("13", "Bilhete de Passagem Rodoviário"),
+            ("14", "Bilhete de Passagem Aquaviário"),
+            ("15", "Bilhete de Passagem e Nota de Bagagem"),
+            ("17", "Despacho de Transporte"),
+            ("16", "Bilhete de Passagem Ferroviário"),
+            ("18", "Resumo de Movimento Diário"),
+            ("20", "Ordem de Coleta de Cargas"),
+            ("21", "Nota Fiscal de Serviço de Comunicação"),
+            ("22", "Nota Fiscal de Serviço de Telecomunicação"),
+            ("23", "GNRE"),
+            ("24", "Autorização de Carregamento e Transporte"),
+            ("25", "Manifesto de Carga"),
+            ("26", "Conhecimento de Transporte Multimodal de Cargas"),
+            ("27", "Nota Fiscal de Transporte Ferroviário de Cargas"),
+            (
+                "28",
+                "Nota Fiscal / Conta de Fornecimento de Gás Canalizado",
+            ),
+            (
+                "29",
+                "Nota Fiscal / Conta de Fornecimento de Água Canalizada",
+            ),
+            ("30", "Bilhete / Recibo do Passageiro"),
+            ("55", "Nota Fiscal Eletrônica: NF-e"),
+            ("57", "Conhecimento de Transporte Eletrônico: CT-e"),
+            ("59", "Cupom Fiscal Eletrônico: CF-e (CF-e-SAT)"),
+            ("60", "Cupom Fiscal Eletrônico: CF-e-ECF"),
+            ("63", "Bilhete de Passagem Eletrônico: BP-e"),
+            ("65", "Nota Fiscal Eletrônica ao Consumidor Final: NFC-e"),
+            ("66", "Nota Fiscal de Energia Elétrica Eletrônica: NF3e"),
+            (
+                "67",
+                "Conhecimento de Transporte Eletrônico para Outros Serviços: CT-e OS",
+            ),
+        ])
+    });
 
 pub fn obter_modelo_do_documento_fiscal(codigo: &str) -> String {
-
     let modelo_do_documento_fiscal = match MODELOS_DOCUMENTOS_FISCAIS.get(codigo) {
         Some(&modelo) => [codigo, " - ", modelo].concat(),
         None => "".to_string(),
@@ -294,56 +299,49 @@ pub fn obter_modelo_do_documento_fiscal(codigo: &str) -> String {
     modelo_do_documento_fiscal
 }
 
-static CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, u16>> = LazyLock::new(|| {
-    // Natureza da BC dos Créditos em função do CFOP
-    let mut info: HashMap<Option<u16>, u16> = HashMap::new();
+static CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, u16>> =
+    LazyLock::new(|| {
+        // Natureza da BC dos Créditos em função do CFOP
+        let mut info: HashMap<Option<u16>, u16> = HashMap::new();
 
-    let cfops_de_natureza01: [u16; 21] = [
-        1102, 1113, 1117, 1118, 1121, 1159, 1251, 1403,
-        1652, 2102, 2113, 2117, 2118, 2121, 2159, 2251,
-        2403, 2652, 3102, 3251, 3652
-    ];
+        let cfops_de_natureza01: [u16; 21] = [
+            1102, 1113, 1117, 1118, 1121, 1159, 1251, 1403, 1652, 2102, 2113, 2117, 2118, 2121,
+            2159, 2251, 2403, 2652, 3102, 3251, 3652,
+        ];
 
-    let cfops_de_natureza02: [u16; 36] = [
-        1101, 1111, 1116, 1120, 1122, 1126, 1128, 1401,
-        1407, 1556, 1651, 1653, 2101, 2111, 2116, 2120,
-        2122, 2126, 2128, 2401, 2407, 2556, 2651, 2653,
-        3101, 3126, 3128, 3556, 3651, 3653, 1135, 2135,
-        1132, 2132, 1456, 2456
-    ];
+        let cfops_de_natureza02: [u16; 36] = [
+            1101, 1111, 1116, 1120, 1122, 1126, 1128, 1401, 1407, 1556, 1651, 1653, 2101, 2111,
+            2116, 2120, 2122, 2126, 2128, 2401, 2407, 2556, 2651, 2653, 3101, 3126, 3128, 3556,
+            3651, 3653, 1135, 2135, 1132, 2132, 1456, 2456,
+        ];
 
-    let cfops_de_natureza03:[u16; 6] = [
-        1124, 1125, 1933, 2124, 2125, 2933
-    ];
+        let cfops_de_natureza03: [u16; 6] = [1124, 1125, 1933, 2124, 2125, 2933];
 
-    let cfops_de_natureza12: [u16; 24] = [
-        1201, 1202, 1203, 1204, 1410, 1411, 1660, 1661,
-        1662, 2201, 2202, 2410, 2411, 2660, 2661, 2662,
-        1206, 2206, 1207, 2207, 1215, 1216, 2215, 2216
-    ];
+        let cfops_de_natureza12: [u16; 24] = [
+            1201, 1202, 1203, 1204, 1410, 1411, 1660, 1661, 1662, 2201, 2202, 2410, 2411, 2660,
+            2661, 2662, 1206, 2206, 1207, 2207, 1215, 1216, 2215, 2216,
+        ];
 
-    let cfops_de_natureza13: [u16; 2] = [
-        1922, 2922
-    ];
+        let cfops_de_natureza13: [u16; 2] = [1922, 2922];
 
-    for cfop in cfops_de_natureza01 {
-        info.insert(Some(cfop), 1);
-    }
-    for cfop in cfops_de_natureza02 {
-        info.insert(Some(cfop), 2);
-    }
-    for cfop in cfops_de_natureza03 {
-        info.insert(Some(cfop), 3);
-    }
-    for cfop in cfops_de_natureza12 {
-        info.insert(Some(cfop), 12);
-    }
-    for cfop in cfops_de_natureza13 {
-        info.insert(Some(cfop), 13);
-    }
+        for cfop in cfops_de_natureza01 {
+            info.insert(Some(cfop), 1);
+        }
+        for cfop in cfops_de_natureza02 {
+            info.insert(Some(cfop), 2);
+        }
+        for cfop in cfops_de_natureza03 {
+            info.insert(Some(cfop), 3);
+        }
+        for cfop in cfops_de_natureza12 {
+            info.insert(Some(cfop), 12);
+        }
+        for cfop in cfops_de_natureza13 {
+            info.insert(Some(cfop), 13);
+        }
 
-    info
-});
+        info
+    });
 
 /// Obter código da Natureza da Base de Cálculo
 ///
@@ -357,88 +355,135 @@ static CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, u16>
 ///
 /// conforme Tabela “CFOP – Operações Geradoras de Créditos”.
 pub fn obter_cod_da_natureza_da_bc(opt_cfop: &Option<u16>, opt_cst: Option<u16>) -> Option<u16> {
-
     match (CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS.get(opt_cfop), opt_cst) {
         // if 50 <= cst <= 56 || 60 <= cst <= 66
-        (Some(&cod_nat), Some(50..=56|60..=66)) => {
-            Some(cod_nat)
-        },
-        _ => None
+        (Some(&cod_nat), Some(50..=56 | 60..=66)) => Some(cod_nat),
+        _ => None,
     }
 }
 
-static NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(|| {
-    // array of tuples [T; length]
-    // 4.3.7 - Tabela Base de Cálculo do Crédito (versão 1.0.1)
-    let natureza_bc: [(u16, &str); 45] = [
-        ( 1, "Aquisição de Bens para Revenda"),
-        ( 2, "Aquisição de Bens Utilizados como Insumo"),
-        ( 3, "Aquisição de Serviços Utilizados como Insumo"),
-        ( 4, "Energia Elétrica e Térmica, Inclusive sob a Forma de Vapor"),
-        ( 5, "Aluguéis de Prédios"),
-        ( 6, "Aluguéis de Máquinas e Equipamentos"),
-        ( 7, "Armazenagem de Mercadoria e Frete na Operação de Venda"),
-        ( 8, "Contraprestações de Arrendamento Mercantil"),
-        ( 9, "Máquinas, Equipamentos ... (Crédito sobre Encargos de Depreciação)"),
-        (10, "Máquinas, Equipamentos ... (Crédito com Base no Valor de Aquisição)"),
-        (11, "Amortizacao e Depreciação de Edificações e Benfeitorias em Imóveis"),
-        (12, "Devolução de Vendas Sujeitas à Incidência Não-Cumulativa"),
-        (13, "Outras Operações com Direito a Crédito"),
-        (14, "Atividade de Transporte de Cargas - Subcontratação"),
-        (15, "Atividade Imobiliária - Custo Incorrido de Unidade Imobiliária"),
-        (16, "Atividade Imobiliária - Custo Orçado de Unidade não Concluída"),
-        (17, "Atividade de Prestação de Serviços de Limpeza, Conservação e Manutenção"),
-        (18, "Estoque de Abertura de Bens"),
+static NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, &'static str>> =
+    LazyLock::new(|| {
+        // array of tuples [T; length]
+        // 4.3.7 - Tabela Base de Cálculo do Crédito (versão 1.0.1)
+        let natureza_bc: [(u16, &str); 45] = [
+            (1, "Aquisição de Bens para Revenda"),
+            (2, "Aquisição de Bens Utilizados como Insumo"),
+            (3, "Aquisição de Serviços Utilizados como Insumo"),
+            (
+                4,
+                "Energia Elétrica e Térmica, Inclusive sob a Forma de Vapor",
+            ),
+            (5, "Aluguéis de Prédios"),
+            (6, "Aluguéis de Máquinas e Equipamentos"),
+            (7, "Armazenagem de Mercadoria e Frete na Operação de Venda"),
+            (8, "Contraprestações de Arrendamento Mercantil"),
+            (
+                9,
+                "Máquinas, Equipamentos ... (Crédito sobre Encargos de Depreciação)",
+            ),
+            (
+                10,
+                "Máquinas, Equipamentos ... (Crédito com Base no Valor de Aquisição)",
+            ),
+            (
+                11,
+                "Amortizacao e Depreciação de Edificações e Benfeitorias em Imóveis",
+            ),
+            (
+                12,
+                "Devolução de Vendas Sujeitas à Incidência Não-Cumulativa",
+            ),
+            (13, "Outras Operações com Direito a Crédito"),
+            (14, "Atividade de Transporte de Cargas - Subcontratação"),
+            (
+                15,
+                "Atividade Imobiliária - Custo Incorrido de Unidade Imobiliária",
+            ),
+            (
+                16,
+                "Atividade Imobiliária - Custo Orçado de Unidade não Concluída",
+            ),
+            (
+                17,
+                "Atividade de Prestação de Serviços de Limpeza, Conservação e Manutenção",
+            ),
+            (18, "Estoque de Abertura de Bens"),
+            // Ajustes
+            (31, "Ajuste de Acréscimo (PIS/PASEP)"),
+            (35, "Ajuste de Acréscimo (COFINS)"),
+            (41, "Ajuste de Redução (PIS/PASEP)"),
+            (45, "Ajuste de Redução (COFINS)"),
+            // Descontos
+            (
+                51,
+                "Desconto da Contribuição Apurada no Próprio Período (PIS/PASEP)",
+            ),
+            (
+                55,
+                "Desconto da Contribuição Apurada no Próprio Período (COFINS)",
+            ),
+            (61, "Desconto Efetuado em Período Posterior (PIS/PASEP)"),
+            (65, "Desconto Efetuado em Período Posterior (COFINS)"),
+            // Base de Cálculo dos Créditos
+            (101, "Base de Cálculo dos Créditos - Alíquota Básica (Soma)"),
+            (
+                102,
+                "Base de Cálculo dos Créditos - Alíquotas Diferenciadas (Soma)",
+            ),
+            (
+                103,
+                "Base de Cálculo dos Créditos - Alíquota por Unidade de Produto (Soma)",
+            ),
+            (
+                104,
+                "Base de Cálculo dos Créditos - Estoque de Abertura (Soma)",
+            ),
+            (
+                105,
+                "Base de Cálculo dos Créditos - Aquisição Embalagens para Revenda (Soma)",
+            ),
+            (
+                106,
+                "Base de Cálculo dos Créditos - Presumido da Agroindústria (Soma)",
+            ),
+            (
+                107,
+                "Base de Cálculo dos Créditos - Outros Créditos Presumidos (Soma)",
+            ),
+            (108, "Base de Cálculo dos Créditos - Importação (Soma)"),
+            (
+                109,
+                "Base de Cálculo dos Créditos - Atividade Imobiliária (Soma)",
+            ),
+            (199, "Base de Cálculo dos Créditos - Outros (Soma)"),
+            // Valor Total do Crédito Apurado no Período
+            (201, "Crédito Apurado no Período (PIS/PASEP)"),
+            (205, "Crédito Apurado no Período (COFINS)"),
+            // Crédito Disponível após Ajustes
+            (211, "Crédito Disponível após Ajustes (PIS/PASEP)"),
+            (215, "Crédito Disponível após Ajustes (COFINS)"),
+            // Crédito Disponível após Descontos
+            (221, "Crédito Disponível após Descontos (PIS/PASEP)"),
+            (225, "Crédito Disponível após Descontos (COFINS)"),
+            // Saldo de Crédito Passível de Desconto ou Ressarcimento
+            (300, "Base de Cálculo dos Créditos - Valor Total (Soma)"),
+            (
+                301,
+                "Saldo de Crédito Passível de Desconto ou Ressarcimento (PIS/PASEP)",
+            ),
+            (
+                305,
+                "Saldo de Crédito Passível de Desconto ou Ressarcimento (COFINS)",
+            ),
+        ];
 
-        // Ajustes
-        (31, "Ajuste de Acréscimo (PIS/PASEP)"),
-        (35, "Ajuste de Acréscimo (COFINS)"),
-        (41, "Ajuste de Redução (PIS/PASEP)"),
-        (45, "Ajuste de Redução (COFINS)"),
+        let nat = natureza_bc.map(|(n, t)| (Some(n), t));
 
-        // Descontos
-        (51, "Desconto da Contribuição Apurada no Próprio Período (PIS/PASEP)"),
-        (55, "Desconto da Contribuição Apurada no Próprio Período (COFINS)"),
-        (61, "Desconto Efetuado em Período Posterior (PIS/PASEP)"),
-        (65, "Desconto Efetuado em Período Posterior (COFINS)"),
-
-        // Base de Cálculo dos Créditos
-        (101, "Base de Cálculo dos Créditos - Alíquota Básica (Soma)"),
-        (102, "Base de Cálculo dos Créditos - Alíquotas Diferenciadas (Soma)"),
-        (103, "Base de Cálculo dos Créditos - Alíquota por Unidade de Produto (Soma)"),
-        (104, "Base de Cálculo dos Créditos - Estoque de Abertura (Soma)"),
-        (105, "Base de Cálculo dos Créditos - Aquisição Embalagens para Revenda (Soma)"),
-        (106, "Base de Cálculo dos Créditos - Presumido da Agroindústria (Soma)"),
-        (107, "Base de Cálculo dos Créditos - Outros Créditos Presumidos (Soma)"),
-        (108, "Base de Cálculo dos Créditos - Importação (Soma)"),
-        (109, "Base de Cálculo dos Créditos - Atividade Imobiliária (Soma)"),
-        (199, "Base de Cálculo dos Créditos - Outros (Soma)"),
-
-        // Valor Total do Crédito Apurado no Período
-        (201, "Crédito Apurado no Período (PIS/PASEP)"),
-        (205, "Crédito Apurado no Período (COFINS)"),
-
-        // Crédito Disponível após Ajustes
-        (211, "Crédito Disponível após Ajustes (PIS/PASEP)"),
-        (215, "Crédito Disponível após Ajustes (COFINS)"),
-
-        // Crédito Disponível após Descontos
-        (221, "Crédito Disponível após Descontos (PIS/PASEP)"),
-        (225, "Crédito Disponível após Descontos (COFINS)"),
-
-        // Saldo de Crédito Passível de Desconto ou Ressarcimento
-        (300, "Base de Cálculo dos Créditos - Valor Total (Soma)"),
-        (301, "Saldo de Crédito Passível de Desconto ou Ressarcimento (PIS/PASEP)"),
-        (305, "Saldo de Crédito Passível de Desconto ou Ressarcimento (COFINS)"),
-    ];
-
-    let nat = natureza_bc.map(|(n, t)| (Some(n), t));
-
-    HashMap::from(nat)
-});
+        HashMap::from(nat)
+    });
 
 pub fn obter_descricao_da_natureza_da_bc_dos_creditos(cod: &Option<u16>) -> String {
-
     let natureza = match NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS.get(cod) {
         Some(&descricao) => {
             if *cod <= Some(18) {
@@ -447,7 +492,7 @@ pub fn obter_descricao_da_natureza_da_bc_dos_creditos(cod: &Option<u16>) -> Stri
                 //format!("{} - {}", cod.unwrap(), descricao)
                 descricao.to_string()
             }
-        },
+        }
         None => "".to_string(),
     };
 
@@ -462,7 +507,6 @@ struct Aliquotas {
 }
 
 static ALIQUOTAS_DE_CRED_PRESUMIDO: LazyLock<HashSet<Aliquotas>> = LazyLock::new(|| {
-
     let mut hashset: HashSet<Aliquotas> = HashSet::new();
 
     let percentuais = [
@@ -477,7 +521,6 @@ static ALIQUOTAS_DE_CRED_PRESUMIDO: LazyLock<HashSet<Aliquotas>> = LazyLock::new
 
     // geralmente, aliq de cred presumido é um percentual da aliq básica
     for percentual in percentuais {
-
         let aliquotas = Aliquotas {
             pis: format!("{:0.DECIMAL_ALIQ$}", percentual * ALIQ_BASICA_PIS),
             cof: format!("{:0.DECIMAL_ALIQ$}", percentual * ALIQ_BASICA_COF),
@@ -491,7 +534,6 @@ static ALIQUOTAS_DE_CRED_PRESUMIDO: LazyLock<HashSet<Aliquotas>> = LazyLock::new
 });
 
 pub fn cred_presumido(aliq_pis: f64, aliq_cof: f64) -> bool {
-
     let aliquotas = Aliquotas {
         pis: format!("{aliq_pis:0.DECIMAL_ALIQ$}"),
         cof: format!("{aliq_cof:0.DECIMAL_ALIQ$}"),
@@ -500,30 +542,30 @@ pub fn cred_presumido(aliq_pis: f64, aliq_cof: f64) -> bool {
     ALIQUOTAS_DE_CRED_PRESUMIDO.contains(&aliquotas)
 }
 
-pub static DESCRICAO_DO_TIPO_DE_CREDITO: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(|| {
-    // array of tuples [T; length]
-    // 4.3.6 - Tabela Código de Tipo de Crédito
-    let cred_descricao: [(u16, &str); 11] = [
-        (  1, "Alíquota Básica"),
-        (  2, "Alíquotas Diferenciadas"),
-        (  3, "Alíquota por Unidade de Produto"),
-        (  4, "Estoque de Abertura"),
-        (  5, "Aquisição Embalagens para Revenda"),
-        (  6, "Presumido da Agroindústria"),
-        (  7, "Outros Créditos Presumidos"),
-        (  8, "Importação"),
-        (  9, "Atividade Imobiliária"),
-        ( 99, "Outros"), // código encerrado a partir de 31/03/2023
-        (100, ""),
-    ];
+pub static DESCRICAO_DO_TIPO_DE_CREDITO: LazyLock<HashMap<Option<u16>, &'static str>> =
+    LazyLock::new(|| {
+        // array of tuples [T; length]
+        // 4.3.6 - Tabela Código de Tipo de Crédito
+        let cred_descricao: [(u16, &str); 11] = [
+            (1, "Alíquota Básica"),
+            (2, "Alíquotas Diferenciadas"),
+            (3, "Alíquota por Unidade de Produto"),
+            (4, "Estoque de Abertura"),
+            (5, "Aquisição Embalagens para Revenda"),
+            (6, "Presumido da Agroindústria"),
+            (7, "Outros Créditos Presumidos"),
+            (8, "Importação"),
+            (9, "Atividade Imobiliária"),
+            (99, "Outros"), // código encerrado a partir de 31/03/2023
+            (100, ""),
+        ];
 
-    let cred = cred_descricao.map(|(n, t)| (Some(n), t));
+        let cred = cred_descricao.map(|(n, t)| (Some(n), t));
 
-    HashMap::from(cred)
-});
+        HashMap::from(cred)
+    });
 
 pub fn obter_descricao_do_tipo_de_credito(cod: &Option<u16>, formatar: bool) -> String {
-
     let cred_descricao = match DESCRICAO_DO_TIPO_DE_CREDITO.get(cod) {
         Some(&descricao) => {
             if formatar {
@@ -531,17 +573,18 @@ pub fn obter_descricao_do_tipo_de_credito(cod: &Option<u16>, formatar: bool) -> 
             } else {
                 descricao.to_string()
             }
-        },
+        }
         None => "".to_string(),
     };
 
     cred_descricao
 }
 
-static CODIGO_DA_SITUACAO_TRIBUTARIA: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(|| {
-    // array of tuples [T; length]
-    // 4.3.4 - Tabela Código da Situação Tributária (CST)
-    let cst_descricao: [(u16, &str); 33] = [
+static CODIGO_DA_SITUACAO_TRIBUTARIA: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(
+    || {
+        // array of tuples [T; length]
+        // 4.3.4 - Tabela Código da Situação Tributária (CST)
+        let cst_descricao: [(u16, &str); 33] = [
         ( 1, "Operação Tributável com Alíquota Básica"),
         ( 2, "Operação Tributável com Alíquota Diferenciada"),
         ( 3, "Operação Tributável com Alíquota por Unidade de Medida de Produto"),
@@ -577,13 +620,13 @@ static CODIGO_DA_SITUACAO_TRIBUTARIA: LazyLock<HashMap<Option<u16>, &'static str
         (99, "Outras Operações")
     ];
 
-    let cst = cst_descricao.map(|(n, t)| (Some(n), t));
+        let cst = cst_descricao.map(|(n, t)| (Some(n), t));
 
-    HashMap::from(cst)
-});
+        HashMap::from(cst)
+    },
+);
 
 pub fn obter_descricao_do_cst(cst: &Option<u16>) -> String {
-
     let cst_descricao = match CODIGO_DA_SITUACAO_TRIBUTARIA.get(cst) {
         Some(&descricao) => format!("{:02} - {}", cst.unwrap(), descricao),
         None => "".to_string(),
@@ -592,12 +635,13 @@ pub fn obter_descricao_do_cst(cst: &Option<u16>) -> String {
     cst_descricao
 }
 
-static CFOP_DESCRICAO_RESUMIDA: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(|| {
-    // array of tuples [T; length]
-    // Tabela Código CFOP: Descrição Resumida
-    // https://www.confaz.fazenda.gov.br/legislacao/ajustes/sinief/cfop_cvsn_70_vigente
-    // ^(\d{4}) - (.*)$       |        $cfop_descricao_resumida{'$1'} = '$2';
-    let cfop_descricao: [(u16, &str); 661] = [
+static CFOP_DESCRICAO_RESUMIDA: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(
+    || {
+        // array of tuples [T; length]
+        // Tabela Código CFOP: Descrição Resumida
+        // https://www.confaz.fazenda.gov.br/legislacao/ajustes/sinief/cfop_cvsn_70_vigente
+        // ^(\d{4}) - (.*)$       |        $cfop_descricao_resumida{'$1'} = '$2';
+        let cfop_descricao: [(u16, &str); 661] = [
         (1000, "ENTRADAS OU AQUISIÇÕES DE SERVIÇOS DO ESTADO"),
         (1100, "COMPRAS PARA INDUSTRIALIZAÇÃO, PRODUÇÃO RURAL, COMERCIALIZAÇÃO OU PRESTAÇÃO DE SERVIÇOS"),
         (1101, "Compra para industrialização ou produção rural"),
@@ -1261,16 +1305,16 @@ static CFOP_DESCRICAO_RESUMIDA: LazyLock<HashMap<Option<u16>, &'static str>> = L
         (7949, "Outra saída de mercadoria ou prestação de serviço não especificado"),
     ];
 
-    let cfop: HashMap<Option<u16>, &'static str> = cfop_descricao
-        .into_iter()
-        .map(|(cfop, descricao)| (Some(cfop), descricao))
-        .collect();
+        let cfop: HashMap<Option<u16>, &'static str> = cfop_descricao
+            .into_iter()
+            .map(|(cfop, descricao)| (Some(cfop), descricao))
+            .collect();
 
-    cfop
-});
+        cfop
+    },
+);
 
 pub fn obter_descricao_do_cfop(cfop: &Option<u16>) -> String {
-
     let cfop_descricao = match CFOP_DESCRICAO_RESUMIDA.get(cfop) {
         Some(&descricao) => format!("{:04} - {}", cfop.unwrap(), descricao),
         None => "".to_string(),
@@ -1288,7 +1332,7 @@ mod tests {
 
     #[test]
     fn testar_month_to_str() {
-    // cargo test -- --show-output testar_month_to_str
+        // cargo test -- --show-output testar_month_to_str
         let mes_deze = month_to_str(&Some(12));
         let mes_none = month_to_str(&Some(15));
         println!("mes Some(12): {}", mes_deze);

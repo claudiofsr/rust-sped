@@ -1,25 +1,17 @@
-use csv::StringRecord;
 use chrono::NaiveDate;
-use serde::{Serialize, Deserialize, Serializer};
+use claudiofsr_lib::{
+    match_cast, StrExtension, CFOP_VENDA_DE_IMOBILIZADO, CODIGO_DA_NATUREZA_BC, CST_ALL,
+    CST_CREDITO, CST_RECEITA_BRUTA, OUTRAS_RECEITAS_REGEX,
+};
+use csv::StringRecord;
+use rust_xlsxwriter::serialize_chrono_option_naive_to_excel;
+use serde::{Deserialize, Serialize, Serializer};
 use serde_aux::prelude::serde_introspect;
 use struct_iterable::Iterable;
-use claudiofsr_lib::{
-    match_cast,
-    StrExtension,
-    CFOP_VENDA_DE_IMOBILIZADO,
-    CODIGO_DA_NATUREZA_BC,
-    CST_ALL, CST_CREDITO,
-    CST_RECEITA_BRUTA,
-    OUTRAS_RECEITAS_REGEX,
-};
-use rust_xlsxwriter::serialize_chrono_option_naive_to_excel;
 
 use crate::{
-    indicador_de_origem_to_str,
-    serialize_natureza,
-    serialize_tipo_de_credito,
-    serialize_tipo_de_operacao,
-    InfoExtension,
+    indicador_de_origem_to_str, serialize_natureza, serialize_tipo_de_credito,
+    serialize_tipo_de_operacao, InfoExtension,
 };
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Iterable)]
@@ -28,7 +20,10 @@ pub struct DocsFiscais {
     pub linhas: usize,
     #[serde(rename = "Arquivo da EFD Contribuições")] // não pode conter vírgulas
     pub arquivo_efd: String,
-    #[serde(rename = "Nº da Linha da EFD", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Nº da Linha da EFD",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub num_linha_efd: Option<usize>,
     #[serde(rename = "CNPJ dos Estabelecimentos do Contribuinte")]
     pub estabelecimento_cnpj: String,
@@ -42,9 +37,15 @@ pub struct DocsFiscais {
     )]
     pub periodo_de_apuracao: Option<NaiveDate>,
 
-    #[serde(rename = "Ano do Período de Apuração", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Ano do Período de Apuração",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub ano: Option<i32>,
-    #[serde(rename = "Trimestre do Período de Apuração", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Trimestre do Período de Apuração",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub trimestre: Option<u32>,
 
     #[serde(
@@ -68,7 +69,10 @@ pub struct DocsFiscais {
     )]
     pub indicador_de_origem: Option<u16>,
 
-    #[serde(rename = "Código do Tipo de Crédito", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Código do Tipo de Crédito",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub cod_credito: Option<u16>,
 
     #[serde(
@@ -80,9 +84,15 @@ pub struct DocsFiscais {
 
     #[serde(rename = "Registro")]
     pub registro: String,
-    #[serde(rename = "Código de Situação Tributária (CST)", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Código de Situação Tributária (CST)",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub cst: Option<u16>,
-    #[serde(rename = "Código Fiscal de Operações e Prestações (CFOP)", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Código Fiscal de Operações e Prestações (CFOP)",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub cfop: Option<u16>,
 
     #[serde(
@@ -98,13 +108,19 @@ pub struct DocsFiscais {
     pub particante_cpf: String,
     #[serde(rename = "Nome do Participante")]
     pub particante_nome: String,
-    #[serde(rename = "Nº do Documento Fiscal", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Nº do Documento Fiscal",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub num_doc: Option<usize>,
     #[serde(rename = "Chave do Documento")]
     pub chave_doc: String,
     #[serde(rename = "Modelo do Documento Fiscal")]
     pub modelo_doc_fiscal: String,
-    #[serde(rename = "Nº do Item do Documento Fiscal", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Nº do Item do Documento Fiscal",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub num_item: Option<u32>,
     #[serde(rename = "Tipo do Item")]
     pub tipo_item: String,
@@ -132,23 +148,44 @@ pub struct DocsFiscais {
     )]
     pub data_lancamento: Option<NaiveDate>,
 
-    #[serde(rename = "Valor Total do Item", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Valor Total do Item",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub valor_item: Option<f64>,
-    #[serde(rename = "Valor da Base de Cálculo das Contribuições", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Valor da Base de Cálculo das Contribuições",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub valor_bc: Option<f64>,
-    #[serde(rename = "Alíquota de PIS/PASEP (em percentual)", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Alíquota de PIS/PASEP (em percentual)",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub aliq_pis: Option<f64>,
-    #[serde(rename = "Alíquota de COFINS (em percentual)", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Alíquota de COFINS (em percentual)",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub aliq_cofins: Option<f64>,
-    #[serde(rename = "Valor de PIS/PASEP", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Valor de PIS/PASEP",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub valor_pis: Option<f64>,
     #[serde(rename = "Valor de COFINS", deserialize_with = "csv::invalid_option")]
     pub valor_cofins: Option<f64>,
     #[serde(rename = "Valor de ISS", deserialize_with = "csv::invalid_option")]
     pub valor_iss: Option<f64>,
-    #[serde(rename = "Valor da Base de Cálculo de ICMS", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Valor da Base de Cálculo de ICMS",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub valor_bc_icms: Option<f64>,
-    #[serde(rename = "Alíquota de ICMS (em percentual)", deserialize_with = "csv::invalid_option")]
+    #[serde(
+        rename = "Alíquota de ICMS (em percentual)",
+        deserialize_with = "csv::invalid_option"
+    )]
     pub aliq_icms: Option<f64>,
     #[serde(rename = "Valor de ICMS", deserialize_with = "csv::invalid_option")]
     pub valor_icms: Option<f64>,
@@ -182,7 +219,6 @@ impl DocsFiscais {
     }
 
     pub fn get_values(&self) -> Vec<String> {
-
         /*
         vec![
             self.linhas.to_string(),
@@ -230,10 +266,8 @@ impl DocsFiscais {
         ]
         */
 
-        self
-            .iter()
+        self.iter()
             .map(|(_field, value)| {
-
                 let opt_string: Option<String> = match_cast!( value {
                     val as Option<u16> => {
                         val.as_ref().map(|s| s.to_string())
@@ -303,20 +337,23 @@ impl DocsFiscais {
         CST_CREDITO.map(Some).binary_search(&self.cst).is_ok()
     }
 
-     /// CST de Receita Bruta
-     ///
-     /// Valores entre 1 a 9
+    /// CST de Receita Bruta
+    ///
+    /// Valores entre 1 a 9
     pub fn cst_de_receita_bruta(&self) -> bool {
         //self.cst >= Some(1) && self.cst <= Some(9)
         CST_RECEITA_BRUTA.map(Some).binary_search(&self.cst).is_ok()
     }
 
-     /// Natureza da Base de Cálculo
-     ///
-     /// Valores entre 1 a 18
-     pub fn natureza_da_base_de_calculo(&self) -> bool {
+    /// Natureza da Base de Cálculo
+    ///
+    /// Valores entre 1 a 18
+    pub fn natureza_da_base_de_calculo(&self) -> bool {
         //self.natureza_bc >= Some(1) && self.natureza_bc <= Some(18)
-        CODIGO_DA_NATUREZA_BC.map(Some).binary_search(&self.natureza_bc).is_ok()
+        CODIGO_DA_NATUREZA_BC
+            .map(Some)
+            .binary_search(&self.natureza_bc)
+            .is_ok()
     }
 
     /// Alíquota de Receita Financeira
@@ -338,7 +375,10 @@ impl DocsFiscais {
         //self.cfop == Some(6551) ||
         //self.cfop == Some(7551)
         // matches!(self.cfop, Some(5551|6551|7551))
-        CFOP_VENDA_DE_IMOBILIZADO.map(Some).binary_search(&self.cfop).is_ok()
+        CFOP_VENDA_DE_IMOBILIZADO
+            .map(Some)
+            .binary_search(&self.cfop)
+            .is_ok()
     }
 
     /// Insumos com direito ao desconto de crédito das Contribuições
@@ -351,12 +391,12 @@ impl DocsFiscais {
 
     /// Operações de Entrada ou de Saída
     ///
-    /// 1: Entrada, 
+    /// 1: Entrada,
     ///
     /// 2: Saída
     pub fn operacoes_de_entrada_ou_saida(&self) -> bool {
         self.tipo_de_operacao == Some(1) || // 1: Entrada
-        self.tipo_de_operacao == Some(2)    // 2: Saída
+        self.tipo_de_operacao == Some(2) // 2: Saída
     }
 
     /// Receitas Não Operacionais (outras receitas):
@@ -370,9 +410,9 @@ impl DocsFiscais {
     /// Esta é uma lista com possíveis Receitas Não Operacionais
     /// a depender das atividades que constituam objeto da empresa.
     pub fn descricao_de_outras_receitas(&self) -> bool {
-        OUTRAS_RECEITAS_REGEX.is_match(&self.descr_item) ||
-        OUTRAS_RECEITAS_REGEX.is_match(&self.nome_da_conta) ||
-        OUTRAS_RECEITAS_REGEX.is_match(&self.complementar)
+        OUTRAS_RECEITAS_REGEX.is_match(&self.descr_item)
+            || OUTRAS_RECEITAS_REGEX.is_match(&self.nome_da_conta)
+            || OUTRAS_RECEITAS_REGEX.is_match(&self.complementar)
     }
 
     /**
@@ -419,17 +459,16 @@ impl DocsFiscais {
     }
 
     pub fn format(&mut self) {
-
         // 44 digits: exemplo NFe: 01234567890123456789012345678901234567890123 --> 01-2345-67.890.123/4567-89-01-234-567.890.123-456.789.012-3
         // 14 digits: exemplo CNPJ: 01234567000890 --> 01.234.567/0008-90
         // 11 digits: exemplo CPF: 12345678901     --> 123.456.789-01
         //  8 digits: exemplo NCM: 01234567        --> 0123.45.67
 
         let fields: [(&str, &mut String); 5] = [
-            ("cnpj",  &mut self.estabelecimento_cnpj),
-            ("cnpj",  &mut self.particante_cnpj),
-            ("cpf",   &mut self.particante_cpf),
-            ("ncm",   &mut self.cod_ncm),
+            ("cnpj", &mut self.estabelecimento_cnpj),
+            ("cnpj", &mut self.particante_cnpj),
+            ("cpf", &mut self.particante_cpf),
+            ("ncm", &mut self.cod_ncm),
             ("chave", &mut self.chave_doc),
         ];
 
@@ -439,44 +478,61 @@ impl DocsFiscais {
             .into_iter()
             //.into_par_iter() // rayon: parallel iterator
             .filter(|(_t, field)| field.is_ascii_alphanumeric())
-            .for_each(|(t, field)| {
-                match (t, field.chars().count()) {
-                    ("cnpj", 14) => {
-                        *field = field.format_cnpj();
-                    },
-                    ("cpf", 11) => {
-                        *field = field.format_cpf();
-                    },
-                    ("ncm", 8) => {
-                        *field = field.format_ncm();
-                    },
-                    ("chave", 44) => {
-                        *field = [
-                            &field[ 0 ..  2], "-",
-                            &field[ 2 ..  6], "-",
-                            &field[ 6 ..  8], ".",
-                            &field[ 8 .. 11], ".",
-                            &field[11 .. 14], "/",
-                            &field[14 .. 18], "-",
-                            &field[18 .. 20], "-",
-                            &field[20 .. 22], "-",
-                            &field[22 .. 25], "-",
-                            &field[25 .. 28], ".",
-                            &field[28 .. 31], ".",
-                            &field[31 .. 34], "-",
-                            &field[34 .. 37], ".",
-                            &field[37 .. 40], ".",
-                            &field[40 .. 43], "-",
-                            &field[43 ..   ]
-                        ].concat();
-                    },
-                    _ => (),
+            .for_each(|(t, field)| match (t, field.chars().count()) {
+                ("cnpj", 14) => {
+                    *field = field.format_cnpj();
                 }
+                ("cpf", 11) => {
+                    *field = field.format_cpf();
+                }
+                ("ncm", 8) => {
+                    *field = field.format_ncm();
+                }
+                ("chave", 44) => {
+                    *field = [
+                        &field[0..2],
+                        "-",
+                        &field[2..6],
+                        "-",
+                        &field[6..8],
+                        ".",
+                        &field[8..11],
+                        ".",
+                        &field[11..14],
+                        "/",
+                        &field[14..18],
+                        "-",
+                        &field[18..20],
+                        "-",
+                        &field[20..22],
+                        "-",
+                        &field[22..25],
+                        "-",
+                        &field[25..28],
+                        ".",
+                        &field[28..31],
+                        ".",
+                        &field[31..34],
+                        "-",
+                        &field[34..37],
+                        ".",
+                        &field[37..40],
+                        ".",
+                        &field[40..43],
+                        "-",
+                        &field[43..],
+                    ]
+                    .concat();
+                }
+                _ => (),
             });
     }
 }
 
-pub fn serialize_indicador_de_origem<S>(codigo: &Option<u16>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_indicador_de_origem<S>(
+    codigo: &Option<u16>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -486,12 +542,7 @@ where
 
 #[allow(dead_code)]
 mod option_mes {
-    use serde::{
-        self,
-        Serializer,
-        Deserialize,
-        Deserializer,
-    };
+    use serde::{self, Deserialize, Deserializer, Serializer};
 
     use crate::{month_to_str, str_to_month};
 
@@ -501,7 +552,7 @@ mod option_mes {
     {
         match mes {
             Some(1..=12) => serializer.serialize_str(month_to_str(mes)),
-            _            => serializer.serialize_none(),
+            _ => serializer.serialize_none(),
         }
     }
 
@@ -521,13 +572,7 @@ mod option_mes {
 #[allow(dead_code)]
 mod option_date {
     use chrono::NaiveDate;
-    use serde::{
-        self,
-        de::Error,
-        Serializer,
-        Deserialize,
-        Deserializer,
-    };
+    use serde::{self, de::Error, Deserialize, Deserializer, Serializer};
 
     const FORMAT: &str = "%-d/%-m/%Y %H:%M:%S";
 
@@ -547,13 +592,10 @@ mod option_date {
     {
         let s: Option<String> = Option::deserialize(deserializer)?;
         if let Some(s) = s {
-            return Ok(Some(
-                NaiveDate::parse_from_str(&s, FORMAT)
-                .map_err({
-                    //eprintln!("Option<NaiveDate> Error: {s:?}");
-                    Error::custom
-                })?
-            ));
+            return Ok(Some(NaiveDate::parse_from_str(&s, FORMAT).map_err({
+                //eprintln!("Option<NaiveDate> Error: {s:?}");
+                Error::custom
+            })?));
         }
 
         Ok(None)
@@ -603,7 +645,9 @@ mod tests {
     #[test]
     fn formatar_colunas() {
         // cargo test -- --show-output formatar_colunas
-        let mut colunas = DocsFiscais {..Default::default()};
+        let mut colunas = DocsFiscais {
+            ..Default::default()
+        };
         colunas.estabelecimento_cnpj = "01234567000890".to_string();
         colunas.particante_cnpj = "12345678000912".to_string();
         colunas.particante_cpf = "12345678901".to_string();
@@ -617,13 +661,18 @@ mod tests {
         assert_eq!(colunas.particante_cnpj, "12.345.678/0009-12");
         assert_eq!(colunas.particante_cpf, "123.456.789-01");
         assert_eq!(colunas.cod_ncm, "0123.45.67");
-        assert_eq!(colunas.chave_doc, "01-2345-67.890.123/4567-89-01-234-567.890.123-456.789.012-3");
+        assert_eq!(
+            colunas.chave_doc,
+            "01-2345-67.890.123/4567-89-01-234-567.890.123-456.789.012-3"
+        );
     }
 
     #[test]
     fn classificar_receitas() {
         // cargo test -- --show-output classificar_receitas
-        let mut colunas = DocsFiscais {..Default::default()};
+        let mut colunas = DocsFiscais {
+            ..Default::default()
+        };
         colunas.descr_item = "Descrição do Item".to_string();
         colunas.nome_da_conta = "Nome da Conta".to_string();
         colunas.complementar = "Informação Complementar".to_string();
@@ -657,10 +706,7 @@ mod tests {
 
         println!("receitas: {receitas:?}\n");
 
-        assert_eq!(
-            receitas,
-            [false, true, true, true]
-        );
+        assert_eq!(receitas, [false, true, true, true]);
     }
 }
 

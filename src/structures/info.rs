@@ -1,11 +1,9 @@
 use chrono::NaiveDate;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::{
-    collections::{
-        BTreeMap, HashMap
-    }, 
-    fmt, 
-    path::Path
+    collections::{BTreeMap, HashMap},
+    fmt,
+    path::Path,
 };
 
 /**
@@ -71,7 +69,8 @@ impl Info {
     /// Get new value
     pub fn new(arquivo: &Path) -> Info {
         let mut info = Info::default();
-        info.global.insert("arquivo_efd".to_string(), arquivo.display().to_string());
+        info.global
+            .insert("arquivo_efd".to_string(), arquivo.display().to_string());
 
         info
     }
@@ -82,8 +81,9 @@ impl Info {
     }
 }
 
-pub fn get_the_most_frequent_value(nome_do_cnpj: &BTreeMap<String, String>) -> HashMap<String, String> {
-
+pub fn get_the_most_frequent_value(
+    nome_do_cnpj: &BTreeMap<String, String>,
+) -> HashMap<String, String> {
     let mut frequencia: HashMap<String, Vec<String>> = HashMap::new();
 
     for (cnpj, nome) in nome_do_cnpj {
@@ -106,7 +106,6 @@ pub fn get_the_most_frequent_value(nome_do_cnpj: &BTreeMap<String, String>) -> H
     let mut hashmap: HashMap<String, String> = HashMap::new();
 
     for (cnpj_base, vetor) in frequencia {
-
         // Ordenado pelo nome, em caso de mesma frequência.
         let mut counts: BTreeMap<String, u32> = BTreeMap::new();
 

@@ -1,5 +1,9 @@
 use std::{
-    error::Error, io::Error as io_Error, num::ParseFloatError, path::PathBuf, str::Utf8Error,
+    error::Error,
+    io::Error as io_Error,
+    num::{ParseFloatError, ParseIntError},
+    path::PathBuf,
+    str::Utf8Error,
 };
 
 #[derive(Debug)]
@@ -10,10 +14,14 @@ pub enum EFDError {
 
     InvalidName(String, usize),
 
+    InvalidStyle,
+
     // We will defer to the parse error implementation for their error.
     // Supplying extra info requires adding more data to the type.
     // <https://doc.rust-lang.org/rust-by-example/error/multiple_error_types/wrap_error.html>
-    ParseError(ParseFloatError),
+    ParseFloatError(ParseFloatError),
+
+    ParseIntError(ParseIntError, String),
 
     /// Error utf8 decoding.
     Utf8DecodeError(PathBuf, usize, Utf8Error, io_Error),
@@ -22,7 +30,7 @@ pub enum EFDError {
 impl std::fmt::Display for EFDError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            EFDError::InvalidFile(name, arquivo, error) => write!(
+            EFDError::InvalidFile(name, arquivo, error) => writeln!(
                 f,
                 "
                 Erro ao executar a função: {name}\n\
@@ -32,7 +40,7 @@ impl std::fmt::Display for EFDError {
                 ",
                 a = arquivo.display()
             ),
-            EFDError::InvalidCNPJ(filename, num) => write!(
+            EFDError::InvalidCNPJ(filename, num) => writeln!(
                 f,
                 "
                 Erro ao executar a função: parse_file_info()\n\
@@ -41,7 +49,7 @@ impl std::fmt::Display for EFDError {
                 linha nº: {num}\n\
                 "
             ),
-            EFDError::InvalidName(filename, num) => write!(
+            EFDError::InvalidName(filename, num) => writeln!(
                 f,
                 "
                 Erro ao executar a função: parse_file_info()\n\
@@ -50,7 +58,8 @@ impl std::fmt::Display for EFDError {
                 linha nº: {num}\n\
                 "
             ),
-            EFDError::ParseError(error) => write!(
+            EFDError::InvalidStyle => writeln!(f, "Invalid Style!"),
+            EFDError::ParseFloatError(error) => writeln!(
                 f,
                 "
                 Erro ao executar a função: formatar_casas_decimais()\n\
@@ -58,7 +67,15 @@ impl std::fmt::Display for EFDError {
                 Error: {error}\n\
                 "
             ),
-            EFDError::Utf8DecodeError(path, line_number, error1, error2) => write!(
+            EFDError::ParseIntError(error, msg) => writeln!(
+                f,
+                "
+                {msg}
+                The provided string could not be parsed as Integer.\n\
+                Error: {error}\n\
+                "
+            ),
+            EFDError::Utf8DecodeError(path, line_number, error1, error2) => writeln!(
                 f,
                 "
                 Erro ao executar a função: get_string_utf8()\n\
@@ -85,6 +102,6 @@ impl std::error::Error for EFDError {}
 // <https://doc.rust-lang.org/rust-by-example/error/multiple_error_types/wrap_error.html>
 impl From<ParseFloatError> for EFDError {
     fn from(err: ParseFloatError) -> EFDError {
-        EFDError::ParseError(err)
+        EFDError::ParseFloatError(err)
     }
 }

@@ -1,28 +1,14 @@
 use indicatif::MultiProgress;
 
-use std::{
-    thread,
-    io::Write,
-    path::PathBuf,
-};
+use std::{io::Write, path::PathBuf, thread};
 
 // https://github.com/jmcnamara/rust_xlsxwriter/issues/1
 // https://rustxlsxwriter.github.io/index.html
-use rust_xlsxwriter::{
-    Workbook,
-    Worksheet,
-    DocProperties,
-    ExcelDateTime,
-};
+use rust_xlsxwriter::{DocProperties, ExcelDateTime, Workbook, Worksheet};
 
 use crate::{
-    OUTPUT_DIRECTORY,
+    get_worksheets, AnaliseDosCreditos, ConsolidacaoCST, DocsFiscais, MyResult, OUTPUT_DIRECTORY,
     OUTPUT_FILENAME,
-    DocsFiscais,
-    AnaliseDosCreditos,
-    ConsolidacaoCST,
-    MyResult,
-    get_worksheets,
 };
 
 /// Create excel xlsx file from data_efd, data_cst, data_nat.
@@ -34,10 +20,7 @@ pub fn create_xlsx(
     data_nat: &[AnaliseDosCreditos],
     write: &mut dyn Write,
 ) -> MyResult<()> {
-
-    let mut excel_file: PathBuf = [OUTPUT_DIRECTORY, OUTPUT_FILENAME]
-        .iter()
-        .collect();
+    let mut excel_file: PathBuf = [OUTPUT_DIRECTORY, OUTPUT_FILENAME].iter().collect();
     excel_file.set_extension("xlsx");
     writeln!(write, "Write Excel xlsx file: {:?}\n", excel_file.display())?;
 
@@ -47,9 +30,8 @@ pub fn create_xlsx(
 
     let multiprogressbar: MultiProgress = MultiProgress::new();
 
-    let worksheets: Vec<Worksheet> = get_all_worksheets(
-        data_efd, data_cst, data_nat, &multiprogressbar
-    )?;
+    let worksheets: Vec<Worksheet> =
+        get_all_worksheets(data_efd, data_cst, data_nat, &multiprogressbar)?;
 
     for worksheet in worksheets {
         // Add the worksheets to the workbook.
@@ -85,7 +67,6 @@ fn get_all_worksheets(
     data_nat: &[AnaliseDosCreditos],
     multiprogressbar: &MultiProgress,
 ) -> MyResult<Vec<Worksheet>> {
-
     // Use std::thread in the following functions (these functions are independent of each other):
     let results: MyResult<Vec<Vec<Worksheet>>> = thread::scope(|s| {
         let thread_efd = s.spawn(|| -> MyResult<Vec<Worksheet>> {
@@ -118,8 +99,8 @@ fn get_all_worksheets(
         Err(e) => {
             eprintln!("fn get_all_worksheets()");
             eprintln!("Failed to generate worksheets!");
-            return Err(e)
-        },
+            return Err(e);
+        }
     };
 
     Ok(worksheets)

@@ -1,39 +1,37 @@
 use std::{
-    str,
-    process, // process::exit(1)
     cmp::Ordering,
     error::Error,
-    path::PathBuf,
     io::{self, Write},
+    path::PathBuf,
+    process, // process::exit(1)
+    str,
 };
 
 use clap::{CommandFactory, Parser};
 use clap_complete::{generate, Generator, Shell};
-use glob::{glob_with, MatchOptions};
-use colored::*;
 use claudiofsr_lib::clear_terminal_screen;
+use colored::*;
+use glob::{glob_with, MatchOptions};
 
 // https://stackoverflow.com/questions/74068168/clap-rs-not-printing-colors-during-help
 pub fn get_styles() -> clap::builder::Styles {
     clap::builder::Styles::styled()
         .placeholder(
-            anstyle::Style::new()
-            .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Yellow))),
+            anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Yellow))),
         )
         .usage(
             anstyle::Style::new()
                 .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Cyan)))
-                .bold()
+                .bold(),
         )
         .header(
             anstyle::Style::new()
                 .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Cyan)))
                 .bold()
-                .underline()
+                .underline(),
         )
         .literal(
-            anstyle::Style::new()
-                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Green)))
+            anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Green))),
         )
 }
 
@@ -59,21 +57,34 @@ pub struct Arguments {
     pub all_files: Vec<PathBuf>,
 
     /// Clear the terminal screen before presenting the analysis of EFD files.
-    #[arg(short('c'), long("clear_terminal"), default_value_t = false)] // action = ArgAction::SetTrue
+    #[arg(short('c'), long("clear_terminal"), default_value_t = false)]
+    // action = ArgAction::SetTrue
     pub clear_terminal: bool,
 
     /// Delete output operations items from Excel and CSV files.
-    /// 
+    ///
     /// Exclua itens de operações de saída de arquivos Excel e CSV.
-    /// 
+    ///
     /// Ou seja, não imprimir nos arquivos finais as operações em que:
-    /// 
+    ///
     /// Tipo de Operação = Saídas
-    #[arg(short, long, value_parser, verbatim_doc_comment, default_value_t = false)]
+    #[arg(
+        short,
+        long,
+        value_parser,
+        verbatim_doc_comment,
+        default_value_t = false
+    )]
     pub excluir_saidas: bool,
 
     /// Find SPED EFD files
-    #[arg(short, long, value_parser, verbatim_doc_comment, default_value_t = false)]
+    #[arg(
+        short,
+        long,
+        value_parser,
+        verbatim_doc_comment,
+        default_value_t = false
+    )]
     pub find: bool,
 
     /**
@@ -103,19 +114,32 @@ pub struct Arguments {
     pub generator: Option<Shell>,
 
     /// Retain only credit entries (50 <= CST <= 66)
-    /// 
+    ///
     /// Reter apenas itens de operações de crédito em arquivos Excel e CSV.
-    /// 
+    ///
     /// Ou seja, imprimir nos arquivos finais itens de operações com alguna
-    /// 
+    ///
     /// Natureza da Base de Cálculo.
-    #[arg(short, long, value_parser, verbatim_doc_comment, default_value_t = false)]
+    #[arg(
+        short,
+        long,
+        value_parser,
+        verbatim_doc_comment,
+        default_value_t = false
+    )]
     pub operacoes_de_creditos: bool,
 
     /// Print CSV (Comma Separated Values) file.
     ///
     /// Para imprimir o arquivo .csv, adicione a opção: --print_csv ou -p
-    #[arg(short, long, value_parser, verbatim_doc_comment, default_value_t = false, requires = "range")]
+    #[arg(
+        short,
+        long,
+        value_parser,
+        verbatim_doc_comment,
+        default_value_t = false,
+        requires = "range"
+    )]
     pub print_csv: bool,
 
     /// Select SPED EFD files to analyze by specifying the range.
@@ -134,7 +158,6 @@ pub struct Arguments {
 impl Arguments {
     /// Build Arguments struct
     pub fn build() -> Result<Arguments, Box<dyn Error>> {
-
         let mut args: Arguments = Arguments::parse();
 
         if let Some(generator) = args.generator {
@@ -168,16 +191,13 @@ impl Arguments {
     }
 
     fn search_files(&mut self, pattern: &str) -> Result<(), Box<dyn Error>> {
-
         let options = MatchOptions {
             case_sensitive: false,
             require_literal_separator: false,
             require_literal_leading_dot: false,
         };
 
-        let paths: Vec<PathBuf> = glob_with(pattern, options)?
-            .flatten()
-            .collect();
+        let paths: Vec<PathBuf> = glob_with(pattern, options)?.flatten().collect();
 
         self.all_files = paths;
 
@@ -185,7 +205,6 @@ impl Arguments {
     }
 
     pub fn get_range(&mut self) -> Result<(), Box<dyn Error>> {
-
         let number_of_files: usize = self.all_files.len();
 
         if number_of_files == 0 {
@@ -221,45 +240,61 @@ impl Arguments {
             process::exit(1);
         }
 
-        self.all_files = self.all_files[(first-1)..last].to_vec();
+        self.all_files = self.all_files[(first - 1)..last].to_vec();
 
         Ok(())
     }
 
     pub fn print_arquivos_efd(&self, write: &mut dyn Write) -> Result<(), Box<dyn Error>> {
-
         let number_of_files = self.all_files.len();
         let number_of_digits = number_of_files.to_string().len();
 
         match number_of_files.cmp(&1) {
-            Ordering::Less    => writeln!(write, "Nenhum arquivo SPED EFD encontrado neste diretório!")?,
-            Ordering::Equal   => writeln!(write, "Arquivo SPED EFD encontrado neste diretório:\n")?,
-            Ordering::Greater => writeln!(write, "Arquivos SPED EFD encontrados neste diretório:\n")?,
+            Ordering::Less => {
+                writeln!(write, "Nenhum arquivo SPED EFD encontrado neste diretório!")?
+            }
+            Ordering::Equal => writeln!(write, "Arquivo SPED EFD encontrado neste diretório:\n")?,
+            Ordering::Greater => {
+                writeln!(write, "Arquivos SPED EFD encontrados neste diretório:\n")?
+            }
         }
 
         for (i, arquivo) in self.all_files.iter().enumerate() {
-            writeln!(write, "   arquivo nº {:>number_of_digits$}: {}", i + 1, arquivo.display())?;
+            writeln!(
+                write,
+                "   arquivo nº {:>number_of_digits$}: {}",
+                i + 1,
+                arquivo.display()
+            )?;
         }
 
         writeln!(write)?;
 
         if number_of_files >= 1 {
-
             writeln!(write, "\tExemplos de uso:\n")?;
 
-            writeln!(write, "\tPara analisar o primeiro arquivo SPED EFD utilize o comando:")?;
+            writeln!(
+                write,
+                "\tPara analisar o primeiro arquivo SPED EFD utilize o comando:"
+            )?;
             writeln!(write, "\tefd_contribuicoes -r 1\n")?;
 
             if number_of_files >= 4 {
                 let q2 = number_of_files * 2 / 4;
                 let q3 = number_of_files * 3 / 4;
                 let delta = 1 + q3 - q2;
-                writeln!(write, "\tPara analisar {delta} arquivos SPED EFD de {q2} a {q3} utilize o comando:")?;
+                writeln!(
+                    write,
+                    "\tPara analisar {delta} arquivos SPED EFD de {q2} a {q3} utilize o comando:"
+                )?;
                 writeln!(write, "\tefd_contribuicoes -r {q2} {q3}\n")?;
             }
 
             if number_of_files > 1 {
-                writeln!(write, "\tPara analisar todos os arquivos SPED EFD utilize o comando:")?;
+                writeln!(
+                    write,
+                    "\tPara analisar todos os arquivos SPED EFD utilize o comando:"
+                )?;
                 writeln!(write, "\tefd_contribuicoes -r 1 {number_of_files}\n")?;
             }
         }
@@ -270,7 +305,7 @@ impl Arguments {
     /// Print shell completions to standard output
     pub fn print_completions<G>(&self, gen: G)
     where
-        G: Generator + std::fmt::Debug
+        G: Generator + std::fmt::Debug,
     {
         let mut cmd = Arguments::command();
         let cmd_name = cmd.get_name().to_string();

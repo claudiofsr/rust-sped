@@ -1,12 +1,12 @@
-use rayon::prelude::*;
 use csv::StringRecord;
-use indicatif::{ProgressBar, MultiProgress};
+use indicatif::{MultiProgress, ProgressBar};
+use rayon::prelude::*;
 
 use std::{
-    thread,
+    collections::{BTreeMap, HashMap},
     io::Write,
     path::PathBuf,
-    collections::{HashMap, BTreeMap},
+    thread,
 };
 
 use chrono::{
@@ -17,39 +17,17 @@ use chrono::{
 // https://github.com/jmcnamara/rust_xlsxwriter/issues/1
 // https://rustxlsxwriter.github.io/index.html
 use rust_xlsxwriter::{
-    Color,
-    DocProperties,
-    ExcelDateTime,
-    Format,
-    FormatAlign,
-    Workbook,
-    Worksheet,
+    Color, DocProperties, ExcelDateTime, Format, FormatAlign, Workbook, Worksheet,
 };
 
 use crate::{
-    DECIMAL_VALOR,
-    OUTPUT_DIRECTORY,
-    OUTPUT_FILENAME,
-    DocsFiscais,
-    ConsolidacaoCST,
-    AnaliseDosCreditos,
-    MyResult,
-    display_cst,
-    display_aliquota,
-    obter_descricao_do_cst,
-    obter_descricao_do_cfop,
-    obter_descricao_do_tipo_de_credito,
-    obter_descricao_da_natureza_da_bc_dos_creditos,
-    month_to_str,
-    indicador_de_origem_to_str,
-    get_tipo_de_operacao,
+    display_aliquota, display_cst, get_tipo_de_operacao, indicador_de_origem_to_str, month_to_str,
+    obter_descricao_da_natureza_da_bc_dos_creditos, obter_descricao_do_cfop,
+    obter_descricao_do_cst, obter_descricao_do_tipo_de_credito, AnaliseDosCreditos,
+    ConsolidacaoCST, DocsFiscais, MyResult, DECIMAL_VALOR, OUTPUT_DIRECTORY, OUTPUT_FILENAME,
 };
 
-use claudiofsr_lib::{
-    get_style,
-    num_digits,
-    OptionExtension,
-};
+use claudiofsr_lib::{get_style, num_digits, OptionExtension};
 
 const FONT_SIZE: f64 = 12.0;
 const HEADER_FONT_SIZE: f64 = 11.0;
@@ -64,10 +42,7 @@ pub fn create_xlsx(
     data_nat: &[AnaliseDosCreditos],
     write: &mut dyn Write,
 ) -> MyResult<()> {
-
-    let mut excel_file: PathBuf = [OUTPUT_DIRECTORY, OUTPUT_FILENAME]
-        .iter()
-        .collect();
+    let mut excel_file: PathBuf = [OUTPUT_DIRECTORY, OUTPUT_FILENAME].iter().collect();
     excel_file.set_extension("xlsx");
     writeln!(write, "Write Excel xlsx file: {:?}\n", excel_file.display())?;
 
@@ -78,9 +53,8 @@ pub fn create_xlsx(
 
     let multiprogressbar: MultiProgress = MultiProgress::new();
 
-    let worksheets: Vec<Worksheet> = get_all_worksheets(
-        data_efd, data_cst, data_nat, &formats, &multiprogressbar
-    )?;
+    let worksheets: Vec<Worksheet> =
+        get_all_worksheets(data_efd, data_cst, data_nat, &formats, &multiprogressbar)?;
 
     for worksheet in worksheets {
         // Add the worksheets to the workbook.
@@ -143,11 +117,10 @@ fn get_all_worksheets(
 
     let worksheets: Vec<Worksheet> = results
         .into_par_iter() // rayon: parallel iterator
-        .flat_map(|result|
-            match result {
-                Ok(vec_ws) => vec_ws,
-                Err(_) => panic!("Failed to generate worksheet!"),
-            })
+        .flat_map(|result| match result {
+            Ok(vec_ws) => vec_ws,
+            Err(_) => panic!("Failed to generate worksheet!"),
+        })
         .collect();
 
     Ok(worksheets)
@@ -158,14 +131,12 @@ fn add_worksheet_efd(
     data_efd: &[DocsFiscais],
     formats: &HashMap<String, Format>,
     multiprogressbar: &MultiProgress,
-    index: usize
+    index: usize,
 ) -> MyResult<Vec<Worksheet>> {
     let mut sheet_name = "Itens de Docs Fiscais".to_string();
 
-    let progressbar: ProgressBar = multiprogressbar.insert(
-        index,
-        ProgressBar::new(data_efd.len().try_into()?)
-    );
+    let progressbar: ProgressBar =
+        multiprogressbar.insert(index, ProgressBar::new(data_efd.len().try_into()?));
     let style = get_style(0, 0, 35)?;
     progressbar.set_style(style);
 
@@ -184,10 +155,16 @@ fn add_worksheet_efd(
         worksheet1.set_name(&sheet_name)?;
         let headers_efd: StringRecord = DocsFiscais::get_headers();
         let mut width_map: BTreeMap<u16, usize> = BTreeMap::new();
-        create_headers(&headers_efd, &mut  worksheet1, &mut width_map, formats, "data_efd")?;
+        create_headers(
+            &headers_efd,
+            &mut worksheet1,
+            &mut width_map,
+            formats,
+            "data_efd",
+        )?;
 
         for (j, colunas) in data.iter().enumerate() {
-        // data.iter().enumerate().for_each(|(j, colunas)| {
+            // data.iter().enumerate().for_each(|(j, colunas)| {
             add_row_efd(j as u32, colunas, &mut worksheet1, formats, &mut width_map)?;
             progressbar.inc(1);
         }
@@ -208,10 +185,8 @@ fn add_worksheet_cst(
     // CST: CONSOLIDAÇÃO DAS OPERAÇÕES POR CST
     let mut sheet_name = "Consolidação CST".to_string();
 
-    let progressbar: ProgressBar = multiprogressbar.insert(
-        index,
-        ProgressBar::new(data_cst.len().try_into()?)
-    );
+    let progressbar: ProgressBar =
+        multiprogressbar.insert(index, ProgressBar::new(data_cst.len().try_into()?));
     let style = get_style(0, 0, 35)?;
     progressbar.set_style(style);
 
@@ -229,9 +204,15 @@ fn add_worksheet_cst(
         worksheet2.set_name(&sheet_name)?;
         let headers_cst: StringRecord = ConsolidacaoCST::get_headers();
         let mut width_map: BTreeMap<u16, usize> = BTreeMap::new();
-        create_headers(&headers_cst, &mut worksheet2, &mut width_map, formats, "data_cst")?;
+        create_headers(
+            &headers_cst,
+            &mut worksheet2,
+            &mut width_map,
+            formats,
+            "data_cst",
+        )?;
         for (j, colunas) in data.iter().enumerate() {
-        //data.iter().enumerate().for_each(|(j, colunas)| {
+            //data.iter().enumerate().for_each(|(j, colunas)| {
             add_row_cst(j as u32, colunas, &mut worksheet2, formats, &mut width_map)?;
             progressbar.inc(1);
         }
@@ -252,10 +233,8 @@ fn add_worksheet_nat(
     // NAT: Natureza da Base de Cálculo dos Créditos
     let mut sheet_name = "Análise dos Créditos".to_string();
 
-    let progressbar: ProgressBar = multiprogressbar.insert(
-        index + 1,
-        ProgressBar::new(data_nat.len().try_into()?)
-    );
+    let progressbar: ProgressBar =
+        multiprogressbar.insert(index + 1, ProgressBar::new(data_nat.len().try_into()?));
     let style = get_style(0, 0, 35)?;
     progressbar.set_style(style);
 
@@ -273,9 +252,15 @@ fn add_worksheet_nat(
         worksheet3.set_name(&sheet_name)?;
         let headers_nat: StringRecord = AnaliseDosCreditos::get_headers();
         let mut width_map: BTreeMap<u16, usize> = BTreeMap::new();
-        create_headers(&headers_nat, &mut worksheet3, &mut width_map, formats, "data_nat")?;
+        create_headers(
+            &headers_nat,
+            &mut worksheet3,
+            &mut width_map,
+            formats,
+            "data_nat",
+        )?;
         for (j, colunas) in data.iter().enumerate() {
-        //data.iter().enumerate().for_each(|(j, colunas)| {
+            //data.iter().enumerate().for_each(|(j, colunas)| {
             add_row_nat(j as u32, colunas, &mut worksheet3, formats, &mut width_map)?;
             progressbar.inc(1);
         }
@@ -288,7 +273,6 @@ fn add_worksheet_nat(
 }
 
 fn create_default_formats() -> Vec<(&'static str, Format)> {
-
     let fmt_default: Format = Format::new()
         .set_align(FormatAlign::VerticalCenter)
         .set_font_size(FONT_SIZE);
@@ -321,19 +305,18 @@ fn create_default_formats() -> Vec<(&'static str, Format)> {
         .set_font_size(FONT_SIZE);
 
     let default_formats: Vec<(&str, Format)> = vec![
-        ("default",  fmt_default),
-        ("center",   fmt_center),
-        ("date",     fmt_date),
-        ("number",   fmt_number),
+        ("default", fmt_default),
+        ("center", fmt_center),
+        ("date", fmt_date),
+        ("number", fmt_number),
         ("aliquota", fmt_aliquota),
-        ("integer",  fmt_integer),
+        ("integer", fmt_integer),
     ];
 
     default_formats
 }
 
 fn create_formats() -> MyResult<HashMap<String, Format>> {
-
     let color_header: u32 = u32::from_str_radix("c5d9f1", 16)?;
     let color_bcsoma: u32 = u32::from_str_radix("bfbfbf", 16)?;
     let color_descon: u32 = u32::from_str_radix("fff2cc", 16)?;
@@ -347,30 +330,30 @@ fn create_formats() -> MyResult<HashMap<String, Format>> {
         //.set_font_color(FormatColor::Black)
         .set_background_color(Color::RGB(color_header));
 
-    let mut hash_map: HashMap<String, Format> = HashMap::from([
-        ("header".to_string(), fmt_header)
-    ]);
+    let mut hash_map: HashMap<String, Format> = HashMap::from([("header".to_string(), fmt_header)]);
 
     let default_formats: Vec<(&str, Format)> = create_default_formats();
 
     for (name, default_format) in default_formats {
-
         let name_bcsoma: String = [name, "_bcsoma"].concat();
         let name_descon: String = [name, "_descon"].concat();
         let name_saldoc: String = [name, "_saldoc"].concat();
 
         // BG Color: Base de Cálculo dos Créditos - Alíquota Básica (Soma)
-        let format_bcsoma: Format = default_format.clone()
+        let format_bcsoma: Format = default_format
+            .clone()
             .set_background_color(Color::RGB(color_bcsoma))
             .clone();
 
         // BG Color: Crédito Disponível após Descontos
-        let format_descon: Format = default_format.clone()
+        let format_descon: Format = default_format
+            .clone()
             .set_background_color(Color::RGB(color_descon))
             .clone();
 
         // BG Color: Saldo de Crédito Passível de Desconto ou Ressarcimento
-        let format_saldoc: Format = default_format.clone()
+        let format_saldoc: Format = default_format
+            .clone()
             .set_background_color(Color::RGB(color_saldoc))
             .clone();
 
@@ -394,7 +377,6 @@ fn create_headers(
     let fmt_header = fmt.get("header").unwrap();
 
     for (idx, header) in headers.iter().enumerate() {
-
         //println!("header {idx:02}: {header}");
         sheet.write_string_with_format(0, idx as u16, header, fmt_header)?;
         let mut width = header.len();
@@ -402,18 +384,18 @@ fn create_headers(
         match tipo {
             "data_efd" => {
                 // definir largura mínima de colunas específicas
-                let valor_ou_aliquota: bool = header.contains("Valor") || header.contains("Alíquota");
+                let valor_ou_aliquota: bool =
+                    header.contains("Valor") || header.contains("Alíquota");
                 if idx == 2 || header.contains("Período de Apuração") || valor_ou_aliquota {
                     width = 12;
-                }
-                else if header.contains("CNPJ") || header.contains("Data") {
+                } else if header.contains("CNPJ") || header.contains("Data") {
                     width = 18;
                 }
-            },
+            }
             "data_cst" => {
                 // definir largura mínima
                 width = 12;
-            },
+            }
             "data_nat" => {
                 // definir largura mínima
                 width = 12;
@@ -424,7 +406,7 @@ fn create_headers(
                 } else if idx >= 9 {
                     width = 18;
                 }
-            },
+            }
             _ => continue,
         }
 
@@ -445,67 +427,145 @@ fn add_row_efd(
     fmt: &HashMap<String, Format>,
     width_map: &mut BTreeMap<u16, usize>,
 ) -> MyResult<()> {
-    let fmt_default  = fmt.get("default").unwrap();
-    let fmt_center   = fmt.get("center").unwrap();
-    let fmt_date     = fmt.get("date").unwrap();
-    let fmt_integer  = fmt.get("integer").unwrap();
-    let fmt_number   = fmt.get("number").unwrap();
+    let fmt_default = fmt.get("default").unwrap();
+    let fmt_center = fmt.get("center").unwrap();
+    let fmt_date = fmt.get("date").unwrap();
+    let fmt_integer = fmt.get("integer").unwrap();
+    let fmt_number = fmt.get("number").unwrap();
     let fmt_aliquota = fmt.get("aliquota").unwrap();
 
     let month_name = month_to_str(&colunas.mes);
     let indicador_de_origem = indicador_de_origem_to_str(&colunas.indicador_de_origem);
-    let tipo_de_operacao  = get_tipo_de_operacao(&colunas.tipo_de_operacao).to_string();
-    let descricao_do_cst  = obter_descricao_do_cst(&colunas.cst);
+    let tipo_de_operacao = get_tipo_de_operacao(&colunas.tipo_de_operacao).to_string();
+    let descricao_do_cst = obter_descricao_do_cst(&colunas.cst);
     let descricao_do_cfop = obter_descricao_do_cfop(&colunas.cfop);
-    let descricao_do_tipo_de_credito = obter_descricao_do_tipo_de_credito(&colunas.tipo_de_credito, true);
+    let descricao_do_tipo_de_credito =
+        obter_descricao_do_tipo_de_credito(&colunas.tipo_de_credito, true);
     let descricao_da_nat_bc = obter_descricao_da_natureza_da_bc_dos_creditos(&colunas.natureza_bc);
 
-    add_integer_column(row,  0, Some(row + 2),                 sheet, width_map, fmt_integer)?;
-    add_strings_column(row,  1, &colunas.arquivo_efd,          sheet, width_map, fmt_default)?;
-    add_usizenb_column(row,  2, colunas.num_linha_efd,         sheet, width_map, fmt_integer)?;
-    add_strings_column(row,  3, &colunas.estabelecimento_cnpj, sheet, width_map, fmt_center)?;
-    add_strings_column(row,  4, &colunas.estabelecimento_nome, sheet, width_map, fmt_default)?;
-    add_naidate_column(row,  5, colunas.periodo_de_apuracao,   sheet, width_map, fmt_date)?;
-    add_integer_column(row,  6, colunas.ano,                   sheet, width_map, fmt_integer)?;
-    add_integer_column(row,  7, colunas.trimestre,             sheet, width_map, fmt_integer)?;
-    add_strings_column(row,  8, month_name,                    sheet, width_map, fmt_center)?;
-    add_strings_column(row,  9, &tipo_de_operacao,             sheet, width_map, fmt_default)?;
+    add_integer_column(row, 0, Some(row + 2), sheet, width_map, fmt_integer)?;
+    add_strings_column(row, 1, &colunas.arquivo_efd, sheet, width_map, fmt_default)?;
+    add_usizenb_column(row, 2, colunas.num_linha_efd, sheet, width_map, fmt_integer)?;
+    add_strings_column(
+        row,
+        3,
+        &colunas.estabelecimento_cnpj,
+        sheet,
+        width_map,
+        fmt_center,
+    )?;
+    add_strings_column(
+        row,
+        4,
+        &colunas.estabelecimento_nome,
+        sheet,
+        width_map,
+        fmt_default,
+    )?;
+    add_naidate_column(
+        row,
+        5,
+        colunas.periodo_de_apuracao,
+        sheet,
+        width_map,
+        fmt_date,
+    )?;
+    add_integer_column(row, 6, colunas.ano, sheet, width_map, fmt_integer)?;
+    add_integer_column(row, 7, colunas.trimestre, sheet, width_map, fmt_integer)?;
+    add_strings_column(row, 8, month_name, sheet, width_map, fmt_center)?;
+    add_strings_column(row, 9, &tipo_de_operacao, sheet, width_map, fmt_default)?;
 
-    add_strings_column(row, 10, indicador_de_origem,           sheet, width_map, fmt_default)?;
-    add_integer_column(row, 11, colunas.cod_credito,           sheet, width_map, fmt_integer)?;
-    add_strings_column(row, 12, &descricao_do_tipo_de_credito, sheet, width_map, fmt_default)?;
-    add_strings_column(row, 13, &colunas.registro,             sheet, width_map, fmt_default)?;
-    add_strings_column(row, 14, &descricao_do_cst,             sheet, width_map, fmt_default)?;
-    add_strings_column(row, 15, &descricao_do_cfop,            sheet, width_map, fmt_default)?;
-    add_strings_column(row, 16, &descricao_da_nat_bc,          sheet, width_map, fmt_default)?;
-    add_strings_column(row, 17, &colunas.particante_cnpj,      sheet, width_map, fmt_center)?;
-    add_strings_column(row, 18, &colunas.particante_cpf,       sheet, width_map, fmt_center)?;
-    add_strings_column(row, 19, &colunas.particante_nome,      sheet, width_map, fmt_default)?;
+    add_strings_column(row, 10, indicador_de_origem, sheet, width_map, fmt_default)?;
+    add_integer_column(row, 11, colunas.cod_credito, sheet, width_map, fmt_integer)?;
+    add_strings_column(
+        row,
+        12,
+        &descricao_do_tipo_de_credito,
+        sheet,
+        width_map,
+        fmt_default,
+    )?;
+    add_strings_column(row, 13, &colunas.registro, sheet, width_map, fmt_default)?;
+    add_strings_column(row, 14, &descricao_do_cst, sheet, width_map, fmt_default)?;
+    add_strings_column(row, 15, &descricao_do_cfop, sheet, width_map, fmt_default)?;
+    add_strings_column(row, 16, &descricao_da_nat_bc, sheet, width_map, fmt_default)?;
+    add_strings_column(
+        row,
+        17,
+        &colunas.particante_cnpj,
+        sheet,
+        width_map,
+        fmt_center,
+    )?;
+    add_strings_column(
+        row,
+        18,
+        &colunas.particante_cpf,
+        sheet,
+        width_map,
+        fmt_center,
+    )?;
+    add_strings_column(
+        row,
+        19,
+        &colunas.particante_nome,
+        sheet,
+        width_map,
+        fmt_default,
+    )?;
 
-    add_usizenb_column(row, 20, colunas.num_doc,               sheet, width_map, fmt_default)?;
-    add_strings_column(row, 21, &colunas.chave_doc,            sheet, width_map, fmt_center)?;
-    add_strings_column(row, 22, &colunas.modelo_doc_fiscal,    sheet, width_map, fmt_center)?;
-    add_integer_column(row, 23, colunas.num_item,              sheet, width_map, fmt_integer)?;
-    add_strings_column(row, 24, &colunas.tipo_item,            sheet, width_map, fmt_default)?;
-    add_strings_column(row, 25, &colunas.descr_item,           sheet, width_map, fmt_default)?;
-    add_strings_column(row, 26, &colunas.cod_ncm,              sheet, width_map, fmt_center)?;
-    add_strings_column(row, 27, &colunas.nat_operacao,         sheet, width_map, fmt_default)?;
-    add_strings_column(row, 28, &colunas.complementar,         sheet, width_map, fmt_default)?;
-    add_strings_column(row, 29, &colunas.nome_da_conta,        sheet, width_map, fmt_default)?;
+    add_usizenb_column(row, 20, colunas.num_doc, sheet, width_map, fmt_default)?;
+    add_strings_column(row, 21, &colunas.chave_doc, sheet, width_map, fmt_center)?;
+    add_strings_column(
+        row,
+        22,
+        &colunas.modelo_doc_fiscal,
+        sheet,
+        width_map,
+        fmt_center,
+    )?;
+    add_integer_column(row, 23, colunas.num_item, sheet, width_map, fmt_integer)?;
+    add_strings_column(row, 24, &colunas.tipo_item, sheet, width_map, fmt_default)?;
+    add_strings_column(row, 25, &colunas.descr_item, sheet, width_map, fmt_default)?;
+    add_strings_column(row, 26, &colunas.cod_ncm, sheet, width_map, fmt_center)?;
+    add_strings_column(
+        row,
+        27,
+        &colunas.nat_operacao,
+        sheet,
+        width_map,
+        fmt_default,
+    )?;
+    add_strings_column(
+        row,
+        28,
+        &colunas.complementar,
+        sheet,
+        width_map,
+        fmt_default,
+    )?;
+    add_strings_column(
+        row,
+        29,
+        &colunas.nome_da_conta,
+        sheet,
+        width_map,
+        fmt_default,
+    )?;
 
-    add_naidate_column(row, 30, colunas.data_emissao,          sheet, width_map, fmt_date)?;
-    add_naidate_column(row, 31, colunas.data_lancamento,       sheet, width_map, fmt_date)?;
-    add_float64_column(row, 32, colunas.valor_item,            sheet, width_map, fmt_number)?;
-    add_float64_column(row, 33, colunas.valor_bc,              sheet, width_map, fmt_number)?;
-    add_float64_column(row, 34, colunas.aliq_pis,              sheet, width_map, fmt_aliquota)?;
-    add_float64_column(row, 35, colunas.aliq_cofins,           sheet, width_map, fmt_aliquota)?;
-    add_float64_column(row, 36, colunas.valor_pis,             sheet, width_map, fmt_number)?;
-    add_float64_column(row, 37, colunas.valor_cofins,          sheet, width_map, fmt_number)?;
-    add_float64_column(row, 38, colunas.valor_iss,             sheet, width_map, fmt_number)?;
-    add_float64_column(row, 39, colunas.valor_bc_icms,         sheet, width_map, fmt_number)?;
+    add_naidate_column(row, 30, colunas.data_emissao, sheet, width_map, fmt_date)?;
+    add_naidate_column(row, 31, colunas.data_lancamento, sheet, width_map, fmt_date)?;
+    add_float64_column(row, 32, colunas.valor_item, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 33, colunas.valor_bc, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 34, colunas.aliq_pis, sheet, width_map, fmt_aliquota)?;
+    add_float64_column(row, 35, colunas.aliq_cofins, sheet, width_map, fmt_aliquota)?;
+    add_float64_column(row, 36, colunas.valor_pis, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 37, colunas.valor_cofins, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 38, colunas.valor_iss, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 39, colunas.valor_bc_icms, sheet, width_map, fmt_number)?;
 
-    add_float64_column(row, 40, colunas.aliq_icms,             sheet, width_map, fmt_aliquota)?;
-    add_float64_column(row, 41, colunas.valor_icms,            sheet, width_map, fmt_number)?;
+    add_float64_column(row, 40, colunas.aliq_icms, sheet, width_map, fmt_aliquota)?;
+    add_float64_column(row, 41, colunas.valor_icms, sheet, width_map, fmt_number)?;
 
     let mut height = FONT_SIZE + 3.0;
 
@@ -525,29 +585,29 @@ fn add_row_cst(
     fmt: &HashMap<String, Format>,
     width_map: &mut BTreeMap<u16, usize>,
 ) -> MyResult<()> {
-    let mut fmt_center  = fmt.get("center").unwrap();
+    let mut fmt_center = fmt.get("center").unwrap();
     let mut fmt_integer = fmt.get("integer").unwrap();
-    let mut fmt_number  = fmt.get("number").unwrap();
+    let mut fmt_number = fmt.get("number").unwrap();
 
-    if let Some(490|980) = colunas.cst {
+    if let Some(490 | 980) = colunas.cst {
         // BG Color: Base de Cálculo dos Créditos - Alíquota Básica (Soma)
-        fmt_center  = fmt.get("center_bcsoma").unwrap();
+        fmt_center = fmt.get("center_bcsoma").unwrap();
         fmt_integer = fmt.get("integer_bcsoma").unwrap();
-        fmt_number  = fmt.get("number_bcsoma").unwrap();
+        fmt_number = fmt.get("number_bcsoma").unwrap();
     }
 
     let month_name = month_to_str(&colunas.mes);
-    let descricao_do_cst  = display_cst(&colunas.cst);
+    let descricao_do_cst = display_cst(&colunas.cst);
 
-    add_strings_column(row, 0, &colunas.cnpj_base,    sheet, width_map, fmt_center)?;
-    add_integer_column(row, 1, colunas.ano,           sheet, width_map, fmt_integer)?;
-    add_integer_column(row, 2, colunas.trimestre,     sheet, width_map, fmt_integer)?;
-    add_strings_column(row, 3, month_name,            sheet, width_map, fmt_center)?;
-    add_strings_column(row, 4, &descricao_do_cst,     sheet, width_map, fmt_center)?;
-    add_float64_column(row, 5, colunas.valor_item,    sheet, width_map, fmt_number)?;
-    add_float64_column(row, 6, colunas.valor_bc,      sheet, width_map, fmt_number)?;
-    add_float64_column(row, 7, colunas.valor_pis,     sheet, width_map, fmt_number)?;
-    add_float64_column(row, 8, colunas.valor_cofins,  sheet, width_map, fmt_number)?;
+    add_strings_column(row, 0, &colunas.cnpj_base, sheet, width_map, fmt_center)?;
+    add_integer_column(row, 1, colunas.ano, sheet, width_map, fmt_integer)?;
+    add_integer_column(row, 2, colunas.trimestre, sheet, width_map, fmt_integer)?;
+    add_strings_column(row, 3, month_name, sheet, width_map, fmt_center)?;
+    add_strings_column(row, 4, &descricao_do_cst, sheet, width_map, fmt_center)?;
+    add_float64_column(row, 5, colunas.valor_item, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 6, colunas.valor_bc, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 7, colunas.valor_pis, sheet, width_map, fmt_number)?;
+    add_float64_column(row, 8, colunas.valor_cofins, sheet, width_map, fmt_number)?;
 
     let mut height = FONT_SIZE + 3.0;
 
@@ -569,63 +629,91 @@ fn add_row_nat(
 ) -> MyResult<()> {
     // BG Color: default color
     let mut fmt_default = fmt.get("default").unwrap();
-    let mut fmt_center  = fmt.get("center").unwrap();
+    let mut fmt_center = fmt.get("center").unwrap();
     let mut fmt_integer = fmt.get("integer").unwrap();
-    let mut fmt_number  = fmt.get("number").unwrap();
+    let mut fmt_number = fmt.get("number").unwrap();
 
     match colunas.natureza_bc {
-
         // BG Color: Base de Cálculo dos Créditos - Alíquota Básica (Soma)
-        Some(101..=199|300) => {
+        Some(101..=199 | 300) => {
             fmt_default = fmt.get("default_bcsoma").unwrap();
-            fmt_center  = fmt.get("center_bcsoma").unwrap();
+            fmt_center = fmt.get("center_bcsoma").unwrap();
             fmt_integer = fmt.get("integer_bcsoma").unwrap();
-            fmt_number  = fmt.get("number_bcsoma").unwrap();
+            fmt_number = fmt.get("number_bcsoma").unwrap();
         }
 
         // BG Color: Crédito Disponível após Descontos
-        Some(221|225) => {
+        Some(221 | 225) => {
             fmt_default = fmt.get("default_descon").unwrap();
-            fmt_center  = fmt.get("center_descon").unwrap();
+            fmt_center = fmt.get("center_descon").unwrap();
             fmt_integer = fmt.get("integer_descon").unwrap();
-            fmt_number  = fmt.get("number_descon").unwrap();
+            fmt_number = fmt.get("number_descon").unwrap();
         }
 
         // BG Color: Saldo de Crédito Passível de Desconto ou Ressarcimento
-        Some(301|305) => {
+        Some(301 | 305) => {
             fmt_default = fmt.get("default_saldoc").unwrap();
-            fmt_center  = fmt.get("center_saldoc").unwrap();
+            fmt_center = fmt.get("center_saldoc").unwrap();
             fmt_integer = fmt.get("integer_saldoc").unwrap();
-            fmt_number  = fmt.get("number_saldoc").unwrap();
+            fmt_number = fmt.get("number_saldoc").unwrap();
         }
 
         _ => {}
     }
 
     let month_name = month_to_str(&colunas.mes);
-    let descricao_tipo_de_credito = obter_descricao_do_tipo_de_credito(&colunas.tipo_de_credito, false);
+    let descricao_tipo_de_credito =
+        obter_descricao_do_tipo_de_credito(&colunas.tipo_de_credito, false);
     let tipo_de_operacao = get_tipo_de_operacao(&colunas.tipo_de_operacao).to_string();
     let descricao_da_nat_bc = obter_descricao_da_natureza_da_bc_dos_creditos(&colunas.natureza_bc);
 
     let aliq_pis: String = display_aliquota(&colunas.aliq_pis);
     let aliq_cof: String = display_aliquota(&colunas.aliq_cofins);
 
-    add_strings_column(row,  0, &colunas.cnpj_base,         sheet, width_map, fmt_center)?;
-    add_integer_column(row,  1, colunas.ano,                sheet, width_map, fmt_integer)?;
-    add_integer_column(row,  2, colunas.trimestre,          sheet, width_map, fmt_integer)?;
-    add_strings_column(row,  3, month_name,                 sheet, width_map, fmt_center)?;
-    add_strings_column(row,  4, &tipo_de_operacao,          sheet, width_map, fmt_default)?;
-    add_strings_column(row,  5, &descricao_tipo_de_credito, sheet, width_map, fmt_center)?;
-    add_integer_column(row,  6, colunas.cst,                sheet, width_map, fmt_integer)?;
-    add_strings_column(row,  7, &aliq_pis,                  sheet, width_map, fmt_center)?;
-    add_strings_column(row,  8, &aliq_cof,                  sheet, width_map, fmt_center)?;
-    add_strings_column(row,  9, &descricao_da_nat_bc,       sheet, width_map, fmt_default)?;
+    add_strings_column(row, 0, &colunas.cnpj_base, sheet, width_map, fmt_center)?;
+    add_integer_column(row, 1, colunas.ano, sheet, width_map, fmt_integer)?;
+    add_integer_column(row, 2, colunas.trimestre, sheet, width_map, fmt_integer)?;
+    add_strings_column(row, 3, month_name, sheet, width_map, fmt_center)?;
+    add_strings_column(row, 4, &tipo_de_operacao, sheet, width_map, fmt_default)?;
+    add_strings_column(
+        row,
+        5,
+        &descricao_tipo_de_credito,
+        sheet,
+        width_map,
+        fmt_center,
+    )?;
+    add_integer_column(row, 6, colunas.cst, sheet, width_map, fmt_integer)?;
+    add_strings_column(row, 7, &aliq_pis, sheet, width_map, fmt_center)?;
+    add_strings_column(row, 8, &aliq_cof, sheet, width_map, fmt_center)?;
+    add_strings_column(row, 9, &descricao_da_nat_bc, sheet, width_map, fmt_default)?;
 
-    add_float64_column(row, 10, colunas.valor_bc,           sheet, width_map, fmt_number)?;
-    add_float64_column(row, 11, colunas.valor_rbnc_trib,    sheet, width_map, fmt_number)?;
-    add_float64_column(row, 12, colunas.valor_rbnc_ntrib,   sheet, width_map, fmt_number)?;
-    add_float64_column(row, 13, colunas.valor_rbnc_exp,     sheet, width_map, fmt_number)?;
-    add_float64_column(row, 14, colunas.valor_rb_cum,       sheet, width_map, fmt_number)?;
+    add_float64_column(row, 10, colunas.valor_bc, sheet, width_map, fmt_number)?;
+    add_float64_column(
+        row,
+        11,
+        colunas.valor_rbnc_trib,
+        sheet,
+        width_map,
+        fmt_number,
+    )?;
+    add_float64_column(
+        row,
+        12,
+        colunas.valor_rbnc_ntrib,
+        sheet,
+        width_map,
+        fmt_number,
+    )?;
+    add_float64_column(
+        row,
+        13,
+        colunas.valor_rbnc_exp,
+        sheet,
+        width_map,
+        fmt_number,
+    )?;
+    add_float64_column(row, 14, colunas.valor_rb_cum, sheet, width_map, fmt_number)?;
 
     let mut height = FONT_SIZE + 3.0;
 
@@ -666,8 +754,8 @@ fn add_naidate_column(
             //let date = ExcelDateTime::from_ymd(y as u16, m as u8, d as u8)?;
             //sheet.write_datetime_with_format(row + 1, column, &date, fmt_date)?
             sheet.write_datetime_with_format(row + 1, column, dt, fmt_date)?
-        },
-        None => sheet.write_blank(row + 1, column, fmt_date)?
+        }
+        None => sheet.write_blank(row + 1, column, fmt_date)?,
     };
     get_max_width(column, date_len, width_map)?;
     Ok(())
@@ -682,18 +770,15 @@ fn add_integer_column<T>(
     width_map: &mut BTreeMap<u16, usize>,
     fmt_number: &Format,
 ) -> MyResult<()>
-    where
-        T: ToString + Copy +
-        std::ops::Mul<Output=T> +
-        std::convert::Into<f64> +
-        ilog::IntLog,
+where
+    T: ToString + Copy + std::ops::Mul<Output = T> + std::convert::Into<f64> + ilog::IntLog,
 {
     let mut num_len = 1; // init value
     match number {
         Some(integer) => {
             num_len = num_digits(integer); // integer.to_string().len()
             sheet.write_number_with_format(row + 1, column, integer, fmt_number)?
-        },
+        }
         None => sheet.write_blank(row + 1, column, fmt_number)?,
     };
     get_max_width(column, num_len, width_map)?;
@@ -713,7 +798,7 @@ fn add_usizenb_column(
         Some(usize_value) => {
             num_len = num_digits(usize_value); // usize_value.to_string().len()
             sheet.write_number_with_format(row + 1, column, usize_value as f64, fmt_number)?
-        },
+        }
         None => sheet.write_blank(row + 1, column, fmt_number)?,
     };
     get_max_width(column, num_len, width_map)?;
@@ -734,7 +819,7 @@ fn add_float64_column(
         Some(f64_value) => {
             num_len = num_digits(f64_value as usize) + 4 + DECIMAL_VALOR; // f64_value.to_string().len()
             sheet.write_number_with_format(row + 1, column, f64_value, fmt_number)?
-        },
+        }
         None => sheet.write_blank(row + 1, column, fmt_number)?,
     };
     get_max_width(column, num_len, width_map)?;
@@ -744,18 +829,22 @@ fn add_float64_column(
 fn get_max_width(column: u16, new: usize, width_map: &mut BTreeMap<u16, usize>) -> MyResult<()> {
     width_map
         .entry(column)
-        .and_modify(|previous_value|
+        .and_modify(|previous_value| {
             if new > *previous_value {
                 *previous_value = new
             }
-        )
+        })
         .or_insert(new);
     Ok(())
 }
 
-fn set_max_width(sheet: &mut Worksheet, width_map: &BTreeMap<u16, usize>, fator_de_correcao: f64) -> MyResult<()> {
+fn set_max_width(
+    sheet: &mut Worksheet,
+    width_map: &BTreeMap<u16, usize>,
+    fator_de_correcao: f64,
+) -> MyResult<()> {
     for (&k, &v) in width_map {
         sheet.set_column_width(k, (v as f64) * fator_de_correcao)?;
-    };
+    }
     Ok(())
 }

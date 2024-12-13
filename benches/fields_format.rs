@@ -1,5 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use claudiofsr_lib::StrExtension;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 // Testar quais das funções seguintes é a mais rápida
 
@@ -48,10 +48,30 @@ pub fn format1(fields: &[&str]) -> Vec<String> {
         //  8 digits: exemplo NCM: 01234567        --> 0123.45.67
 
         let formatted_text: String = match digits.len() {
-            14 => [&field[0..2], ".", &field[2..5], ".", &field[5..8], "/", &field[8..12], "-", &field[12..]].concat(),
-            11 => [&field[0..3], ".", &field[3..6], ".", &field[6..9], "-", &field[9..]].concat(),
-             8 => [&field[0..4], ".", &field[4..6], ".", &field[6..]].concat(),
-             _ => continue,
+            14 => [
+                &field[0..2],
+                ".",
+                &field[2..5],
+                ".",
+                &field[5..8],
+                "/",
+                &field[8..12],
+                "-",
+                &field[12..],
+            ]
+            .concat(),
+            11 => [
+                &field[0..3],
+                ".",
+                &field[3..6],
+                ".",
+                &field[6..9],
+                "-",
+                &field[9..],
+            ]
+            .concat(),
+            8 => [&field[0..4], ".", &field[4..6], ".", &field[6..]].concat(),
+            _ => continue,
         };
 
         result.push(formatted_text);
@@ -67,7 +87,6 @@ pub fn format2(fields: &[&str]) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
     for &field in fields {
-
         // Check if string contains only digits
         // Set the boolean b to true if the string field contains only characters in the range '0'..'9', false otherwise.
         if !field.contains_only_digits() {
@@ -80,10 +99,30 @@ pub fn format2(fields: &[&str]) -> Vec<String> {
         //  8 digits: exemplo NCM: 01234567        --> 0123.45.67
 
         let formatted_text: String = match field.len() {
-            14 => [&field[0..2], ".", &field[2..5], ".", &field[5..8], "/", &field[8..12], "-", &field[12..]].concat(),
-            11 => [&field[0..3], ".", &field[3..6], ".", &field[6..9], "-", &field[9..]].concat(),
-             8 => [&field[0..4], ".", &field[4..6], ".", &field[6..]].concat(),
-             _ => continue,
+            14 => [
+                &field[0..2],
+                ".",
+                &field[2..5],
+                ".",
+                &field[5..8],
+                "/",
+                &field[8..12],
+                "-",
+                &field[12..],
+            ]
+            .concat(),
+            11 => [
+                &field[0..3],
+                ".",
+                &field[3..6],
+                ".",
+                &field[6..9],
+                "-",
+                &field[9..],
+            ]
+            .concat(),
+            8 => [&field[0..4], ".", &field[4..6], ".", &field[6..]].concat(),
+            _ => continue,
         };
 
         result.push(formatted_text);
@@ -99,20 +138,41 @@ pub fn format3(fields: &[&str]) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
     for &field in fields {
-
         // https://stackoverflow.com/questions/30154541/how-do-i-concatenate-strings
         // 14 digits: exemplo CNPJ: 01234567000890 --> 01.234.567/0008-90
         // 11 digits: exemplo CPF: 12345678901     --> 123.456.789-01
         //  8 digits: exemplo NCM: 01234567        --> 0123.45.67
 
         if field.contains_num_digits(14) {
-            result.push( [&field[0..2], ".", &field[2..5], ".", &field[5..8], "/", &field[8..12], "-", &field[12..]].concat() );
-        }
-        else if field.contains_num_digits(11) {
-            result.push( [&field[0..3], ".", &field[3..6], ".", &field[6..9], "-", &field[9..]].concat() );
-        }
-        else if field.contains_num_digits(8) {
-            result.push( [&field[0..4], ".", &field[4..6], ".", &field[6..]].concat() );
+            result.push(
+                [
+                    &field[0..2],
+                    ".",
+                    &field[2..5],
+                    ".",
+                    &field[5..8],
+                    "/",
+                    &field[8..12],
+                    "-",
+                    &field[12..],
+                ]
+                .concat(),
+            );
+        } else if field.contains_num_digits(11) {
+            result.push(
+                [
+                    &field[0..3],
+                    ".",
+                    &field[3..6],
+                    ".",
+                    &field[6..9],
+                    "-",
+                    &field[9..],
+                ]
+                .concat(),
+            );
+        } else if field.contains_num_digits(8) {
+            result.push([&field[0..4], ".", &field[4..6], ".", &field[6..]].concat());
         }
     }
 
@@ -136,7 +196,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         "",
         " ",
         "12",
-        "123456"
+        "123456",
     ];
 
     let mut group = c.benchmark_group("Formatar Campos");

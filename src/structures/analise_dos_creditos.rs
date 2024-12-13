@@ -1,8 +1,8 @@
 use csv::StringRecord;
-use serde::{Serialize, Deserialize, Serializer};
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize, Serializer};
 use serde_aux::prelude::serde_introspect;
 use struct_iterable::Iterable;
-use rayon::prelude::*;
 
 // https://stackoverflow.com/questions/39638363/how-can-i-use-a-hashmap-with-f64-as-key-in-rust
 // Because OrderedFloat implements Ord and Eq, it can be used as a key in a
@@ -10,37 +10,33 @@ use rayon::prelude::*;
 use ordered_float::OrderedFloat;
 
 use std::{
-    fmt,
-    thread,
-    hash::Hash,
+    collections::{BTreeMap, HashMap},
     //cmp::Reverse,
     error::Error,
-    ops::{Add, Mul, AddAssign},
-    collections::{HashMap, BTreeMap},
+    fmt,
+    hash::Hash,
+    ops::{Add, AddAssign, Mul},
+    thread,
 };
 
 use tabled::{
-    Tabled,
-    Table,
     settings::{
-        Alignment,
-        Style,
-        Modify,
-        object::{Segment, Rows, Columns},
+        object::{Columns, Rows, Segment},
+        Alignment, Modify, Style,
     },
+    Table, Tabled,
 };
 
 use crate::{
-    get_tipo_de_operacao, month_to_str, 
-    obter_descricao_da_natureza_da_bc_dos_creditos, obter_descricao_do_tipo_de_credito, 
-    verificar_periodo_multiplo, Despise, DocsFiscais, InfoExtension, Mes, 
-    MyResult, Tributos::{Cofins, Pis}, DECIMAL_ALIQ, DECIMAL_VALOR, SMALL_VALUE, ZERO
+    get_tipo_de_operacao, month_to_str, obter_descricao_da_natureza_da_bc_dos_creditos,
+    obter_descricao_do_tipo_de_credito, verificar_periodo_multiplo, Despise, DocsFiscais,
+    InfoExtension, Mes, MyResult,
+    Tributos::{Cofins, Pis},
+    DECIMAL_ALIQ, DECIMAL_VALOR, SMALL_VALUE, ZERO,
 };
 
 use claudiofsr_lib::{
-    svec, thousands_separator,
-    OptionExtension, RoundFloat,
-    BASE_CALC_SOMA, CFOP_DE_EXPORTACAO
+    svec, thousands_separator, OptionExtension, RoundFloat, BASE_CALC_SOMA, CFOP_DE_EXPORTACAO,
 };
 
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Serialize, Deserialize)]
@@ -68,8 +64,11 @@ impl Chaves {
     . Fim específico de exportação.
     */
     pub fn cfop_de_exportacao(&self) -> bool {
-        self.cfop.is_none() ||
-        CFOP_DE_EXPORTACAO.map(Some).binary_search(&self.cfop).is_ok()
+        self.cfop.is_none()
+            || CFOP_DE_EXPORTACAO
+                .map(Some)
+                .binary_search(&self.cfop)
+                .is_ok()
     }
 }
 
@@ -89,12 +88,12 @@ impl Add for Valores {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         Self {
-            valor_item:       self.valor_item       + other.valor_item,
-            valor_bc:         self.valor_bc         + other.valor_bc,
-            valor_rbnc_trib:  self.valor_rbnc_trib  + other.valor_rbnc_trib,
+            valor_item: self.valor_item + other.valor_item,
+            valor_bc: self.valor_bc + other.valor_bc,
+            valor_rbnc_trib: self.valor_rbnc_trib + other.valor_rbnc_trib,
             valor_rbnc_ntrib: self.valor_rbnc_ntrib + other.valor_rbnc_ntrib,
-            valor_rbnc_exp:   self.valor_rbnc_exp   + other.valor_rbnc_exp,
-            valor_rb_cum:     self.valor_rb_cum     + other.valor_rb_cum,
+            valor_rbnc_exp: self.valor_rbnc_exp + other.valor_rbnc_exp,
+            valor_rb_cum: self.valor_rb_cum + other.valor_rb_cum,
         }
     }
 }
@@ -103,12 +102,12 @@ impl Add for Valores {
 /// Executa a operação +=
 impl AddAssign for Valores {
     fn add_assign(&mut self, other: Self) {
-        self.valor_item       += other.valor_item;
-        self.valor_bc         += other.valor_bc;
-        self.valor_rbnc_trib  += other.valor_rbnc_trib;
+        self.valor_item += other.valor_item;
+        self.valor_bc += other.valor_bc;
+        self.valor_rbnc_trib += other.valor_rbnc_trib;
         self.valor_rbnc_ntrib += other.valor_rbnc_ntrib;
-        self.valor_rbnc_exp   += other.valor_rbnc_exp;
-        self.valor_rb_cum     += other.valor_rb_cum;
+        self.valor_rbnc_exp += other.valor_rbnc_exp;
+        self.valor_rb_cum += other.valor_rb_cum;
     }
 }
 
@@ -117,12 +116,12 @@ impl Mul<f64> for Valores {
     type Output = Self;
     fn mul(self, value: f64) -> Self {
         Self {
-            valor_item:       self.valor_item       * value,
-            valor_bc:         self.valor_bc         * value,
-            valor_rbnc_trib:  self.valor_rbnc_trib  * value,
+            valor_item: self.valor_item * value,
+            valor_bc: self.valor_bc * value,
+            valor_rbnc_trib: self.valor_rbnc_trib * value,
             valor_rbnc_ntrib: self.valor_rbnc_ntrib * value,
-            valor_rbnc_exp:   self.valor_rbnc_exp   * value,
-            valor_rb_cum:     self.valor_rb_cum     * value,
+            valor_rbnc_exp: self.valor_rbnc_exp * value,
+            valor_rb_cum: self.valor_rb_cum * value,
         }
     }
 }
@@ -149,8 +148,7 @@ impl Valores {
     /// # Returns
     /// `true` se os valores forem aproximadamente iguais, `false` caso contrário
     pub fn aproximadamente_iguais(&self, other: &Self, delta: f64) -> bool {
-        self
-            .get_values()
+        self.get_values()
             .iter()
             .zip(other.get_values().iter())
             .all(|(a, b)| (a - b).abs() <= delta)
@@ -160,7 +158,7 @@ impl Valores {
     fn distribuir_conforme_rateio(&mut self, linha: &DocsFiscais, credito_rateado: Option<f64>) {
         // De acordo com 4.3.6 – Tabela Código de Tipo de Crédito
         let cod_rateio: Option<u16> = linha
-            .cod_credito               // valor inteiro entre 101 e 499
+            .cod_credito // valor inteiro entre 101 e 499
             .map(|value| value / 100); // valor inteiro entre 1 e 4
 
         match (cod_rateio, credito_rateado) {
@@ -173,9 +171,11 @@ impl Valores {
 }
 
 /// Análise dos Créditos
-#[derive(Debug, Default, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Tabled, Iterable)]
+#[derive(
+    Debug, Default, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Tabled, Iterable,
+)]
 pub struct AnaliseDosCreditos {
-    #[serde( rename = "CNPJ Base")]
+    #[serde(rename = "CNPJ Base")]
     #[tabled(rename = "CNPJ Base")]
     pub cnpj_base: String,
     #[serde(rename = "Ano do Período de Apuração")]
@@ -184,40 +184,55 @@ pub struct AnaliseDosCreditos {
     #[serde(rename = "Trimestre do Período de Apuração")]
     #[tabled(rename = "Trim", display_with = "display_value")]
     pub trimestre: Option<u32>,
-    #[serde(rename = "Mês do Período de Apuração", serialize_with = "serialize_mes")]
+    #[serde(
+        rename = "Mês do Período de Apuração",
+        serialize_with = "serialize_mes"
+    )]
     #[tabled(rename = "Mês", display_with = "display_mes")]
     pub mes: Option<u32>,
-    #[serde(rename  = "Tipo de Operação", serialize_with = "serialize_tipo_de_operacao")]
+    #[serde(
+        rename = "Tipo de Operação",
+        serialize_with = "serialize_tipo_de_operacao"
+    )]
     #[tabled(rename = "Tipo de Operação", display_with = "display_tipo_de_operacao")]
     pub tipo_de_operacao: Option<u16>,
-    #[serde(rename  = "Tipo de Crédito", serialize_with = "serialize_tipo_de_credito")]
+    #[serde(
+        rename = "Tipo de Crédito",
+        serialize_with = "serialize_tipo_de_credito"
+    )]
     #[tabled(rename = "Tipo de Crédito", display_with = "display_tipo_de_credito")]
     pub tipo_de_credito: Option<u16>,
-    #[serde(rename  = "CST", serialize_with = "serialize_cst")]
+    #[serde(rename = "CST", serialize_with = "serialize_cst")]
     #[tabled(rename = "CST", display_with = "display_cst")]
     pub cst: Option<u16>,
-    #[serde(rename  = "Alíquota de PIS/PASEP")]
+    #[serde(rename = "Alíquota de PIS/PASEP")]
     #[tabled(rename = "Alíquota PIS/PASEP", display_with = "display_aliquota")]
     pub aliq_pis: Option<f64>,
-    #[serde(rename  = "Alíquota de COFINS")]
+    #[serde(rename = "Alíquota de COFINS")]
     #[tabled(rename = "Alíquota COFINS", display_with = "display_aliquota")]
     pub aliq_cofins: Option<f64>,
-    #[serde(rename  = "Natureza da Base de Cálculo dos Créditos", serialize_with = "serialize_natureza")]
-    #[tabled(rename = "Natureza da Base de Cálculo dos Créditos", display_with = "display_natureza")]
+    #[serde(
+        rename = "Natureza da Base de Cálculo dos Créditos",
+        serialize_with = "serialize_natureza"
+    )]
+    #[tabled(
+        rename = "Natureza da Base de Cálculo dos Créditos",
+        display_with = "display_natureza"
+    )]
     pub natureza_bc: Option<u16>,
-    #[serde(rename  = "Base de Cálculo")] // serialize_with = "serialize_f64"
+    #[serde(rename = "Base de Cálculo")] // serialize_with = "serialize_f64"
     #[tabled(rename = "Base de Cálculo", display_with = "display_f64")]
     pub valor_bc: Option<f64>,
-    #[serde(rename  = "Crédito vinculado à Receita Bruta Não Cumulativa: Tributada")]
+    #[serde(rename = "Crédito vinculado à Receita Bruta Não Cumulativa: Tributada")]
     #[tabled(rename = "RBNC_Trib", display_with = "display_f64")]
     pub valor_rbnc_trib: Option<f64>,
-    #[serde(rename  = "Crédito vinculado à Receita Bruta Não Cumulativa: Não Tributada")]
+    #[serde(rename = "Crédito vinculado à Receita Bruta Não Cumulativa: Não Tributada")]
     #[tabled(rename = "RBNC_NTrib", display_with = "display_f64")]
     pub valor_rbnc_ntrib: Option<f64>,
-    #[serde(rename  = "Crédito vinculado à Receita Bruta Não Cumulativa: de Exportação")]
+    #[serde(rename = "Crédito vinculado à Receita Bruta Não Cumulativa: de Exportação")]
     #[tabled(rename = "RBNC_Exp", display_with = "display_f64")]
     pub valor_rbnc_exp: Option<f64>,
-    #[serde(rename  = "Crédito vinculado à Receita Bruta Cumulativa")]
+    #[serde(rename = "Crédito vinculado à Receita Bruta Cumulativa")]
     #[tabled(rename = "RB_Cum", display_with = "display_f64")]
     pub valor_rb_cum: Option<f64>,
 }
@@ -233,7 +248,10 @@ impl AnaliseDosCreditos {
     }
 }
 
-pub fn serialize_tipo_de_operacao<S>(tipo_de_operacao: &Option<u16>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_tipo_de_operacao<S>(
+    tipo_de_operacao: &Option<u16>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -248,7 +266,7 @@ where
 pub fn display_tipo_de_operacao(tipo_de_operacao: &Option<u16>) -> String {
     match tipo_de_operacao {
         value @ Some(1..=7) => get_tipo_de_operacao(value).to_string(),
-        _  => "".to_string(),
+        _ => "".to_string(),
     }
 }
 
@@ -274,12 +292,8 @@ where
 
 pub fn display_cst(codigo: &Option<u16>) -> String {
     match codigo {
-        Some(490) => {
-            "Total Receitas/Saídas".to_string()
-        }
-        Some(980) => {
-            "Total Aquisições/Custos/Despesas".to_string()
-        }
+        Some(490) => "Total Receitas/Saídas".to_string(),
+        Some(980) => "Total Aquisições/Custos/Despesas".to_string(),
         Some(_) => {
             format!("{:02}", codigo.unwrap())
         }
@@ -288,11 +302,12 @@ pub fn display_cst(codigo: &Option<u16>) -> String {
 }
 
 pub fn display_value<T>(valor: &Option<T>) -> String
-    where T: std::fmt::Display + ToString
+where
+    T: std::fmt::Display + ToString,
 {
     match valor {
         Some(val) => val.to_string(),
-        None      => "".to_string()
+        None => "".to_string(),
     }
 }
 
@@ -310,7 +325,7 @@ where
 pub fn display_f64(valor: &Option<f64>) -> String {
     match *valor {
         Some(val) => thousands_separator(val, DECIMAL_VALOR),
-        None      => "".to_string()
+        None => "".to_string(),
     }
 }
 
@@ -320,14 +335,14 @@ where
 {
     match mes {
         Some(1..=12) => serializer.serialize_str(month_to_str(mes)),
-        _            => serializer.serialize_none(),
+        _ => serializer.serialize_none(),
     }
 }
 
 pub fn display_mes(mes: &Option<u32>) -> String {
     match mes {
         Some(1..=12) => mes.unwrap().to_string(),
-        _            => "".to_string(),
+        _ => "".to_string(),
     }
 }
 
@@ -346,7 +361,7 @@ pub fn display_natureza(nat: &Option<u16>) -> String {
 pub fn display_aliquota(valor: &Option<f64>) -> String {
     match *valor {
         Some(val) => [thousands_separator(val, DECIMAL_ALIQ), "%".to_string()].concat(),
-        None      => "".to_string()
+        None => "".to_string(),
     }
 }
 
@@ -376,7 +391,7 @@ impl fmt::Display for ReceitaBruta {
 
 #[derive(Debug, Default, Eq, PartialEq, PartialOrd, Clone, Hash, Serialize, Deserialize)]
 pub struct PeriodoDeApuracao {
-    #[serde( rename = "CNPJ Base")]
+    #[serde(rename = "CNPJ Base")]
     cnpj_base: String,
     #[serde(rename = "Ano do Período de Apuração")]
     ano: Option<i32>,
@@ -384,15 +399,15 @@ pub struct PeriodoDeApuracao {
     trimestre: Option<u32>,
     #[serde(rename = "Mês do Período de Apuração")]
     mes: Option<u32>,
-    #[serde( rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos")]
+    #[serde(rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos")]
     rb_nome: Option<ReceitaBruta>,
 }
 
 #[derive(Debug, Default, PartialEq, PartialOrd, Clone, Serialize, Deserialize)]
 pub struct ValorDaReceita {
-    #[serde( rename = "Valor")]
+    #[serde(rename = "Valor")]
     valor: f64,
-    #[serde( rename = "Percentual")]
+    #[serde(rename = "Percentual")]
     pct: f64,
     #[serde(rename = "CST")]
     csts: Vec<Option<u16>>,
@@ -417,14 +432,14 @@ impl ValorDaReceita {
 impl AddAssign for ValorDaReceita {
     fn add_assign(&mut self, other: Self) {
         self.valor += other.valor;
-        self.pct   += other.pct;
+        self.pct += other.pct;
         self.cst_sum(other);
     }
 }
 
 #[derive(Debug, Default, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Tabled)]
 pub struct TabelaValorDaReceita {
-    #[serde( rename = "CNPJ Base")]
+    #[serde(rename = "CNPJ Base")]
     #[tabled(rename = "CNPJ Base")]
     pub cnpj_base: String,
     #[serde(rename = "Ano do Período de Apuração")]
@@ -433,25 +448,30 @@ pub struct TabelaValorDaReceita {
     #[serde(rename = "Trimestre do Período de Apuração")]
     #[tabled(rename = "Trim", display_with = "display_value")]
     pub trimestre: Option<u32>,
-    #[serde(rename = "Mês do Período de Apuração", serialize_with = "serialize_mes")]
+    #[serde(
+        rename = "Mês do Período de Apuração",
+        serialize_with = "serialize_mes"
+    )]
     #[tabled(rename = "Mês", display_with = "display_mes")]
     pub mes: Option<u32>,
     #[serde(rename = "CST")]
     #[tabled(rename = "CST", display_with = "display_csts")]
     pub csts: Vec<Option<u16>>,
-    #[serde( rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos")]
-    #[tabled(rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos", display_with = "display_value")]
+    #[serde(rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos")]
+    #[tabled(
+        rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos",
+        display_with = "display_value"
+    )]
     pub rb_nome: Option<ReceitaBruta>,
-    #[serde( rename = "Valor")]
+    #[serde(rename = "Valor")]
     #[tabled(rename = "Valor", display_with = "display_f64")]
     pub valor: Option<f64>,
-    #[serde( rename = "Percentual")]
+    #[serde(rename = "Percentual")]
     #[tabled(rename = "Percentual", display_with = "display_percentual")]
     pub pct: Option<f64>,
 }
 
 fn display_csts(csts: &[Option<u16>]) -> String {
-
     let vec_csts: Vec<String> = csts
         .iter()
         .filter(|&opt_u16| opt_u16.is_some_and(|v| v > 0))
@@ -468,12 +488,13 @@ fn display_csts(csts: &[Option<u16>]) -> String {
 fn display_percentual(valor: &Option<f64>) -> String {
     match *valor {
         Some(val) => [thousands_separator(val, 4), "%".to_string()].concat(),
-        None => "".to_string()
+        None => "".to_string(),
     }
 }
 
-pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResult<(String, String, Vec<AnaliseDosCreditos>)> {
-
+pub fn consolidar_natureza_da_base_de_calculo(
+    linhas: &[DocsFiscais],
+) -> MyResult<(String, String, Vec<AnaliseDosCreditos>)> {
     let chaves_consolidadas: HashMap<Chaves, Valores> = consolidar_chaves(linhas); // 1 <= CST <= 99
 
     let mut receita_bruta: HashMap<Chaves, Valores> = HashMap::new(); //  1 <= CST <=  9
@@ -481,7 +502,7 @@ pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResul
 
     for (k, v) in chaves_consolidadas {
         match k.cst {
-            Some( 1..= 9) => receita_bruta.insert(k, v),
+            Some(1..=9) => receita_bruta.insert(k, v),
             Some(50..=66) => base_creditos.insert(k, v),
             _ => continue,
         };
@@ -489,8 +510,10 @@ pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResul
 
     distribuir_creditos_rateados(linhas, &mut base_creditos);
 
-    let receita_bruta_segregada: HashMap<PeriodoDeApuracao, ValorDaReceita> = apurar_receita_bruta(&receita_bruta);
-    let informacoes_de_receita_bruta: Vec<TabelaValorDaReceita> = obter_informacoes_de_receita_bruta(&receita_bruta_segregada);
+    let receita_bruta_segregada: HashMap<PeriodoDeApuracao, ValorDaReceita> =
+        apurar_receita_bruta(&receita_bruta);
+    let informacoes_de_receita_bruta: Vec<TabelaValorDaReceita> =
+        obter_informacoes_de_receita_bruta(&receita_bruta_segregada);
     let tabela_da_receita_bruta: String = gerar_tabela_rec(&informacoes_de_receita_bruta);
 
     //analisar_rateio_dos_creditos(&base_creditos, &receita_bruta_segregada)?;
@@ -515,15 +538,16 @@ pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResul
     };
     */
 
-    let (mut bcparcial, mut ajustes, mut descontos) = (HashMap::new(), HashMap::new(), HashMap::new());
+    let (mut bcparcial, mut ajustes, mut descontos) =
+        (HashMap::new(), HashMap::new(), HashMap::new());
 
     // Usar std::thread nas funções seguintes (estas funções são independentes umas das outras):
     thread::scope(|s| {
-        s.spawn(||bcparcial = somar_base_de_calculo_valor_parcial(&base_creditos));
+        s.spawn(|| bcparcial = somar_base_de_calculo_valor_parcial(&base_creditos));
 
-        s.spawn(||ajustes = distribuir_ajustes_rateados(linhas));
+        s.spawn(|| ajustes = distribuir_ajustes_rateados(linhas));
 
-        s.spawn(||descontos = distribuir_descontos_rateados(linhas));
+        s.spawn(|| descontos = distribuir_descontos_rateados(linhas));
     });
 
     // Merge two HashMaps in Rust
@@ -547,7 +571,11 @@ pub fn consolidar_natureza_da_base_de_calculo(linhas: &[DocsFiscais]) -> MyResul
     let base_creditos_estruturado: Vec<AnaliseDosCreditos> = get_analises(&base_creditos_ordenado);
     let tabela_de_base_creditos: String = gerar_tabela_nat(&base_creditos_estruturado);
 
-    Ok((tabela_de_base_creditos, tabela_da_receita_bruta, base_creditos_estruturado))
+    Ok((
+        tabela_de_base_creditos,
+        tabela_da_receita_bruta,
+        base_creditos_estruturado,
+    ))
 }
 
 /**
@@ -604,7 +632,6 @@ fn consolidar_chaves(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
                     .entry(key_b)
                     .and_modify(|previous_value| *previous_value += value_b)
                     .or_insert(value_b);
-
             });
 
             hashmap_a
@@ -614,7 +641,6 @@ fn consolidar_chaves(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
 }
 
 pub fn obter_chaves_valores(linha: &DocsFiscais) -> (Chaves, Valores) {
-
     // Informações de CFOP serão utilizadas na segregação da Receita Bruta.
     // Informações de CFOP não serão utilizadas na discriminação da
     // Natureza da Base de Cálculo dos Créditos.
@@ -625,52 +651,55 @@ pub fn obter_chaves_valores(linha: &DocsFiscais) -> (Chaves, Valores) {
     };
 
     let chaves = Chaves {
-        cnpj_base:        linha.get_cnpj_base(),
-        ano:              linha.ano,
-        trimestre:        linha.trimestre,
-        mes:              linha.mes,
+        cnpj_base: linha.get_cnpj_base(),
+        ano: linha.ano,
+        trimestre: linha.trimestre,
+        mes: linha.mes,
         tipo_de_operacao: linha.tipo_de_operacao,
-        tipo_de_credito:  linha.tipo_de_credito,
-        cst:              linha.cst,
+        tipo_de_credito: linha.tipo_de_credito,
+        cst: linha.cst,
         cfop,
-        aliq_pis:         linha.aliq_pis   .map(OrderedFloat),
-        aliq_cofins:      linha.aliq_cofins.map(OrderedFloat),
-        natureza_bc:      linha.natureza_bc,
+        aliq_pis: linha.aliq_pis.map(OrderedFloat),
+        aliq_cofins: linha.aliq_cofins.map(OrderedFloat),
+        natureza_bc: linha.natureza_bc,
     };
 
     let valores = Valores {
-        valor_item:       linha.valor_item.unwrap_or(ZERO),
-        valor_bc:         linha.valor_bc  .unwrap_or(ZERO),
-        valor_rbnc_trib:  ZERO, // valor inicial
+        valor_item: linha.valor_item.unwrap_or(ZERO),
+        valor_bc: linha.valor_bc.unwrap_or(ZERO),
+        valor_rbnc_trib: ZERO, // valor inicial
         valor_rbnc_ntrib: ZERO,
-        valor_rbnc_exp:   ZERO,
-        valor_rb_cum:     ZERO,
+        valor_rbnc_exp: ZERO,
+        valor_rb_cum: ZERO,
     };
 
     (chaves, valores)
 }
 
-fn distribuir_creditos_rateados(linhas: &[DocsFiscais], base_creditos: &mut HashMap<Chaves, Valores>) {
-
+fn distribuir_creditos_rateados(
+    linhas: &[DocsFiscais],
+    base_creditos: &mut HashMap<Chaves, Valores>,
+) {
     // Transmitir cod_credito (crédito com informação de rateio) para base_creditos.
     // Distribuir valores de Creditos rateados nas colunas correspondentes: Trib, NTrib e Exportação.
 
     for linha in linhas
         .iter()
-        .filter(|&line| line.tipo_de_operacao == Some(7)) // 7: "Detalhamento"
+        .filter(|&line| line.tipo_de_operacao == Some(7))
+    // 7: "Detalhamento"
     {
         let chaves = Chaves {
-            cnpj_base:        linha.get_cnpj_base(),
-            ano:              linha.ano,
-            trimestre:        linha.trimestre,
-            mes:              linha.mes,
+            cnpj_base: linha.get_cnpj_base(),
+            ano: linha.ano,
+            trimestre: linha.trimestre,
+            mes: linha.mes,
             tipo_de_operacao: Some(1), // atualizar valor: Entrada
-            tipo_de_credito:  linha.tipo_de_credito,
-            cst:              linha.cst,
-            cfop:             linha.cfop,
-            aliq_pis:         linha.aliq_pis   .map(OrderedFloat),
-            aliq_cofins:      linha.aliq_cofins.map(OrderedFloat),
-            natureza_bc:      linha.natureza_bc,
+            tipo_de_credito: linha.tipo_de_credito,
+            cst: linha.cst,
+            cfop: linha.cfop,
+            aliq_pis: linha.aliq_pis.map(OrderedFloat),
+            aliq_cofins: linha.aliq_cofins.map(OrderedFloat),
+            natureza_bc: linha.natureza_bc,
         };
 
         // usar base_creditos.get_mut(&chaves) para obter uma referência mutável do valor associado à chave.
@@ -678,115 +707,113 @@ fn distribuir_creditos_rateados(linhas: &[DocsFiscais], base_creditos: &mut Hash
         if let Some(valores) = base_creditos.get_mut(&chaves) {
             valores.distribuir_conforme_rateio(linha, linha.valor_bc);
         }
-    };
+    }
 }
 
 /// Obter Receita Bruta segregada por CST para fins de rateio dos créditos
-fn apurar_receita_bruta(receita_bruta: &HashMap<Chaves, Valores>) -> HashMap<PeriodoDeApuracao, ValorDaReceita> {
+fn apurar_receita_bruta(
+    receita_bruta: &HashMap<Chaves, Valores>,
+) -> HashMap<PeriodoDeApuracao, ValorDaReceita> {
     // CST já foi filtrado e pertence ao intervalo: 01 a 09.
     let mut hashmap: HashMap<PeriodoDeApuracao, ValorDaReceita> = HashMap::new();
 
-    receita_bruta
-        .iter()
-        .for_each(|(chaves, valores)| {
-            // Somar: RbncTot = RbnTrmi + RbnNtmi + RbnExpo
-            // Somar: RbTotal = RbncTot + RbCumul
-            let mut receitas: Vec<Option<ReceitaBruta>> = vec![Some(ReceitaBruta::RbTotal)];
+    receita_bruta.iter().for_each(|(chaves, valores)| {
+        // Somar: RbncTot = RbnTrmi + RbnNtmi + RbnExpo
+        // Somar: RbTotal = RbncTot + RbCumul
+        let mut receitas: Vec<Option<ReceitaBruta>> = vec![Some(ReceitaBruta::RbTotal)];
 
-            if chaves.aliq_pis == Some(OrderedFloat(0.65)) && chaves.aliq_cofins == Some(OrderedFloat(3.0)) {
-                receitas.push(Some(ReceitaBruta::RbCumul));
-            } else {
-                receitas.push(Some(ReceitaBruta::RbncTot));
-                match chaves.cst {
-                    Some(1|2|3|5) => receitas.push(Some(ReceitaBruta::RbnTrmi)),
-                    Some(4|6|7|9) => receitas.push(Some(ReceitaBruta::RbnNtmi)),
-                    Some(8) => {
-                        if chaves.cfop_de_exportacao() {
-                            receitas.push(Some(ReceitaBruta::RbnExpo))
-                        } else {
-                            receitas.push(Some(ReceitaBruta::RbnNtmi))
-                        }
-                    },
-                    _ => panic!("1 <= CST <= 9; CST obtido: {:?}!", chaves.cst),
+        if chaves.aliq_pis == Some(OrderedFloat(0.65))
+            && chaves.aliq_cofins == Some(OrderedFloat(3.0))
+        {
+            receitas.push(Some(ReceitaBruta::RbCumul));
+        } else {
+            receitas.push(Some(ReceitaBruta::RbncTot));
+            match chaves.cst {
+                Some(1 | 2 | 3 | 5) => receitas.push(Some(ReceitaBruta::RbnTrmi)),
+                Some(4 | 6 | 7 | 9) => receitas.push(Some(ReceitaBruta::RbnNtmi)),
+                Some(8) => {
+                    if chaves.cfop_de_exportacao() {
+                        receitas.push(Some(ReceitaBruta::RbnExpo))
+                    } else {
+                        receitas.push(Some(ReceitaBruta::RbnNtmi))
+                    }
                 }
-            };
-
-            let rb = ValorDaReceita {
-                valor: valores.valor_item,
-                pct: 0.0,
-                csts: vec![chaves.cst],
-            };
-
-            for receita in receitas {
-
-                let pa = PeriodoDeApuracao {
-                    cnpj_base: chaves.cnpj_base.clone(),
-                    ano: chaves.ano,
-                    trimestre: chaves.trimestre,
-                    mes: chaves.mes,
-                    rb_nome: receita,
-                };
-
-                // impl Add and AddAssign for Valores: Soma de Valores
-                hashmap
-                    .entry(pa)
-                    .and_modify(|previous_value| *previous_value += rb.clone())
-                    .or_insert(rb.clone());
+                _ => panic!("1 <= CST <= 9; CST obtido: {:?}!", chaves.cst),
             }
-        });
+        };
+
+        let rb = ValorDaReceita {
+            valor: valores.valor_item,
+            pct: 0.0,
+            csts: vec![chaves.cst],
+        };
+
+        for receita in receitas {
+            let pa = PeriodoDeApuracao {
+                cnpj_base: chaves.cnpj_base.clone(),
+                ano: chaves.ano,
+                trimestre: chaves.trimestre,
+                mes: chaves.mes,
+                rb_nome: receita,
+            };
+
+            // impl Add and AddAssign for Valores: Soma de Valores
+            hashmap
+                .entry(pa)
+                .and_modify(|previous_value| *previous_value += rb.clone())
+                .or_insert(rb.clone());
+        }
+    });
 
     hashmap
 }
 
-fn obter_informacoes_de_receita_bruta(receita_bruta_segregada: &HashMap<PeriodoDeApuracao, ValorDaReceita>) -> Vec<TabelaValorDaReceita> {
-
+fn obter_informacoes_de_receita_bruta(
+    receita_bruta_segregada: &HashMap<PeriodoDeApuracao, ValorDaReceita>,
+) -> Vec<TabelaValorDaReceita> {
     let mut lines: Vec<TabelaValorDaReceita> = Vec::new();
 
-    let mut sorted: Vec<(&PeriodoDeApuracao, &ValorDaReceita)> = receita_bruta_segregada
-        .iter()
-        .collect();
+    let mut sorted: Vec<(&PeriodoDeApuracao, &ValorDaReceita)> =
+        receita_bruta_segregada.iter().collect();
 
-    sorted.sort_by_key(|&(periodo_de_apuracao, _valor_da_receita)| (
-        periodo_de_apuracao.cnpj_base.clone(),
-        periodo_de_apuracao.ano,
-        periodo_de_apuracao.trimestre,
-        periodo_de_apuracao.mes,
-        periodo_de_apuracao.rb_nome,
-    ));
+    sorted.sort_by_key(|&(periodo_de_apuracao, _valor_da_receita)| {
+        (
+            periodo_de_apuracao.cnpj_base.clone(),
+            periodo_de_apuracao.ano,
+            periodo_de_apuracao.trimestre,
+            periodo_de_apuracao.mes,
+            periodo_de_apuracao.rb_nome,
+        )
+    });
 
     for (periodo_de_apuracao, valor_da_receita) in sorted
         .into_iter()
         // Ao Remover valores nulos, evita-se divisão por Zero.
         .filter(|&(_, valor_da_receita)| valor_da_receita.valor > ZERO)
-        {
-            let mut pa = periodo_de_apuracao.clone();
-            pa.rb_nome = Some(ReceitaBruta::RbTotal);
+    {
+        let mut pa = periodo_de_apuracao.clone();
+        pa.rb_nome = Some(ReceitaBruta::RbTotal);
 
-            // Obter o valor da Receita Bruta Total
-            let rb_total: Option<f64> = receita_bruta_segregada
-                .get(&pa)
-                .map(|v| v.valor);
+        // Obter o valor da Receita Bruta Total
+        let rb_total: Option<f64> = receita_bruta_segregada.get(&pa).map(|v| v.valor);
 
-            let pct: Option<f64> = Some(100.0 * valor_da_receita.valor)
-                .combine_with_div(rb_total);
+        let pct: Option<f64> = Some(100.0 * valor_da_receita.valor).combine_with_div(rb_total);
 
-            lines.push(
-                TabelaValorDaReceita {
-                    cnpj_base: periodo_de_apuracao.cnpj_base.clone(),
-                    ano:       periodo_de_apuracao.ano,
-                    trimestre: periodo_de_apuracao.trimestre,
-                    mes:       periodo_de_apuracao.mes,
-                    csts:      valor_da_receita.csts.clone(),
-                    rb_nome:   periodo_de_apuracao.rb_nome,
-                    valor:     Some(valor_da_receita.valor),
-                    pct,
-                }
-            );
+        lines.push(TabelaValorDaReceita {
+            cnpj_base: periodo_de_apuracao.cnpj_base.clone(),
+            ano: periodo_de_apuracao.ano,
+            trimestre: periodo_de_apuracao.trimestre,
+            mes: periodo_de_apuracao.mes,
+            csts: valor_da_receita.csts.clone(),
+            rb_nome: periodo_de_apuracao.rb_nome,
+            valor: Some(valor_da_receita.valor),
+            pct,
+        });
 
-            if periodo_de_apuracao.rb_nome == Some(ReceitaBruta::RbncTot) && pct == Some(100.0) {
-                break;
-            }
+        if periodo_de_apuracao.rb_nome == Some(ReceitaBruta::RbncTot) && pct == Some(100.0) {
+            break;
         }
+    }
 
     lines
 }
@@ -794,12 +821,12 @@ fn obter_informacoes_de_receita_bruta(receita_bruta_segregada: &HashMap<PeriodoD
 fn gerar_tabela_rec<'a, T: Tabled + Deserialize<'a>>(lines: &[T]) -> String {
     // https://crates.io/crates/tabled
     Table::new(lines)
-    .with(Modify::new(Columns::new(..4)).with(Alignment::center()))
-    .with(Modify::new(Columns::single(4)).with(Alignment::left()))
-    .with(Modify::new(Columns::new(5..)).with(Alignment::right()))
-    .with(Modify::new(Rows::single(0)).with(Alignment::center()))
-    .with(Style::rounded())
-    .to_string()
+        .with(Modify::new(Columns::new(..4)).with(Alignment::center()))
+        .with(Modify::new(Columns::single(4)).with(Alignment::left()))
+        .with(Modify::new(Columns::new(5..)).with(Alignment::right()))
+        .with(Modify::new(Rows::single(0)).with(Alignment::center()))
+        .with(Style::rounded())
+        .to_string()
 }
 
 #[allow(dead_code)]
@@ -807,9 +834,11 @@ fn analisar_rateio_dos_creditos(
     base_creditos: &HashMap<Chaves, Valores>,
     receita_bruta_segregada: &HashMap<PeriodoDeApuracao, ValorDaReceita>,
 ) -> Result<(), Box<dyn Error>> {
-
     let bc_com_creditos_distribuidos: HashMap<Chaves, Valores> =
-        distribuir_creditos_conforme_receita_bruta_segregada(base_creditos, receita_bruta_segregada);
+        distribuir_creditos_conforme_receita_bruta_segregada(
+            base_creditos,
+            receita_bruta_segregada,
+        );
 
     let delta: f64 = 0.50;
 
@@ -823,9 +852,8 @@ fn analisar_rateio_dos_creditos(
 /// Distribuir créditos conforme segregação da receita bruta
 fn distribuir_creditos_conforme_receita_bruta_segregada(
     base_creditos: &HashMap<Chaves, Valores>,
-    receita_bruta_segregada: &HashMap<PeriodoDeApuracao, ValorDaReceita>
+    receita_bruta_segregada: &HashMap<PeriodoDeApuracao, ValorDaReceita>,
 ) -> HashMap<Chaves, Valores> {
-
     let mut bc_com_creditos_distribuidos: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, &valores) in base_creditos
@@ -836,70 +864,106 @@ fn distribuir_creditos_conforme_receita_bruta_segregada(
 
         let mut pa = PeriodoDeApuracao {
             cnpj_base: chaves.cnpj_base.clone(),
-            ano:       chaves.ano,
+            ano: chaves.ano,
             trimestre: chaves.trimestre,
-            mes:       chaves.mes,
-            rb_nome:   None, // Atualizar pelo valor correspondente
+            mes: chaves.mes,
+            rb_nome: None, // Atualizar pelo valor correspondente
         };
 
         // Para este periodo_de_apuracao, obter valores da Receita Bruta Segregada
-        let rbn_trmi: f64 = receita_bruta_segregada.get({pa.rb_nome = Some(ReceitaBruta::RbnTrmi); &pa}).map(|v| v.valor).unwrap_or(0.0);
-        let rbn_ntmi: f64 = receita_bruta_segregada.get({pa.rb_nome = Some(ReceitaBruta::RbnNtmi); &pa}).map(|v| v.valor).unwrap_or(0.0);
-        let rbn_expo: f64 = receita_bruta_segregada.get({pa.rb_nome = Some(ReceitaBruta::RbnExpo); &pa}).map(|v| v.valor).unwrap_or(0.0);
-        let rbnc_tot: f64 = receita_bruta_segregada.get({pa.rb_nome = Some(ReceitaBruta::RbncTot); &pa}).map(|v| v.valor).unwrap_or(0.0);
-        let rb_cumul: f64 = receita_bruta_segregada.get({pa.rb_nome = Some(ReceitaBruta::RbCumul); &pa}).map(|v| v.valor).unwrap_or(0.0);
-        let rb_total: f64 = receita_bruta_segregada.get({pa.rb_nome = Some(ReceitaBruta::RbTotal); &pa}).map(|v| v.valor).unwrap_or(0.0);
+        let rbn_trmi: f64 = receita_bruta_segregada
+            .get({
+                pa.rb_nome = Some(ReceitaBruta::RbnTrmi);
+                &pa
+            })
+            .map(|v| v.valor)
+            .unwrap_or(0.0);
+        let rbn_ntmi: f64 = receita_bruta_segregada
+            .get({
+                pa.rb_nome = Some(ReceitaBruta::RbnNtmi);
+                &pa
+            })
+            .map(|v| v.valor)
+            .unwrap_or(0.0);
+        let rbn_expo: f64 = receita_bruta_segregada
+            .get({
+                pa.rb_nome = Some(ReceitaBruta::RbnExpo);
+                &pa
+            })
+            .map(|v| v.valor)
+            .unwrap_or(0.0);
+        let rbnc_tot: f64 = receita_bruta_segregada
+            .get({
+                pa.rb_nome = Some(ReceitaBruta::RbncTot);
+                &pa
+            })
+            .map(|v| v.valor)
+            .unwrap_or(0.0);
+        let rb_cumul: f64 = receita_bruta_segregada
+            .get({
+                pa.rb_nome = Some(ReceitaBruta::RbCumul);
+                &pa
+            })
+            .map(|v| v.valor)
+            .unwrap_or(0.0);
+        let rb_total: f64 = receita_bruta_segregada
+            .get({
+                pa.rb_nome = Some(ReceitaBruta::RbTotal);
+                &pa
+            })
+            .map(|v| v.valor)
+            .unwrap_or(0.0);
 
         if rb_total > ZERO {
             match chaves.cst {
-                Some(50|60) => {
-                    valores_bc.valor_rbnc_trib  = valores.valor_bc * (rbnc_tot / rb_total);
+                Some(50 | 60) => {
+                    valores_bc.valor_rbnc_trib = valores.valor_bc * (rbnc_tot / rb_total);
                     valores_bc.valor_rbnc_ntrib = ZERO;
-                    valores_bc.valor_rbnc_exp   = ZERO;
-                    valores_bc.valor_rb_cum     = valores.valor_bc * (rb_cumul / rb_total);
-                },
-                Some(51|61) => {
-                    valores_bc.valor_rbnc_trib  = ZERO;
+                    valores_bc.valor_rbnc_exp = ZERO;
+                    valores_bc.valor_rb_cum = valores.valor_bc * (rb_cumul / rb_total);
+                }
+                Some(51 | 61) => {
+                    valores_bc.valor_rbnc_trib = ZERO;
                     valores_bc.valor_rbnc_ntrib = valores.valor_bc * (rbnc_tot / rb_total);
-                    valores_bc.valor_rbnc_exp   = ZERO;
-                    valores_bc.valor_rb_cum     = valores.valor_bc * (rb_cumul / rb_total);
-                },
-                Some(52|62) => {
-                    valores_bc.valor_rbnc_trib  = ZERO;
+                    valores_bc.valor_rbnc_exp = ZERO;
+                    valores_bc.valor_rb_cum = valores.valor_bc * (rb_cumul / rb_total);
+                }
+                Some(52 | 62) => {
+                    valores_bc.valor_rbnc_trib = ZERO;
                     valores_bc.valor_rbnc_ntrib = ZERO;
-                    valores_bc.valor_rbnc_exp   = valores.valor_bc * (rbnc_tot / rb_total);
-                    valores_bc.valor_rb_cum     = valores.valor_bc * (rb_cumul / rb_total);
-                },
-                Some(53|63) => {
-                    valores_bc.valor_rbnc_trib  = valores.valor_bc * (rbn_trmi / rb_total);
+                    valores_bc.valor_rbnc_exp = valores.valor_bc * (rbnc_tot / rb_total);
+                    valores_bc.valor_rb_cum = valores.valor_bc * (rb_cumul / rb_total);
+                }
+                Some(53 | 63) => {
+                    valores_bc.valor_rbnc_trib = valores.valor_bc * (rbn_trmi / rb_total);
                     valores_bc.valor_rbnc_ntrib = valores.valor_bc * (rbn_ntmi / rb_total);
-                    valores_bc.valor_rbnc_exp   = ZERO;
-                    valores_bc.valor_rb_cum     = valores.valor_bc * (rb_cumul / rb_total);
-                },
-                Some(54|64) => {
-                    valores_bc.valor_rbnc_trib  = valores.valor_bc * (rbn_trmi / rb_total);
+                    valores_bc.valor_rbnc_exp = ZERO;
+                    valores_bc.valor_rb_cum = valores.valor_bc * (rb_cumul / rb_total);
+                }
+                Some(54 | 64) => {
+                    valores_bc.valor_rbnc_trib = valores.valor_bc * (rbn_trmi / rb_total);
                     valores_bc.valor_rbnc_ntrib = ZERO;
-                    valores_bc.valor_rbnc_exp   = valores.valor_bc * (rbn_expo / rb_total);
-                    valores_bc.valor_rb_cum     = valores.valor_bc * (rb_cumul / rb_total);
-                },
-                Some(55|65) => {
-                    valores_bc.valor_rbnc_trib  = ZERO;
+                    valores_bc.valor_rbnc_exp = valores.valor_bc * (rbn_expo / rb_total);
+                    valores_bc.valor_rb_cum = valores.valor_bc * (rb_cumul / rb_total);
+                }
+                Some(55 | 65) => {
+                    valores_bc.valor_rbnc_trib = ZERO;
                     valores_bc.valor_rbnc_ntrib = valores.valor_bc * (rbn_ntmi / rb_total);
-                    valores_bc.valor_rbnc_exp   = valores.valor_bc * (rbn_expo / rb_total);
-                    valores_bc.valor_rb_cum     = valores.valor_bc * (rb_cumul / rb_total);
-                },
-                Some(56|66) => {
-                    valores_bc.valor_rbnc_trib  = valores.valor_bc * (rbn_trmi / rb_total);
+                    valores_bc.valor_rbnc_exp = valores.valor_bc * (rbn_expo / rb_total);
+                    valores_bc.valor_rb_cum = valores.valor_bc * (rb_cumul / rb_total);
+                }
+                Some(56 | 66) => {
+                    valores_bc.valor_rbnc_trib = valores.valor_bc * (rbn_trmi / rb_total);
                     valores_bc.valor_rbnc_ntrib = valores.valor_bc * (rbn_ntmi / rb_total);
-                    valores_bc.valor_rbnc_exp   = valores.valor_bc * (rbn_expo / rb_total);
-                    valores_bc.valor_rb_cum     = valores.valor_bc * (rb_cumul / rb_total);
-                },
+                    valores_bc.valor_rbnc_exp = valores.valor_bc * (rbn_expo / rb_total);
+                    valores_bc.valor_rb_cum = valores.valor_bc * (rb_cumul / rb_total);
+                }
                 _ => (),
             }
         }
 
         bc_com_creditos_distribuidos.insert(chaves.clone(), valores_bc);
-    };
+    }
 
     bc_com_creditos_distribuidos
 }
@@ -918,13 +982,16 @@ fn confrontar_valores(
         match hashmap_b.get(k) {
             Some(val) => {
                 println!("{val:?}\n");
-                assert!(v.aproximadamente_iguais(val, delta), "Diferença maior que delta = {delta}");
-            },
+                assert!(
+                    v.aproximadamente_iguais(val, delta),
+                    "Diferença maior que delta = {delta}"
+                );
+            }
             None => {
                 eprintln!("Erro ao executar a função confrontar_valores()!");
                 eprintln!("Não foi possível encontrar os valores correspondentes após apuração.\n");
-                continue
-            },
+                continue;
+            }
         };
     }
 
@@ -935,19 +1002,18 @@ fn confrontar_valores(
 
 /// Round f64 values
 fn arredondar_valores_hmap(
-    hmap_original: &HashMap<Chaves, Valores>
+    hmap_original: &HashMap<Chaves, Valores>,
 ) -> Result<HashMap<Chaves, Valores>, Box<dyn Error>> {
-
     let mut hmap: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, valores) in hmap_original {
         let val = Valores {
-            valor_item:       valores.valor_item.round_float(DECIMAL_VALOR as i64),
-            valor_bc:         valores.valor_bc.round_float(DECIMAL_VALOR as i64),
-            valor_rbnc_trib:  valores.valor_rbnc_trib.round_float(DECIMAL_VALOR as i64),
+            valor_item: valores.valor_item.round_float(DECIMAL_VALOR as i64),
+            valor_bc: valores.valor_bc.round_float(DECIMAL_VALOR as i64),
+            valor_rbnc_trib: valores.valor_rbnc_trib.round_float(DECIMAL_VALOR as i64),
             valor_rbnc_ntrib: valores.valor_rbnc_ntrib.round_float(DECIMAL_VALOR as i64),
-            valor_rbnc_exp:   valores.valor_rbnc_exp.round_float(DECIMAL_VALOR as i64),
-            valor_rb_cum:     valores.valor_rb_cum.round_float(DECIMAL_VALOR as i64),
+            valor_rbnc_exp: valores.valor_rbnc_exp.round_float(DECIMAL_VALOR as i64),
+            valor_rb_cum: valores.valor_rb_cum.round_float(DECIMAL_VALOR as i64),
         };
         hmap.insert(chaves.clone(), val);
     }
@@ -956,7 +1022,6 @@ fn arredondar_valores_hmap(
 }
 
 fn imprimir_registros_do_bloco_m(bc_com_creditos_distribuidos: &HashMap<Chaves, Valores>) {
-
     let mut base_de_calculo_agrupado_por_natureza: BTreeMap<Chaves, Valores> = BTreeMap::new();
 
     // Informações agrupadas por Natureza da Base de Cálculo.
@@ -969,28 +1034,44 @@ fn imprimir_registros_do_bloco_m(bc_com_creditos_distribuidos: &HashMap<Chaves, 
             .entry(chaves_bloco_m)
             .and_modify(|previous_value| *previous_value += valores)
             .or_insert(valores);
-    };
+    }
 
     println!("base_de_calculo_agrupado_por_natureza: {base_de_calculo_agrupado_por_natureza:#?}");
 
     for tributo in [Pis, Cofins] {
-
         for (chaves, valores) in &base_de_calculo_agrupado_por_natureza {
-
             let valor_bc = f64_format(valores.valor_bc);
 
             let (aliquota, registro_pai, registro_filho, pct) = match tributo {
-                Pis    => (chaves.aliq_pis   .map_or("".to_string(), |v| thousands_separator(*v, DECIMAL_ALIQ)), "M100", "M105", 80.00),
-                Cofins => (chaves.aliq_cofins.map_or("".to_string(), |v| thousands_separator(*v, DECIMAL_ALIQ)), "M500", "M505", 20.00),
+                Pis => (
+                    chaves
+                        .aliq_pis
+                        .map_or("".to_string(), |v| thousands_separator(*v, DECIMAL_ALIQ)),
+                    "M100",
+                    "M105",
+                    80.00,
+                ),
+                Cofins => (
+                    chaves
+                        .aliq_cofins
+                        .map_or("".to_string(), |v| thousands_separator(*v, DECIMAL_ALIQ)),
+                    "M500",
+                    "M505",
+                    20.00,
+                ),
             };
 
             // |M100|101|0|800000|1,6500|||286073,44|0,00|0,00|0,00|286073,44|1|3575,92|3575,92|
             // |M100|201|0|800000|1,6500|||332794,35|0,00|0,00|0,00|332794,35|1|4159,93|4159,93|
             // |M100|301|0|800000|1,6500|||131215,27|0,00|0,00|0,00|131215,27|1|1640,19|1640,19|
 
-            for (coluna, valor) in [(100, valores.valor_rbnc_trib), (200, valores.valor_rbnc_ntrib), (300, valores.valor_rbnc_exp)]
-                .into_iter()
-                .filter(|&(_c, v)| v > ZERO)
+            for (coluna, valor) in [
+                (100, valores.valor_rbnc_trib),
+                (200, valores.valor_rbnc_ntrib),
+                (300, valores.valor_rbnc_exp),
+            ]
+            .into_iter()
+            .filter(|&(_c, v)| v > ZERO)
             {
                 let cod_credito = coluna + chaves.tipo_de_credito.unwrap();
 
@@ -998,10 +1079,11 @@ fn imprimir_registros_do_bloco_m(bc_com_creditos_distribuidos: &HashMap<Chaves, 
                 let vl_parcial = f64_format(valor / pct);
                 println!("|{registro_pai}|{cod_credito}|0|{valor_bc}|{aliquota}|||{vl_cred}|0,00|0,00|0,00|{vl_cred}|1|{vl_parcial}|{vl_parcial}|");
 
-                for (key, value) in bc_com_creditos_distribuidos
-                    .iter()
-                    .filter(|&(k, _v)| {let mut filter = k.clone(); filter.natureza_bc = None; chaves == &filter})
-                {
+                for (key, value) in bc_com_creditos_distribuidos.iter().filter(|&(k, _v)| {
+                    let mut filter = k.clone();
+                    filter.natureza_bc = None;
+                    chaves == &filter
+                }) {
                     // |M105|01|56|500000||500000|178795,90||||
                     // |M105|03|56|200000||200000|71518,36||||
                     // |M105|12|56|100000||100000|35759,18||||
@@ -1009,9 +1091,13 @@ fn imprimir_registros_do_bloco_m(bc_com_creditos_distribuidos: &HashMap<Chaves, 
                     if let (Some(natureza_bc), Some(cst)) = (key.natureza_bc, key.cst) {
                         let valor_bc = f64_format(value.valor_bc);
 
-                        for (_col, val) in [(100, value.valor_rbnc_trib), (200, value.valor_rbnc_ntrib), (300, value.valor_rbnc_exp)]
-                            .into_iter()
-                            .filter(|&(c, v)| c == coluna && v > ZERO)
+                        for (_col, val) in [
+                            (100, value.valor_rbnc_trib),
+                            (200, value.valor_rbnc_ntrib),
+                            (300, value.valor_rbnc_exp),
+                        ]
+                        .into_iter()
+                        .filter(|&(c, v)| c == coluna && v > ZERO)
                         {
                             let vl_bc_rateio = f64_format(val);
                             println!("|{registro_filho}|{natureza_bc:02}|{cst:02}|{valor_bc}||{valor_bc}|{vl_bc_rateio}||||");
@@ -1020,7 +1106,6 @@ fn imprimir_registros_do_bloco_m(bc_com_creditos_distribuidos: &HashMap<Chaves, 
                 }
             }
         }
-
     }
 }
 
@@ -1029,7 +1114,6 @@ fn f64_format(value: f64) -> String {
 }
 
 fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
-
     // Transmitir cod_credito (crédito com informação de rateio) para base_creditos.
     // Distribuir valores de Ajustes rateados nas colunas correspondentes: Trib, NTrib e Exportação.
 
@@ -1042,20 +1126,21 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
 
     for linha in linhas
         .iter()
-        .filter(|&linha| operacoes_selecionadas.contains(&linha.tipo_de_operacao)) // 3 ou 4: "Ajuste de ..."
+        .filter(|&linha| operacoes_selecionadas.contains(&linha.tipo_de_operacao))
+    // 3 ou 4: "Ajuste de ..."
     {
         let mut chaves = Chaves {
-            cnpj_base:        linha.get_cnpj_base(),
-            ano:              linha.ano,
-            trimestre:        linha.trimestre,
-            mes:              linha.mes,
+            cnpj_base: linha.get_cnpj_base(),
+            ano: linha.ano,
+            trimestre: linha.trimestre,
+            mes: linha.mes,
             tipo_de_operacao: linha.tipo_de_operacao,
-            tipo_de_credito:  linha.tipo_de_credito,
-            cst:              linha.cst,
-            cfop:             linha.cfop,
-            aliq_pis:         linha.aliq_pis   .map(OrderedFloat),
-            aliq_cofins:      linha.aliq_cofins.map(OrderedFloat),
-            natureza_bc:      None,
+            tipo_de_credito: linha.tipo_de_credito,
+            cst: linha.cst,
+            cfop: linha.cfop,
+            aliq_pis: linha.aliq_pis.map(OrderedFloat),
+            aliq_cofins: linha.aliq_cofins.map(OrderedFloat),
+            natureza_bc: None,
         };
 
         let delta = if linha.aliq_pis.is_some() {
@@ -1068,12 +1153,12 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
         chaves.natureza_bc = linha.tipo_de_operacao.map(|v| 10 * v + delta);
 
         let mut valores = Valores {
-            valor_item:       linha.valor_item.unwrap_or(ZERO),
-            valor_bc:         linha.valor_item.unwrap_or(ZERO),
-            valor_rbnc_trib:  ZERO,
+            valor_item: linha.valor_item.unwrap_or(ZERO),
+            valor_bc: linha.valor_item.unwrap_or(ZERO),
+            valor_rbnc_trib: ZERO,
             valor_rbnc_ntrib: ZERO,
-            valor_rbnc_exp:   ZERO,
-            valor_rb_cum:     ZERO,
+            valor_rbnc_exp: ZERO,
+            valor_rb_cum: ZERO,
         };
 
         valores.distribuir_conforme_rateio(linha, linha.valor_item);
@@ -1083,13 +1168,12 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
             .entry(chaves)
             .and_modify(|previous_value| *previous_value += valores)
             .or_insert(valores);
-    };
+    }
 
     ajustes
 }
 
 fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
-
     // Transmitir cod_credito (crédito com informação de rateio) para base_creditos.
     // Distribuir valores de Descontos rateados nas colunas correspondentes: Trib, NTrib e Exportação.
 
@@ -1102,20 +1186,21 @@ fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valo
 
     for linha in linhas
         .iter()
-        .filter(|&linha| operacoes_selecionadas.contains(&linha.tipo_de_operacao)) // 5 ou 6: "Desconto ..."
+        .filter(|&linha| operacoes_selecionadas.contains(&linha.tipo_de_operacao))
+    // 5 ou 6: "Desconto ..."
     {
         let mut chaves = Chaves {
-            cnpj_base:        linha.get_cnpj_base(),
-            ano:              linha.ano,
-            trimestre:        linha.trimestre,
-            mes:              linha.mes,
+            cnpj_base: linha.get_cnpj_base(),
+            ano: linha.ano,
+            trimestre: linha.trimestre,
+            mes: linha.mes,
             tipo_de_operacao: linha.tipo_de_operacao,
-            tipo_de_credito:  linha.tipo_de_credito,
-            cst:              linha.cst,
-            cfop:             linha.cfop,
-            aliq_pis:         linha.aliq_pis   .map(OrderedFloat),
-            aliq_cofins:      linha.aliq_cofins.map(OrderedFloat),
-            natureza_bc:      None,
+            tipo_de_credito: linha.tipo_de_credito,
+            cst: linha.cst,
+            cfop: linha.cfop,
+            aliq_pis: linha.aliq_pis.map(OrderedFloat),
+            aliq_cofins: linha.aliq_cofins.map(OrderedFloat),
+            natureza_bc: None,
         };
 
         let registro = linha.registro.as_str();
@@ -1125,19 +1210,19 @@ fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valo
             _ => {
                 eprintln!("fn distribuir_descontos_rateados()");
                 panic!("Erro: Registro {registro} não suportado!")
-            },
+            }
         };
 
         // Tipo de Operação, 5: "Desconto no Período", 6: "Desconto em Período Posterior"
         chaves.natureza_bc = linha.tipo_de_operacao.map(|v| 10 * v + delta);
 
         let mut valores = Valores {
-            valor_item:       linha.valor_item.unwrap_or(ZERO),
-            valor_bc:         linha.valor_item.unwrap_or(ZERO),
-            valor_rbnc_trib:  ZERO,
+            valor_item: linha.valor_item.unwrap_or(ZERO),
+            valor_bc: linha.valor_item.unwrap_or(ZERO),
+            valor_rbnc_trib: ZERO,
             valor_rbnc_ntrib: ZERO,
-            valor_rbnc_exp:   ZERO,
-            valor_rb_cum:     ZERO,
+            valor_rbnc_exp: ZERO,
+            valor_rb_cum: ZERO,
         };
 
         valores.distribuir_conforme_rateio(linha, linha.valor_item);
@@ -1147,34 +1232,32 @@ fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valo
             .entry(chaves)
             .and_modify(|previous_value| *previous_value += valores)
             .or_insert(valores);
-    };
+    }
 
     descontos
 }
 
-fn somar_base_de_calculo_valor_parcial(base_creditos: &HashMap<Chaves, Valores>) -> HashMap<Chaves, Valores> {
-
+fn somar_base_de_calculo_valor_parcial(
+    base_creditos: &HashMap<Chaves, Valores>,
+) -> HashMap<Chaves, Valores> {
     let mut base_de_calculo: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, &valores) in base_creditos.iter() {
-
         let mut chaves_bc = chaves.clone();
 
         match chaves.tipo_de_credito {
             Some(tipo_de_credito) => {
                 chaves_bc.cst = Some(910);
                 chaves_bc.natureza_bc = Some(tipo_de_credito + 100);
-            },
+            }
             _ => continue,
         };
 
         // Crédito vinculado à Receita Bruta Cumulativa deve ser descartado!
         let receita_bruta_nao_cumulativa =
-            valores.valor_rbnc_trib +
-            valores.valor_rbnc_ntrib +
-            valores.valor_rbnc_exp;
+            valores.valor_rbnc_trib + valores.valor_rbnc_ntrib + valores.valor_rbnc_exp;
 
-        let mut valores_base_calculo_soma  = valores;
+        let mut valores_base_calculo_soma = valores;
         valores_base_calculo_soma.valor_bc = receita_bruta_nao_cumulativa;
 
         // impl Add and AddAssign for Valores: Soma de Valores
@@ -1182,58 +1265,62 @@ fn somar_base_de_calculo_valor_parcial(base_creditos: &HashMap<Chaves, Valores>)
             .entry(chaves_bc)
             .and_modify(|previous_value| *previous_value += valores_base_calculo_soma)
             .or_insert(valores_base_calculo_soma);
-    };
+    }
 
     base_de_calculo
 }
 
 fn apurar_credito_das_contribuicoes(base_creditos: &mut HashMap<Chaves, Valores>) {
-
     let mut credito_apurado: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, &valores) in base_creditos
         .iter()
         // Filtrar 'Base de Cálculo dos Créditos', valores entre 101 e 199.
         // .filter(|&(chaves, _valores)| chaves.natureza_bc > Some(100) && chaves.natureza_bc < Some(200))
-        .filter(|&(chaves, _valores)| BASE_CALC_SOMA.map(Some).binary_search(&chaves.natureza_bc).is_ok() )
+        .filter(|&(chaves, _valores)| {
+            BASE_CALC_SOMA
+                .map(Some)
+                .binary_search(&chaves.natureza_bc)
+                .is_ok()
+        })
+    {
+        for (tributo, aliquota) in [(Pis, chaves.aliq_pis), (Cofins, chaves.aliq_cofins)]
+            .into_iter()
+            .filter(|(_tributo, aliquota)| aliquota.is_some())
+            .map(|(tributo, aliquota)| (tributo, *aliquota.unwrap()))
         {
-            for (tributo, aliquota) in [(Pis, chaves.aliq_pis), (Cofins, chaves.aliq_cofins)]
-                .into_iter()
-                .filter(|(_tributo, aliquota)| aliquota.is_some())
-                .map(|(tributo, aliquota)| (tributo, *aliquota.unwrap()))
-                {
-                    let mut chaves_apuracao = chaves.clone();
+            let mut chaves_apuracao = chaves.clone();
 
-                    match tributo {
-                        Pis => { // Crédito Apurado no Período (PIS/PASEP)
-                            chaves_apuracao.cst = Some(920);
-                            chaves_apuracao.aliq_cofins = None;
-                            chaves_apuracao.natureza_bc = Some(201);
-                        },
-                        Cofins => { // Crédito Apurado no Período (COFINS)
-                            chaves_apuracao.cst = Some(930);
-                            chaves_apuracao.aliq_pis = None;
-                            chaves_apuracao.natureza_bc = Some(205);
-                        },
-                    }
-
-                    // Foi implementada a função de multiplicação (mul) entre Valores e f64.
-                    let valores_apurados = valores * (aliquota / 100.00);
-
-                    credito_apurado.insert(chaves_apuracao, valores_apurados);
+            match tributo {
+                Pis => {
+                    // Crédito Apurado no Período (PIS/PASEP)
+                    chaves_apuracao.cst = Some(920);
+                    chaves_apuracao.aliq_cofins = None;
+                    chaves_apuracao.natureza_bc = Some(201);
                 }
-        };
+                Cofins => {
+                    // Crédito Apurado no Período (COFINS)
+                    chaves_apuracao.cst = Some(930);
+                    chaves_apuracao.aliq_pis = None;
+                    chaves_apuracao.natureza_bc = Some(205);
+                }
+            }
+
+            // Foi implementada a função de multiplicação (mul) entre Valores e f64.
+            let valores_apurados = valores * (aliquota / 100.00);
+
+            credito_apurado.insert(chaves_apuracao, valores_apurados);
+        }
+    }
 
     // Merge two HashMaps in Rust
     base_creditos.extend(credito_apurado);
 }
 
 fn calcular_credito_apos_ajustes(base_creditos: &mut HashMap<Chaves, Valores>) {
-
     let mut credito_apos_ajustes: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, &valores) in base_creditos.iter() {
-
         let mut chaves_bc = chaves.clone();
 
         // Filtrar 'Crédito Apurado no Período':
@@ -1259,7 +1346,7 @@ fn calcular_credito_apos_ajustes(base_creditos: &mut HashMap<Chaves, Valores>) {
         }
         */
 
-        chaves_bc.aliq_pis    = None;
+        chaves_bc.aliq_pis = None;
         chaves_bc.aliq_cofins = None;
 
         if credito_apurado_pis || ajustes_pis {
@@ -1288,18 +1375,16 @@ fn calcular_credito_apos_ajustes(base_creditos: &mut HashMap<Chaves, Valores>) {
             .entry(chaves_bc)
             .and_modify(|previous_value| *previous_value += valores)
             .or_insert(valores);
-    };
+    }
 
     // Merge two HashMaps in Rust
     base_creditos.extend(credito_apos_ajustes);
 }
 
 fn calcular_credito_apos_descontos(base_creditos: &mut HashMap<Chaves, Valores>) {
-
     let mut credito_apos_ajustes: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, &valores) in base_creditos.iter() {
-
         let mut chaves_bc = chaves.clone();
 
         // Filtrar 'Crédito Disponível após Ajustes':
@@ -1325,7 +1410,7 @@ fn calcular_credito_apos_descontos(base_creditos: &mut HashMap<Chaves, Valores>)
         }
         */
 
-        chaves_bc.aliq_pis    = None;
+        chaves_bc.aliq_pis = None;
         chaves_bc.aliq_cofins = None;
 
         if cred_apos_ajustes_pis || descontos_pis {
@@ -1354,24 +1439,22 @@ fn calcular_credito_apos_descontos(base_creditos: &mut HashMap<Chaves, Valores>)
             .entry(chaves_bc)
             .and_modify(|previous_value| *previous_value += valores)
             .or_insert(valores);
-    };
+    }
 
     // Merge two HashMaps in Rust
     base_creditos.extend(credito_apos_ajustes);
 }
 
 fn somar_base_de_calculo_valor_total(base_creditos: &mut HashMap<Chaves, Valores>) {
-
     let mut base_de_calculo: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, &valores) in base_creditos.iter() {
-
         let mut chaves_bc = chaves.clone();
 
         if chaves_bc.natureza_bc >= Some(101) && chaves_bc.natureza_bc <= Some(199) {
             chaves_bc.tipo_de_operacao = None;
-            chaves_bc.tipo_de_credito  = Some(100);
-            chaves_bc.aliq_pis    = None;
+            chaves_bc.tipo_de_credito = Some(100);
+            chaves_bc.aliq_pis = None;
             chaves_bc.aliq_cofins = None;
             chaves_bc.natureza_bc = Some(300);
         } else {
@@ -1383,18 +1466,18 @@ fn somar_base_de_calculo_valor_total(base_creditos: &mut HashMap<Chaves, Valores
             .entry(chaves_bc)
             .and_modify(|previous_value| *previous_value += valores)
             .or_insert(valores);
-    };
+    }
 
     // Merge two HashMaps in Rust
     base_creditos.extend(base_de_calculo);
 }
 
-fn calcular_saldo_de_credito_passivel_de_ressarcimento(base_creditos: &mut HashMap<Chaves, Valores>) {
-
+fn calcular_saldo_de_credito_passivel_de_ressarcimento(
+    base_creditos: &mut HashMap<Chaves, Valores>,
+) {
     let mut credito_apos_ajustes: HashMap<Chaves, Valores> = HashMap::new();
 
     for (chaves, &valores) in base_creditos.iter() {
-
         let mut chaves_bc = chaves.clone();
 
         // Filtrar 'Crédito Disponível após Descontos':
@@ -1407,8 +1490,8 @@ fn calcular_saldo_de_credito_passivel_de_ressarcimento(base_creditos: &mut HashM
         }
 
         chaves_bc.tipo_de_operacao = None;
-        chaves_bc.tipo_de_credito  = Some(100);
-        chaves_bc.aliq_pis    = None;
+        chaves_bc.tipo_de_credito = Some(100);
+        chaves_bc.aliq_pis = None;
         chaves_bc.aliq_cofins = None;
 
         if descontos_pis {
@@ -1423,7 +1506,7 @@ fn calcular_saldo_de_credito_passivel_de_ressarcimento(base_creditos: &mut HashM
             .entry(chaves_bc)
             .and_modify(|previous_value| *previous_value += valores)
             .or_insert(valores);
-    };
+    }
 
     // Merge two HashMaps in Rust
     base_creditos.extend(credito_apos_ajustes);
@@ -1431,13 +1514,13 @@ fn calcular_saldo_de_credito_passivel_de_ressarcimento(base_creditos: &mut HashM
 
 // https://doc.rust-lang.org/book/ch10-02-traits.html
 pub fn realizar_somas_trimestrais<T, U>(resultado: &mut HashMap<T, U>)
-    where T: Mes + Eq + Hash + Clone,
-          U: Clone + Add<Output = U> + AddAssign,
+where
+    T: Mes + Eq + Hash + Clone,
+    U: Clone + Add<Output = U> + AddAssign,
 {
     let mut resultado_trimestral: HashMap<T, U> = HashMap::new();
 
     for (chaves, valores) in resultado.iter() {
-
         let mut chaves_trimestrais = chaves.clone();
 
         // mês fictício 13 para fins de soma e ordenação.
@@ -1448,69 +1531,67 @@ pub fn realizar_somas_trimestrais<T, U>(resultado: &mut HashMap<T, U>)
             .entry(chaves_trimestrais)
             .and_modify(|previous_value| *previous_value += valores.clone())
             .or_insert(valores.clone());
-    };
+    }
 
     // Merge two HashMaps in Rust
     resultado.extend(resultado_trimestral);
 }
 
 fn ordenar(hmap: HashMap<Chaves, Valores>) -> Vec<(Chaves, Valores)> {
-
     // transform hashmap to vec
     let mut vec_from_hash: Vec<(Chaves, Valores)> = hmap.into_iter().collect();
 
-    vec_from_hash.sort_by_key(|(chaves, _valores)| (
-        chaves.cnpj_base.clone(),
-        chaves.ano,
-        chaves.trimestre,
-        chaves.mes,
-        chaves.tipo_de_credito,
-        chaves.tipo_de_operacao,
-        chaves.cst,
-        chaves.natureza_bc,
-        //(chaves.cst.is_none(), 100),
-        //(chaves.cst.is_some(), Reverse(chaves.cst)),
-        //(Reverse(chaves.cst), chaves.natureza_bc <= Some(18)),
-        chaves.aliq_pis,
-        chaves.aliq_cofins,
-    ));
+    vec_from_hash.sort_by_key(|(chaves, _valores)| {
+        (
+            chaves.cnpj_base.clone(),
+            chaves.ano,
+            chaves.trimestre,
+            chaves.mes,
+            chaves.tipo_de_credito,
+            chaves.tipo_de_operacao,
+            chaves.cst,
+            chaves.natureza_bc,
+            //(chaves.cst.is_none(), 100),
+            //(chaves.cst.is_some(), Reverse(chaves.cst)),
+            //(Reverse(chaves.cst), chaves.natureza_bc <= Some(18)),
+            chaves.aliq_pis,
+            chaves.aliq_cofins,
+        )
+    });
 
-    vec_from_hash
-        .par_iter_mut()
-        .for_each(|(chaves, _valores)|{
-            // Remover valores temporários de CST.
-            // Estes valores foram adicionados com a finalidade de ordenação.
-            if chaves.cst >= Some(900) {
-                chaves.cst = None;
-            }
-        });
+    vec_from_hash.par_iter_mut().for_each(|(chaves, _valores)| {
+        // Remover valores temporários de CST.
+        // Estes valores foram adicionados com a finalidade de ordenação.
+        if chaves.cst >= Some(900) {
+            chaves.cst = None;
+        }
+    });
 
     vec_from_hash
 }
 
 fn get_analises(info_ordenada: &[(Chaves, Valores)]) -> Vec<AnaliseDosCreditos> {
-
     let mut lines: Vec<AnaliseDosCreditos> = Vec::new();
 
     for (chaves, valores) in info_ordenada {
         let receita_bruta_cumulativa = calcular_rb_cumulativa(valores);
 
         let mut line = AnaliseDosCreditos {
-            cnpj_base:        chaves.cnpj_base.clone(),
-            ano:              chaves.ano,
-            trimestre:        chaves.trimestre,
-            mes:              chaves.mes,
+            cnpj_base: chaves.cnpj_base.clone(),
+            ano: chaves.ano,
+            trimestre: chaves.trimestre,
+            mes: chaves.mes,
             tipo_de_operacao: chaves.tipo_de_operacao,
-            tipo_de_credito:  chaves.tipo_de_credito,
-            cst:              chaves.cst,
-            aliq_pis:         chaves.aliq_pis.map(|v| *v),
-            aliq_cofins:      chaves.aliq_cofins.map(|v| *v),
-            natureza_bc:      chaves.natureza_bc,
-            valor_bc:         Some(valores.valor_bc),
-            valor_rbnc_trib:  Some(valores.valor_rbnc_trib),
+            tipo_de_credito: chaves.tipo_de_credito,
+            cst: chaves.cst,
+            aliq_pis: chaves.aliq_pis.map(|v| *v),
+            aliq_cofins: chaves.aliq_cofins.map(|v| *v),
+            natureza_bc: chaves.natureza_bc,
+            valor_bc: Some(valores.valor_bc),
+            valor_rbnc_trib: Some(valores.valor_rbnc_trib),
             valor_rbnc_ntrib: Some(valores.valor_rbnc_ntrib),
-            valor_rbnc_exp:   Some(valores.valor_rbnc_exp),
-            valor_rb_cum:     Some(receita_bruta_cumulativa),
+            valor_rbnc_exp: Some(valores.valor_rbnc_exp),
+            valor_rb_cum: Some(receita_bruta_cumulativa),
         };
 
         line.despise_small_values();
@@ -1525,10 +1606,7 @@ fn get_analises(info_ordenada: &[(Chaves, Valores)]) -> Vec<AnaliseDosCreditos> 
 // Receita Bruta Total = Receita Bruta Cumulativa + Receita Bruta Não Cumulativa ->
 // Receita Bruta Cumulativa = Receita Bruta Total - Receita Bruta Não Cumulativa
 fn calcular_rb_cumulativa(val: &Valores) -> f64 {
-    let rec_bruta_nao_cumulativa =
-        val.valor_rbnc_trib +
-        val.valor_rbnc_ntrib +
-        val.valor_rbnc_exp;
+    let rec_bruta_nao_cumulativa = val.valor_rbnc_trib + val.valor_rbnc_ntrib + val.valor_rbnc_exp;
 
     let mut rec_bruta_cumulativa = val.valor_bc - rec_bruta_nao_cumulativa;
 
@@ -1540,7 +1618,6 @@ fn calcular_rb_cumulativa(val: &Valores) -> f64 {
 }
 
 fn gerar_tabela_nat<'a, T: Tabled + Deserialize<'a>>(lines: &[T]) -> String {
-
     // use serde_aux::prelude::serde_introspect;
     let colunas_vec = serde_introspect::<T>();
     let number_of_fields = colunas_vec.len();
@@ -1549,14 +1626,14 @@ fn gerar_tabela_nat<'a, T: Tabled + Deserialize<'a>>(lines: &[T]) -> String {
 
     // https://crates.io/crates/tabled
     Table::new(lines)
-    .with(Modify::new(Segment::all()).with(Alignment::center()))
-    .with(Modify::new(Columns::single(number_of_fields - 6)).with(Alignment::left()))
-    .with(Modify::new(Columns::new(number_of_fields - 5 ..)).with(Alignment::right()))
-    .with(Modify::new(Rows::single(0)).with(Alignment::center()))
-    //.with(Modify::new(Rows::single(0)).with(Format::new(|s| s.blue().to_string())))
-    //.with(Modify::new(Rows::new(..)).with(Format::new(|s| s.blue().to_string())))
-    .with(Style::rounded())
-    .to_string()
+        .with(Modify::new(Segment::all()).with(Alignment::center()))
+        .with(Modify::new(Columns::single(number_of_fields - 6)).with(Alignment::left()))
+        .with(Modify::new(Columns::new(number_of_fields - 5..)).with(Alignment::right()))
+        .with(Modify::new(Rows::single(0)).with(Alignment::center()))
+        //.with(Modify::new(Rows::single(0)).with(Format::new(|s| s.blue().to_string())))
+        //.with(Modify::new(Rows::new(..)).with(Format::new(|s| s.blue().to_string())))
+        .with(Style::rounded())
+        .to_string()
 }
 
 #[cfg(test)]
@@ -1568,7 +1645,7 @@ mod tests {
 
     #[test]
     fn operacoes_com_vetores() {
-    // cargo test -- --show-output operacoes_com_vetores
+        // cargo test -- --show-output operacoes_com_vetores
 
         let mut vec_a = vec![1, 3, 5];
         println!("vec_a: {:?}", vec_a);
@@ -1592,36 +1669,36 @@ mod tests {
     fn struct_sum() {
         // cargo test
         let val_a = Valores {
-            valor_item:       1.2,
-            valor_bc:         1.2,
-            valor_rbnc_trib:  0.2,
+            valor_item: 1.2,
+            valor_bc: 1.2,
+            valor_rbnc_trib: 0.2,
             valor_rbnc_ntrib: 0.2,
-            valor_rbnc_exp:   0.2,
-            valor_rb_cum:     0.2,
+            valor_rbnc_exp: 0.2,
+            valor_rb_cum: 0.2,
         };
         let val_b = Valores {
-            valor_item:       0.3,
-            valor_bc:         0.3,
-            valor_rbnc_trib:  1.3,
+            valor_item: 0.3,
+            valor_bc: 0.3,
+            valor_rbnc_trib: 1.3,
             valor_rbnc_ntrib: 1.3,
-            valor_rbnc_exp:   1.3,
-            valor_rb_cum:     1.3,
+            valor_rbnc_exp: 1.3,
+            valor_rb_cum: 1.3,
         };
         let val_c = Valores {
-            valor_item:       3.5,
-            valor_bc:         3.5,
-            valor_rbnc_trib:  3.5,
+            valor_item: 3.5,
+            valor_bc: 3.5,
+            valor_rbnc_trib: 3.5,
             valor_rbnc_ntrib: 3.5,
-            valor_rbnc_exp:   3.5,
-            valor_rb_cum:     3.5,
+            valor_rbnc_exp: 3.5,
+            valor_rb_cum: 3.5,
         };
         let val_d = Valores {
-            valor_item:       5.0,
-            valor_bc:         5.0,
-            valor_rbnc_trib:  5.0,
+            valor_item: 5.0,
+            valor_bc: 5.0,
+            valor_rbnc_trib: 5.0,
             valor_rbnc_ntrib: 5.0,
-            valor_rbnc_exp:   5.0,
-            valor_rb_cum:     5.0,
+            valor_rbnc_exp: 5.0,
+            valor_rb_cum: 5.0,
         };
         assert_eq!(val_a + val_b + val_c, val_d);
     }
@@ -1631,32 +1708,32 @@ mod tests {
         // cargo test
         // cargo test -- --show-output struct_mul
         let val_a1 = Valores {
-            valor_item:       1.0,
-            valor_bc:         1.0,
-            valor_rbnc_trib:  1.0,
+            valor_item: 1.0,
+            valor_bc: 1.0,
+            valor_rbnc_trib: 1.0,
             valor_rbnc_ntrib: 1.0,
-            valor_rbnc_exp:   1.0,
-            valor_rb_cum:     1.0,
+            valor_rbnc_exp: 1.0,
+            valor_rb_cum: 1.0,
         };
 
         let val_a5 = val_a1 * 5.0;
         let val_a7 = val_a1.mul(7.0);
 
         let val_b = Valores {
-            valor_item:       5.0,
-            valor_bc:         5.0,
-            valor_rbnc_trib:  5.0,
+            valor_item: 5.0,
+            valor_bc: 5.0,
+            valor_rbnc_trib: 5.0,
             valor_rbnc_ntrib: 5.0,
-            valor_rbnc_exp:   5.0,
-            valor_rb_cum:     5.0,
+            valor_rbnc_exp: 5.0,
+            valor_rb_cum: 5.0,
         };
         let val_c = Valores {
-            valor_item:       7.0,
-            valor_bc:         7.0,
-            valor_rbnc_trib:  7.0,
+            valor_item: 7.0,
+            valor_bc: 7.0,
+            valor_rbnc_trib: 7.0,
             valor_rbnc_ntrib: 7.0,
-            valor_rbnc_exp:   7.0,
-            valor_rb_cum:     7.0,
+            valor_rbnc_exp: 7.0,
+            valor_rb_cum: 7.0,
         };
 
         assert_eq!(val_a5, val_b);
@@ -1671,7 +1748,9 @@ mod tests {
     fn hashmap_sum_values_by_key() {
         // cargo test -- --show-output hashmap_sum_values_by_key
 
-        let mut docs_fiscais1 = DocsFiscais {..Default::default()};
+        let mut docs_fiscais1 = DocsFiscais {
+            ..Default::default()
+        };
         docs_fiscais1.estabelecimento_cnpj = "12.345.678/0001-23".to_string();
         docs_fiscais1.tipo_de_operacao = Some(1); // 1: Entrada
         docs_fiscais1.cst = Some(51);
@@ -1681,7 +1760,9 @@ mod tests {
         docs_fiscais1.valor_item = Some(15.000);
         docs_fiscais1.valor_bc = Some(10.000);
 
-        let mut docs_fiscais2 = DocsFiscais {..Default::default()};
+        let mut docs_fiscais2 = DocsFiscais {
+            ..Default::default()
+        };
         docs_fiscais2.estabelecimento_cnpj = "12.345.678/0001-23".to_string();
         docs_fiscais2.tipo_de_operacao = Some(1); // 1: Entrada
         docs_fiscais2.cst = Some(51);
@@ -1691,7 +1772,9 @@ mod tests {
         docs_fiscais2.valor_item = Some(22.000);
         docs_fiscais2.valor_bc = Some(8.000);
 
-        let mut docs_fiscais3 = DocsFiscais {..Default::default()};
+        let mut docs_fiscais3 = DocsFiscais {
+            ..Default::default()
+        };
         docs_fiscais3.estabelecimento_cnpj = "12.345.678/0001-23".to_string();
         docs_fiscais3.tipo_de_operacao = Some(1); // 1: Entrada
         docs_fiscais3.cst = Some(51);
@@ -1701,7 +1784,9 @@ mod tests {
         docs_fiscais3.valor_item = Some(8.000);
         docs_fiscais3.valor_bc = Some(2.000);
 
-        let mut docs_fiscais4 = DocsFiscais {..Default::default()};
+        let mut docs_fiscais4 = DocsFiscais {
+            ..Default::default()
+        };
         docs_fiscais4.estabelecimento_cnpj = "12.345.678/0001-23".to_string();
         docs_fiscais4.tipo_de_operacao = Some(1); // 1: Entrada
         docs_fiscais4.cst = Some(51);
@@ -1711,7 +1796,9 @@ mod tests {
         docs_fiscais4.valor_item = Some(25.000);
         docs_fiscais4.valor_bc = Some(18.000);
 
-        let mut docs_fiscais5 = DocsFiscais {..Default::default()};
+        let mut docs_fiscais5 = DocsFiscais {
+            ..Default::default()
+        };
         docs_fiscais5.estabelecimento_cnpj = "12.345.678/0001-23".to_string();
         docs_fiscais5.tipo_de_operacao = Some(1); // 1: Entrada
         docs_fiscais5.cst = Some(51);
@@ -1734,55 +1821,52 @@ mod tests {
         println!("somas_nat: {somas_nat:#?}");
 
         let chaves1 = Chaves {
-                cnpj_base: "12.345.678".to_string(),
-                ano: None,
-                trimestre: None,
-                mes: None,
-                tipo_de_operacao: Some(1),
-                tipo_de_credito: Some(1),
-                cst: Some(51),
-                cfop: None,
-                aliq_pis: None,
-                aliq_cofins: None,
-                natureza_bc: Some(7),
+            cnpj_base: "12.345.678".to_string(),
+            ano: None,
+            trimestre: None,
+            mes: None,
+            tipo_de_operacao: Some(1),
+            tipo_de_credito: Some(1),
+            cst: Some(51),
+            cfop: None,
+            aliq_pis: None,
+            aliq_cofins: None,
+            natureza_bc: Some(7),
         };
 
         let valores1 = Valores {
-                valor_item: 50.00,
-                valor_bc: 40.00,
-                valor_rbnc_trib: ZERO,
-                valor_rbnc_ntrib: ZERO,
-                valor_rbnc_exp: ZERO,
-                valor_rb_cum: ZERO,
+            valor_item: 50.00,
+            valor_bc: 40.00,
+            valor_rbnc_trib: ZERO,
+            valor_rbnc_ntrib: ZERO,
+            valor_rbnc_exp: ZERO,
+            valor_rb_cum: ZERO,
         };
 
         let chaves2 = Chaves {
-                cnpj_base: "12.345.678".to_string(),
-                ano: None,
-                trimestre: None,
-                mes: None,
-                tipo_de_operacao: Some(1),
-                tipo_de_credito: Some(1),
-                cst: Some(51),
-                cfop: None,
-                aliq_pis: None,
-                aliq_cofins: None,
-                natureza_bc: Some(12),
+            cnpj_base: "12.345.678".to_string(),
+            ano: None,
+            trimestre: None,
+            mes: None,
+            tipo_de_operacao: Some(1),
+            tipo_de_credito: Some(1),
+            cst: Some(51),
+            cfop: None,
+            aliq_pis: None,
+            aliq_cofins: None,
+            natureza_bc: Some(12),
         };
 
         let valores2 = Valores {
-                valor_item: 30.00,
-                valor_bc: 10.00,
-                valor_rbnc_trib: ZERO,
-                valor_rbnc_ntrib: ZERO,
-                valor_rbnc_exp: ZERO,
-                valor_rb_cum: ZERO,
+            valor_item: 30.00,
+            valor_bc: 10.00,
+            valor_rbnc_trib: ZERO,
+            valor_rbnc_ntrib: ZERO,
+            valor_rbnc_exp: ZERO,
+            valor_rb_cum: ZERO,
         };
 
-        let hashmap = HashMap::from([
-            (chaves1, valores1),
-            (chaves2, valores2),
-        ]);
+        let hashmap = HashMap::from([(chaves1, valores1), (chaves2, valores2)]);
 
         assert_eq!(hashmap, somas_nat);
     }

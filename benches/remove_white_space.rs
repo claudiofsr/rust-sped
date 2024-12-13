@@ -99,10 +99,10 @@ fn remove_multiple_whitespace5(s: &str) -> String {
 
 fn tw_split_space(s: &str) -> String {
     s.trim()
-    .split(' ')
-    .filter(|s| !s.is_empty())
-    .collect::<Vec<_>>()
-    .join(" ")
+        .split(' ')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn twss_itertools(s: &str) -> String {
@@ -140,8 +140,8 @@ fn trim_whitespace_v2(s: &str) -> String {
 }
 
 fn benchmark(c: &mut Criterion) {
-
-    let strings: &str = "  a   bb cc   ddd  fraç   ão foo  bar !!  1 2  3 45 程式   设计  67  && RR ";
+    let strings: &str =
+        "  a   bb cc   ddd  fraç   ão foo  bar !!  1 2  3 45 程式   设计  67  && RR ";
 
     let mut group = c.benchmark_group("Espaços em Branco");
 
@@ -149,18 +149,42 @@ fn benchmark(c: &mut Criterion) {
     group.measurement_time(std::time::Duration::from_secs(20));
     group.sample_size(5_000);
 
-    group.bench_function("trim_whitespace_replace",     |b| b.iter(|| trim_whitespace_replace(black_box(strings))));
-    group.bench_function("remove_multiple_whitespace1", |b| b.iter(|| remove_multiple_whitespace1(black_box(strings))));
-    group.bench_function("remove_multiple_whitespace2", |b| b.iter(|| remove_multiple_whitespace2(black_box(strings))));
-    group.bench_function("remove_multiple_whitespace3", |b| b.iter(|| remove_multiple_whitespace3(black_box(strings))));
-    group.bench_function("remove_multiple_whitespace4", |b| b.iter(|| remove_multiple_whitespace4(black_box(strings))));
-    group.bench_function("remove_multiple_whitespace5", |b| b.iter(|| remove_multiple_whitespace5(black_box(strings.trim()))));
-    group.bench_function("tw_split_space",              |b| b.iter(|| tw_split_space(black_box(strings))));
-    group.bench_function("twss_itertools",              |b| b.iter(|| twss_itertools(black_box(strings))));
-    group.bench_function("tw_split_whitespace",         |b| b.iter(|| tw_split_whitespace(black_box(strings))));
-    group.bench_function("tw_itertools",                |b| b.iter(|| tw_itertools(black_box(strings))));
-    group.bench_function("tw_one_string",               |b| b.iter(|| tw_one_string(black_box(strings))));
-    group.bench_function("trim_whitespace_v2",          |b| b.iter(|| trim_whitespace_v2(black_box(strings))));
+    group.bench_function("trim_whitespace_replace", |b| {
+        b.iter(|| trim_whitespace_replace(black_box(strings)))
+    });
+    group.bench_function("remove_multiple_whitespace1", |b| {
+        b.iter(|| remove_multiple_whitespace1(black_box(strings)))
+    });
+    group.bench_function("remove_multiple_whitespace2", |b| {
+        b.iter(|| remove_multiple_whitespace2(black_box(strings)))
+    });
+    group.bench_function("remove_multiple_whitespace3", |b| {
+        b.iter(|| remove_multiple_whitespace3(black_box(strings)))
+    });
+    group.bench_function("remove_multiple_whitespace4", |b| {
+        b.iter(|| remove_multiple_whitespace4(black_box(strings)))
+    });
+    group.bench_function("remove_multiple_whitespace5", |b| {
+        b.iter(|| remove_multiple_whitespace5(black_box(strings.trim())))
+    });
+    group.bench_function("tw_split_space", |b| {
+        b.iter(|| tw_split_space(black_box(strings)))
+    });
+    group.bench_function("twss_itertools", |b| {
+        b.iter(|| twss_itertools(black_box(strings)))
+    });
+    group.bench_function("tw_split_whitespace", |b| {
+        b.iter(|| tw_split_whitespace(black_box(strings)))
+    });
+    group.bench_function("tw_itertools", |b| {
+        b.iter(|| tw_itertools(black_box(strings)))
+    });
+    group.bench_function("tw_one_string", |b| {
+        b.iter(|| tw_one_string(black_box(strings)))
+    });
+    group.bench_function("trim_whitespace_v2", |b| {
+        b.iter(|| trim_whitespace_v2(black_box(strings)))
+    });
 
     group.finish();
 }

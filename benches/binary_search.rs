@@ -1,7 +1,10 @@
-use std::{cmp::Ordering::{Greater, Less}, sync::LazyLock};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::distributions::{Distribution, Uniform};
 use std::collections::HashSet;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::{
+    cmp::Ordering::{Greater, Less},
+    sync::LazyLock,
+};
 
 #[cfg(feature = "prefetch")]
 use std::{
@@ -43,25 +46,19 @@ Run: cargo bench --bench binary_search
 ### --- ###
 */
 
-const CST_CREDITO: [u16; 14] = [
-    50, 51, 52, 53, 54, 55, 56,
-    60, 61, 62, 63, 64, 65, 66,
-];
+const CST_CREDITO: [u16; 14] = [50, 51, 52, 53, 54, 55, 56, 60, 61, 62, 63, 64, 65, 66];
 
-const CST_CREDITO_EYTZINGER: [u16; 15] = [
-    0, 
-    60, 53, 64, 51, 55, 62, 66, 
-    50, 52, 54, 56, 61, 63, 65,
-];
+const CST_CREDITO_EYTZINGER: [u16; 15] =
+    [0, 60, 53, 64, 51, 55, 62, 66, 50, 52, 54, 56, 61, 63, 65];
 
 /**
 Perform a binary search on a sorted list.
 
 Binary search is an efficient search algorithm that works on sorted lists or arrays.
 
-It repeatedly divides the search interval in half, reducing the search space by half at each step, until the target value is found or the interval is empty. 
+It repeatedly divides the search interval in half, reducing the search space by half at each step, until the target value is found or the interval is empty.
 
-By taking advantage of the sorted property of the input, binary search achieves a much better time complexity compared to linear search. 
+By taking advantage of the sorted property of the input, binary search achieves a much better time complexity compared to linear search.
 
 Its worst-case and average-case time complexity is O(log n), where n is the number of elements in the list.
 
@@ -81,7 +78,7 @@ Its worst-case and average-case time complexity is O(log n), where n is the numb
 
 <https://shane-o.dev/blog/binary-search-rust>
 */
-pub fn binary_search_v2<T>(target: T,items: &[T]) -> Option<usize>
+pub fn binary_search_v2<T>(target: T, items: &[T]) -> Option<usize>
 where
     T: Copy + Ord,
 {
@@ -171,9 +168,9 @@ Perform a binary search on a sorted list.
 
 Binary search is an efficient search algorithm that works on sorted lists or arrays.
 
-It repeatedly divides the search interval in half, reducing the search space by half at each step, until the target value is found or the interval is empty. 
+It repeatedly divides the search interval in half, reducing the search space by half at each step, until the target value is found or the interval is empty.
 
-By taking advantage of the sorted property of the input, binary search achieves a much better time complexity compared to linear search. 
+By taking advantage of the sorted property of the input, binary search achieves a much better time complexity compared to linear search.
 
 Its worst-case and average-case time complexity is O(log n), where n is the number of elements in the list.
 
@@ -205,7 +202,6 @@ pub fn binary_search_v3(target: u16) -> Option<usize> {
 
 // CST de Credito: [Some(50), ..., Some(56), Some(60), ..., Some(66)]
 static HASH_DE_CREDITO: LazyLock<HashSet<Option<u16>>> = LazyLock::new(|| {
-
     let array_a: [Option<u16>; 7] = core::array::from_fn(|i| Some((50 + i) as u16));
     let array_b: [Option<u16>; 7] = core::array::from_fn(|i| Some((60 + i) as u16));
 
@@ -231,69 +227,68 @@ struct Test {
 impl Test {
     /// CST de crédito das Contribuições
     pub fn cst_de_credito_linear(&self) -> bool {
-        (self.cst >= Some(50) && self.cst <= Some(56)) ||
-        (self.cst >= Some(60) && self.cst <= Some(66))
+        (self.cst >= Some(50) && self.cst <= Some(56))
+            || (self.cst >= Some(60) && self.cst <= Some(66))
     }
 
     pub fn cst_de_credito_contains(&self) -> bool {
-        self.cst.is_some_and(|n|
-            CST_CREDITO.contains(&n)
-        )
+        self.cst.is_some_and(|n| CST_CREDITO.contains(&n))
     }
 
     pub fn cst_de_credito_binary_search(&self) -> bool {
-        self.cst.is_some_and(|n|
-            CST_CREDITO.binary_search(&n).is_ok()
-        )
+        self.cst
+            .is_some_and(|n| CST_CREDITO.binary_search(&n).is_ok())
     }
 
     pub fn entrada_de_credito_binary_search_v1(&self) -> bool {
-        self.tipo_de_operacao == "Entrada" &&
-        self.cst_de_credito_binary_search() &&
-        self.natureza_bc.is_some()
+        self.tipo_de_operacao == "Entrada"
+            && self.cst_de_credito_binary_search()
+            && self.natureza_bc.is_some()
     }
 
     pub fn entrada_de_credito_binary_search_v2(&self) -> bool {
-        self.tipo_de_operacao == "Entrada" &&
-        self.cst.and_then(|cst| binary_search_v2(cst, &CST_CREDITO)).is_some() &&
-        self.natureza_bc.is_some()
+        self.tipo_de_operacao == "Entrada"
+            && self
+                .cst
+                .and_then(|cst| binary_search_v2(cst, &CST_CREDITO))
+                .is_some()
+            && self.natureza_bc.is_some()
     }
 
     pub fn entrada_de_credito_binary_search_v3(&self) -> bool {
-        self.tipo_de_operacao == "Entrada" &&
-        self.cst.and_then(binary_search_v3).is_some() &&
-        self.natureza_bc.is_some()
+        self.tipo_de_operacao == "Entrada"
+            && self.cst.and_then(binary_search_v3).is_some()
+            && self.natureza_bc.is_some()
     }
 
     pub fn entrada_de_credito_hashset_search(&self) -> bool {
-        self.tipo_de_operacao == "Entrada" &&
-        HASH_DE_CREDITO.contains(&self.cst) &&
-        self.natureza_bc.is_some()
+        self.tipo_de_operacao == "Entrada"
+            && HASH_DE_CREDITO.contains(&self.cst)
+            && self.natureza_bc.is_some()
     }
 
     pub fn entrada_de_credito_linear_search(&self) -> bool {
-        self.tipo_de_operacao == "Entrada" &&
-        self.cst_de_credito_linear() &&
-        self.natureza_bc.is_some()
+        self.tipo_de_operacao == "Entrada"
+            && self.cst_de_credito_linear()
+            && self.natureza_bc.is_some()
     }
 
     pub fn entrada_de_credito_contains_search(&self) -> bool {
-        self.tipo_de_operacao == "Entrada" &&
-        self.cst_de_credito_contains() &&
-        self.natureza_bc.is_some()
+        self.tipo_de_operacao == "Entrada"
+            && self.cst_de_credito_contains()
+            && self.natureza_bc.is_some()
     }
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-
     // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/randomness.html
     let mut rng = rand::thread_rng();
 
     let cst_range1 = Uniform::from(0..100);
     let cst_range2 = Uniform::from(49..70);
 
-    let nat_range1  = Uniform::from(0..20);
-    let nat_range2  = Uniform::from(0..30);
+    let nat_range1 = Uniform::from(0..20);
+    let nat_range2 = Uniform::from(0..30);
 
     let mut lines: Vec<Test> = Vec::new();
 
@@ -309,13 +304,13 @@ fn criterion_benchmark(c: &mut Criterion) {
         let line01 = Test {
             tipo_de_operacao: "Entrada".to_string(),
             cst: Some(cst_v1),
-            natureza_bc: Some(nat_v1)
+            natureza_bc: Some(nat_v1),
         };
 
         let line02 = Test {
             tipo_de_operacao: "Entrada".to_string(),
             cst: Some(cst_v2),
-            natureza_bc: Some(nat_v2)
+            natureza_bc: Some(nat_v2),
         };
 
         lines.extend([line01, line02]);
@@ -333,12 +328,60 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.measurement_time(std::time::Duration::from_secs(60));
     group.sample_size(2 * sample_size);
 
-    group.bench_function("test_binary_search_v1", |b| b.iter(|| black_box( lines.iter().map(|line| line.entrada_de_credito_binary_search_v1()) )));
-    group.bench_function("test_binary_search_v2", |b| b.iter(|| black_box( lines.iter().map(|line| line.entrada_de_credito_binary_search_v2()) )));
-    group.bench_function("test_binary_search_v3", |b| b.iter(|| black_box( lines.iter().map(|line| line.entrada_de_credito_binary_search_v3()) )));
-    group.bench_function("test_hashset_search",   |b| b.iter(|| black_box( lines.iter().map(|line| line.entrada_de_credito_hashset_search())   )));
-    group.bench_function("test_linear_search",    |b| b.iter(|| black_box( lines.iter().map(|line| line.entrada_de_credito_linear_search())    )));
-    group.bench_function("test_contains_search",  |b| b.iter(|| black_box( lines.iter().map(|line| line.entrada_de_credito_contains_search())  )));
+    group.bench_function("test_binary_search_v1", |b| {
+        b.iter(|| {
+            black_box(
+                lines
+                    .iter()
+                    .map(|line| line.entrada_de_credito_binary_search_v1()),
+            )
+        })
+    });
+    group.bench_function("test_binary_search_v2", |b| {
+        b.iter(|| {
+            black_box(
+                lines
+                    .iter()
+                    .map(|line| line.entrada_de_credito_binary_search_v2()),
+            )
+        })
+    });
+    group.bench_function("test_binary_search_v3", |b| {
+        b.iter(|| {
+            black_box(
+                lines
+                    .iter()
+                    .map(|line| line.entrada_de_credito_binary_search_v3()),
+            )
+        })
+    });
+    group.bench_function("test_hashset_search", |b| {
+        b.iter(|| {
+            black_box(
+                lines
+                    .iter()
+                    .map(|line| line.entrada_de_credito_hashset_search()),
+            )
+        })
+    });
+    group.bench_function("test_linear_search", |b| {
+        b.iter(|| {
+            black_box(
+                lines
+                    .iter()
+                    .map(|line| line.entrada_de_credito_linear_search()),
+            )
+        })
+    });
+    group.bench_function("test_contains_search", |b| {
+        b.iter(|| {
+            black_box(
+                lines
+                    .iter()
+                    .map(|line| line.entrada_de_credito_contains_search()),
+            )
+        })
+    });
 
     group.finish();
 }

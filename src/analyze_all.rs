@@ -1,24 +1,13 @@
-use std::{
-    error::Error, fs, io::Write, path::PathBuf, thread
-};
+use std::{error::Error, fs, io::Write, path::PathBuf, thread};
 
-use chrono::{NaiveDate, Datelike};
+use chrono::{Datelike, NaiveDate};
 use indicatif::MultiProgress;
 use rayon::prelude::*;
 
 use crate::{
-    analyze_one_file,
-    args::Arguments,
-    create_xlsx,
-    make_dispatch_table,
-    sped_efd,
-    structures::analise_dos_creditos,
-    structures::consolidacao_cst,
-    DocsFiscais,
-    DELIMITER_CHAR,
-    OUTPUT_DIRECTORY,
-    OUTPUT_FILENAME,
-    MyResult,
+    analyze_one_file, args::Arguments, create_xlsx, make_dispatch_table, sped_efd,
+    structures::analise_dos_creditos, structures::consolidacao_cst, DocsFiscais, MyResult,
+    DELIMITER_CHAR, OUTPUT_DIRECTORY, OUTPUT_FILENAME,
 };
 
 type Informacoes = (u32, NaiveDate, String, Vec<DocsFiscais>);
@@ -27,7 +16,6 @@ pub fn executar_programa(
     args: &Arguments,
     mut write: &mut dyn Write,
 ) -> Result<Vec<DocsFiscais>, Box<dyn Error>> {
-
     if let Err(error) = make_dir_recursively(OUTPUT_DIRECTORY) {
         eprintln!("Não foi possível criar o diretório '{OUTPUT_DIRECTORY}'!");
         eprintln!("Error: {error}");
@@ -41,35 +29,45 @@ pub fn executar_programa(
         pa_total.sort_by_key(|tuple| (tuple.year(), tuple.month()));
         let last_index = pa_total.len() - 1;
         let (pa_ano_first, pa_mes_first) = (pa_total[0].year(), pa_total[0].month());
-        let (pa_ano_last,  pa_mes_last ) = (pa_total[last_index].year(), pa_total[last_index].month());
-        write!  (write, "Período de Apuração Total ({} arquivos): ", pa_total.len())?;
-        writeln!(write, "{pa_mes_first:02}/{pa_ano_first} a {pa_mes_last:02}/{pa_ano_last}")?;
+        let (pa_ano_last, pa_mes_last) =
+            (pa_total[last_index].year(), pa_total[last_index].month());
+        write!(
+            write,
+            "Período de Apuração Total ({} arquivos): ",
+            pa_total.len()
+        )?;
+        writeln!(
+            write,
+            "{pa_mes_first:02}/{pa_ano_first} a {pa_mes_last:02}/{pa_ano_last}"
+        )?;
     }
 
-    let (consolidacao_cst, consolidacao_nat) = consolidar_resultados(&all_lines, print_table, &mut write)?;
+    let (consolidacao_cst, consolidacao_nat) =
+        consolidar_resultados(&all_lines, print_table, &mut write)?;
 
     // Aplicar filtros: excluir Saídas ou reter apenas operações de crédito.
     let filtered_lines: Vec<DocsFiscais> = all_lines
         .into_par_iter()
         .filter(|docs_fiscais| {
             // Operações de Saídas: Some(2)
-            !(
-                args.excluir_saidas &&
-                docs_fiscais.operacoes_de_entrada_ou_saida() &&
-                docs_fiscais.tipo_de_operacao == Some(2)
-            )
+            !(args.excluir_saidas
+                && docs_fiscais.operacoes_de_entrada_ou_saida()
+                && docs_fiscais.tipo_de_operacao == Some(2))
         })
         .filter(|docs_fiscais| {
             // Reter apenas operações de crédito
-            !(
-                args.operacoes_de_creditos &&
-                docs_fiscais.operacoes_de_entrada_ou_saida() &&
-                docs_fiscais.natureza_bc.is_none()
-            )
+            !(args.operacoes_de_creditos
+                && docs_fiscais.operacoes_de_entrada_ou_saida()
+                && docs_fiscais.natureza_bc.is_none())
         })
         .collect();
 
-    if let Err(error) = create_xlsx(&filtered_lines, &consolidacao_cst, &consolidacao_nat, &mut write) {
+    if let Err(error) = create_xlsx(
+        &filtered_lines,
+        &consolidacao_cst,
+        &consolidacao_nat,
+        &mut write,
+    ) {
         eprintln!("create_xlsx error: {error}");
     }
 
@@ -81,7 +79,7 @@ pub fn executar_programa(
 }
 
 // Função para criar diretório
-fn make_dir_recursively (dir_name: &str) -> std::io::Result<()> {
+fn make_dir_recursively(dir_name: &str) -> std::io::Result<()> {
     // Recursively create a directory and all of its parent components if they are missing.
     fs::create_dir_all(dir_name)?;
     Ok(())
@@ -91,7 +89,6 @@ fn analyze_all_files(
     arquivos_efd: &[PathBuf],
     mut write: &mut dyn Write,
 ) -> Result<(Vec<NaiveDate>, Vec<DocsFiscais>), Box<dyn Error>> {
-
     print_arquivos_selecionados(arquivos_efd, &mut write)?;
 
     let registros_efd = sped_efd::registros(); // tabela de registros
@@ -118,7 +115,7 @@ fn analyze_all_files(
                     eprintln!("Erro na função analyze_one_file()!");
                     eprintln!("Arquivo: {}", arquivo.display());
                     panic!("Erro: {error}")
-                },
+                }
             }
         })
         .filter(|(_cnpj_base, _pa, _info_msg, vec_docs_fiscais)| !vec_docs_fiscais.is_empty())
@@ -133,9 +130,19 @@ fn analyze_all_files(
         .map(|(index, tuple)| {
             let (_cnpj_base, pa, info_msg, vec_docs_fiscais): Informacoes = tuple;
 
-            writeln!(write, "EFD {:02}: {}", index + 1, vec_docs_fiscais[0].arquivo_efd)?;
-            writeln!(write, "Período de Apuração: {:02}/{}\n", pa.month(), pa.year())?;
-            write!  (write, "{info_msg}")?;
+            writeln!(
+                write,
+                "EFD {:02}: {}",
+                index + 1,
+                vec_docs_fiscais[0].arquivo_efd
+            )?;
+            writeln!(
+                write,
+                "Período de Apuração: {:02}/{}\n",
+                pa.month(),
+                pa.year()
+            )?;
+            write!(write, "{info_msg}")?;
 
             consolidar_resultados(&vec_docs_fiscais, true, &mut write)?;
 
@@ -170,7 +177,6 @@ fn print_arquivos_selecionados(
     arquivos: &[PathBuf],
     write: &mut dyn Write,
 ) -> Result<(), Box<dyn Error>> {
-
     let number_of_files = arquivos.len();
 
     writeln!(write)?;
@@ -194,8 +200,13 @@ fn consolidar_resultados(
     database: &[DocsFiscais],
     print_table: bool,
     write: &mut dyn Write,
-) -> Result<(Vec<consolidacao_cst::ConsolidacaoCST>, Vec<analise_dos_creditos::AnaliseDosCreditos>), Box<dyn Error>> {
-
+) -> Result<
+    (
+        Vec<consolidacao_cst::ConsolidacaoCST>,
+        Vec<analise_dos_creditos::AnaliseDosCreditos>,
+    ),
+    Box<dyn Error>,
+> {
     /*
     let (cst, nat) = rayon::join(
         || consolidacao::consolidar_operacoes_por_cst(database),
@@ -211,7 +222,7 @@ fn consolidar_resultados(
             consolidacao_cst::consolidar_operacoes_por_cst(database)
         });
 
-        let thread_nat = s.spawn(|| { 
+        let thread_nat = s.spawn(|| {
             analise_dos_creditos::consolidar_natureza_da_base_de_calculo(database)
         });
 
@@ -240,7 +251,7 @@ fn consolidar_resultados(
             Ok(())
         });
 
-        s.spawn(|| -> MyResult<()> { 
+        s.spawn(|| -> MyResult<()> {
             nat = analise_dos_creditos::consolidar_natureza_da_base_de_calculo(database)?;
             Ok(())
         });
@@ -250,7 +261,8 @@ fn consolidar_resultados(
     let (tabela_nat, tabela_rb, consolidacao_nat) = nat;
 
     if print_table {
-        let title = "Receita Bruta Apurada e Segregada Conforme CST para Fins de Rateio dos Créditos";
+        let title =
+            "Receita Bruta Apurada e Segregada Conforme CST para Fins de Rateio dos Créditos";
         writeln!(write, "{title}")?;
         writeln!(write, "{tabela_rb}\n")?;
 
@@ -266,18 +278,17 @@ fn consolidar_resultados(
     Ok((consolidacao_cst, consolidacao_nat))
 }
 
-fn print_csv_file(
-    all_lines: &[DocsFiscais],
-    write: &mut dyn Write,
-) -> Result<(), Box<dyn Error>> {
-
+fn print_csv_file(all_lines: &[DocsFiscais], write: &mut dyn Write) -> Result<(), Box<dyn Error>> {
     let mut csv_file: PathBuf = [OUTPUT_DIRECTORY, OUTPUT_FILENAME].iter().collect();
     csv_file.set_extension("csv");
 
     writeln!(write, "Write csv file: {:?}\n", csv_file.display())?;
 
     if let Err(err) = write_csv(all_lines, &csv_file) {
-        panic!("Erro ao criar o arquivo {:?} com a função write_csv.\n'{err:?}'", csv_file.display());
+        panic!(
+            "Erro ao criar o arquivo {:?} com a função write_csv.\n'{err:?}'",
+            csv_file.display()
+        );
     }
 
     Ok(())
@@ -286,7 +297,6 @@ fn print_csv_file(
 // https://docs.rs/csv/1.0.0/csv/tutorial/index.html
 // https://github.com/andrewleverette/rust_csv_examples/blob/master/src/bin/csv_write_serde.rs
 fn write_csv(data: &[DocsFiscais], path: &PathBuf) -> Result<(), Box<dyn Error>> {
-
     // Open a file in write-only mode, returns `io::Result<File>`
     let file = match fs::File::create(path) {
         Ok(file) => file,
@@ -316,7 +326,7 @@ fn write_csv(data: &[DocsFiscais], path: &PathBuf) -> Result<(), Box<dyn Error>>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use claudiofsr_lib::{my_print, blake3_hash};
+    use claudiofsr_lib::{blake3_hash, my_print};
 
     // cargo test -- --help
     // cargo test -- --nocapture
@@ -329,7 +339,7 @@ mod tests {
         let filename: &str = "examples/efd_data_random";
         let arquivo: PathBuf = PathBuf::from(filename);
 
-        let mut write_buffer: Vec<u8> = vec!();
+        let mut write_buffer: Vec<u8> = vec![];
         let mut write: Box<&mut dyn Write> = Box::new(&mut write_buffer);
 
         let args = Arguments {
@@ -351,23 +361,43 @@ mod tests {
 
         my_print(&write_buffer, output_file.clone())?;
 
-        let csv_file: PathBuf = [OUTPUT_DIRECTORY, "Info do Contribuinte EFD Contribuicoes.csv"].iter().collect();
+        let csv_file: PathBuf = [
+            OUTPUT_DIRECTORY,
+            "Info do Contribuinte EFD Contribuicoes.csv",
+        ]
+        .iter()
+        .collect();
 
         let arq_file_hash = blake3_hash(&arquivo)?;
         let out_file_hash = blake3_hash(&output_file)?;
         let csv_file_hash = blake3_hash(&csv_file)?;
 
         assert_eq!(all_lines[0].descr_item, "MANTER DE 50ºC À 90ºC");
-        assert_eq!(all_lines[1].descr_item, "“ASPAS”, SÍMBOLO EUROPEU (€) E TRAÇOS FANTASIA (– E —)");
+        assert_eq!(
+            all_lines[1].descr_item,
+            "“ASPAS”, SÍMBOLO EUROPEU (€) E TRAÇOS FANTASIA (– E —)"
+        );
         assert_eq!(all_lines[22].num_linha_efd, Some(121));
         assert_eq!(all_lines[22].registro, "C170");
-        assert_eq!(all_lines[22].chave_doc, "74-3014-23.125.825/8364-49-12-016-867.204.387-416.648.086-8");
+        assert_eq!(
+            all_lines[22].chave_doc,
+            "74-3014-23.125.825/8364-49-12-016-867.204.387-416.648.086-8"
+        );
         assert_eq!(all_lines[22].valor_item.unwrap(), 27256.0);
         assert_eq!(all_lines[45].num_linha_efd, Some(193));
         assert_eq!(all_lines[45].valor_item.unwrap(), 58051.0);
-        assert_eq!("2612118ea298d2365a30808e9e2227a7c210d9e91e6580ec3efc6ef875ca35c7", arq_file_hash);
-        assert_eq!("62d84f3f6811fe651e25b4865a4d82f809fff192c5e03ee9a5aa777a21f6fa42", out_file_hash);
-        assert_eq!("96c857355e6f41de233ec4094c89bca06f3b46fe54bbe65a596a8320beb77843", csv_file_hash);
+        assert_eq!(
+            "2612118ea298d2365a30808e9e2227a7c210d9e91e6580ec3efc6ef875ca35c7",
+            arq_file_hash
+        );
+        assert_eq!(
+            "62d84f3f6811fe651e25b4865a4d82f809fff192c5e03ee9a5aa777a21f6fa42",
+            out_file_hash
+        );
+        assert_eq!(
+            "96c857355e6f41de233ec4094c89bca06f3b46fe54bbe65a596a8320beb77843",
+            csv_file_hash
+        );
 
         Ok(())
     }

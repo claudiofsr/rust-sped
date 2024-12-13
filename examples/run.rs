@@ -13,23 +13,11 @@ cargo build --examples --release
 // novo/Info do Contribuinte EFD Contribuicoes.csv
 */
 
-use std::{
-    env,
-    error::Error,
-    path::PathBuf,
-    io::Write,
-};
+use std::{env, error::Error, io::Write, path::PathBuf};
 
-use efd_contribuicoes::{
-    executar_programa, 
-    Arguments, 
-    OUTPUT_DIRECTORY,
-};
+use efd_contribuicoes::{executar_programa, Arguments, OUTPUT_DIRECTORY};
 
-use claudiofsr_lib::{
-    my_print, 
-    blake3_hash,
-};
+use claudiofsr_lib::{blake3_hash, my_print};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // cargo test -- --show-output test_executar_programa
@@ -40,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let arquivo: PathBuf = PathBuf::from(path);
 
-    let mut write_buffer: Vec<u8> = vec!();
+    let mut write_buffer: Vec<u8> = vec![];
     let mut write: Box<&mut dyn Write> = Box::new(&mut write_buffer);
 
     let args = Arguments {
@@ -62,23 +50,43 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     my_print(&write_buffer, output_file.clone())?;
 
-    let csv_file: PathBuf = [OUTPUT_DIRECTORY, "Info do Contribuinte EFD Contribuicoes.csv"].iter().collect();
+    let csv_file: PathBuf = [
+        OUTPUT_DIRECTORY,
+        "Info do Contribuinte EFD Contribuicoes.csv",
+    ]
+    .iter()
+    .collect();
 
     let arq_file_hash = blake3_hash(&arquivo)?;
     let out_file_hash = blake3_hash(&output_file)?;
     let csv_file_hash = blake3_hash(&csv_file)?;
 
     assert_eq!(all_lines[0].descr_item, "MANTER DE 50ºC À 90ºC");
-    assert_eq!(all_lines[1].descr_item, "“ASPAS”, SÍMBOLO EUROPEU (€) E TRAÇOS FANTASIA (– E —)");
+    assert_eq!(
+        all_lines[1].descr_item,
+        "“ASPAS”, SÍMBOLO EUROPEU (€) E TRAÇOS FANTASIA (– E —)"
+    );
     assert_eq!(all_lines[20].num_linha_efd, Some(115));
     assert_eq!(all_lines[20].registro, "C170");
-    assert_eq!(all_lines[20].chave_doc, "90-0315-29.446.564/7701-69-19-048-060.204.494-849.351.589-8");
+    assert_eq!(
+        all_lines[20].chave_doc,
+        "90-0315-29.446.564/7701-69-19-048-060.204.494-849.351.589-8"
+    );
     assert_eq!(all_lines[20].valor_item.unwrap(), 38752.0);
     assert_eq!(all_lines[40].num_linha_efd, Some(178));
     assert_eq!(all_lines[40].valor_item.unwrap(), 44818.0);
-    assert_eq!("2612118ea298d2365a30808e9e2227a7c210d9e91e6580ec3efc6ef875ca35c7", arq_file_hash);
-    assert_eq!("62d84f3f6811fe651e25b4865a4d82f809fff192c5e03ee9a5aa777a21f6fa42", out_file_hash);
-    assert_eq!("96c857355e6f41de233ec4094c89bca06f3b46fe54bbe65a596a8320beb77843", csv_file_hash);
+    assert_eq!(
+        "2612118ea298d2365a30808e9e2227a7c210d9e91e6580ec3efc6ef875ca35c7",
+        arq_file_hash
+    );
+    assert_eq!(
+        "62d84f3f6811fe651e25b4865a4d82f809fff192c5e03ee9a5aa777a21f6fa42",
+        out_file_hash
+    );
+    assert_eq!(
+        "96c857355e6f41de233ec4094c89bca06f3b46fe54bbe65a596a8320beb77843",
+        csv_file_hash
+    );
 
     Ok(())
 }
