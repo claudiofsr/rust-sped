@@ -27,6 +27,10 @@ pub enum EFDError {
 
     /// Error utf8 decoding.
     Utf8DecodeError(PathBuf, usize, Utf8Error, io_Error),
+
+    InvalidFormat,
+    InvalidDate,
+    NotFound,
 }
 
 impl std::fmt::Display for EFDError {
@@ -92,6 +96,9 @@ impl std::fmt::Display for EFDError {
                 Try another encoding type!\n\
                 "
             ),
+            EFDError::InvalidFormat => write!(f, "Formato MMYYYY inválido"),
+            EFDError::InvalidDate => write!(f, "Data inválida"),
+            EFDError::NotFound => write!(f, "Período de apuração não encontrado"),
         }
     }
 }

@@ -663,37 +663,45 @@ pub fn parse_file_info(info: &mut Info) -> Result<Vec<DocsFiscais>, Box<dyn Erro
     result_database
 }
 
-#[allow(dead_code)]
 fn obter_periodo_de_apuracao(
     periodo_de_apuracao_da_efd: Option<NaiveDate>,
     hashmap: &HashMap<String, String>,
-) -> Result<NaiveDate, Box<dyn Error>> {
+) -> Result<NaiveDate, EFDError> {
     // Obter o Período de Apuração do campo PER_APU_CRED no caso dos Registros 1100 e 1500
     match hashmap.get("PER_APU_CRED") {
         Some(pa_origem) => {
-            // PER_APU_CRED : Período de Apuração de Origem do Crédito, formato: MMYYYY
-            let mmyyyy = pa_origem.trim().parse::<u32>().map_err(|e| {
-                let msg_1 = "Erro ao executar a função: fn obter_periodo_de_apuracao()\n";
-                let msg_2 = "Esperado um número inteiro com 6 dígitos!\n";
-                let msg = [msg_1, msg_2].concat();
-                EFDError::ParseIntError(e, msg)
-            })?;
-
-            let month = mmyyyy / 10_000;
-            let year = mmyyyy % 10_000;
+            let (month, year) = parse_mmyyyy(pa_origem)?;
 
             if !(1..=12).contains(&month) || year < 1900 {
-                eprintln!("fn obter_periodo_de_apuracao()");
-                eprintln!("ano: {year}");
-                eprintln!("mês: {month}");
+                eprintln!("Data inválida: ano: {}, mês: {}", year, month);
+                return Err(EFDError::InvalidDate);
             }
-
-            //Ok(NaiveDate::parse_from_str(&mmyyyy.to_string(), "%-m%Y")?)
-
-            NaiveDate::from_ymd_opt(year as i32, month, 1).ok_or(EFDError::InvalidPA.into())
+            // Tentar criar a data para garantir a validade
+            NaiveDate::from_ymd_opt(year as i32, month, 1).ok_or(EFDError::InvalidDate)
         }
-        None => periodo_de_apuracao_da_efd.ok_or(EFDError::InvalidPA.into()),
+        None => periodo_de_apuracao_da_efd.ok_or(EFDError::NotFound),
     }
+}
+
+/// PER_APU_CRED : Período de Apuração de Origem do Crédito, formato: MMYYYY
+fn parse_mmyyyy(s: &str) -> Result<(u32, u32), EFDError> {
+    let dt = s.trim();
+
+    if dt.len() != 6 {
+        return Err(EFDError::InvalidFormat);
+    }
+
+    let mmyyyy = dt.parse::<u32>().map_err(|e| {
+        let msg_1 = "Erro ao executar a função: fn parse_mmyyyy()\n";
+        let msg_2 = "Data MMYYYY deve conter 6 dígitos!\n";
+        let msg = [msg_1, msg_2].concat();
+        EFDError::ParseIntError(e, msg)
+    })?;
+
+    let month = mmyyyy / 10_000;
+    let year = mmyyyy % 10_000;
+
+    Ok((month, year))
 }
 
 #[allow(dead_code)]
