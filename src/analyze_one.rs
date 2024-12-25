@@ -110,7 +110,7 @@ fn get_file_info(
                 })
                 .take_while(|(_line_number, campos)| campos[0] != "9999")
                 .try_for_each(
-                    |(line_number, campos)| -> Result<(), Box<dyn std::error::Error>> {
+                    |(line_number, campos)| -> LineResult<()> {
                         let registro: &str = campos[0].as_str();
 
                         if let Some(&ler_registro) = dispatch_table.get(registro) {
