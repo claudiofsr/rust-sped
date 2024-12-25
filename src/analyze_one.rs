@@ -76,7 +76,7 @@ fn get_file_info(
     arquivo: &Path,
     index: usize,
     total: usize,
-) -> Result<Info, Box<dyn std::error::Error>> {
+) -> LineResult<Info> {
     let file_number = index + 1;
     let num_len = num_digits(total); // total.to_string().len()
 
