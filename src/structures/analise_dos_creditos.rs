@@ -502,7 +502,7 @@ pub fn consolidar_natureza_da_base_de_calculo(
 
     for (k, v) in chaves_consolidadas {
         match k.cst {
-            Some(1..=9) => receita_bruta.insert(k, v),
+            Some(1..=49) => receita_bruta.insert(k, v),
             Some(50..=66) => base_creditos.insert(k, v),
             _ => continue,
         };
@@ -714,7 +714,7 @@ fn distribuir_creditos_rateados(
 fn apurar_receita_bruta(
     receita_bruta: &HashMap<Chaves, Valores>,
 ) -> HashMap<PeriodoDeApuracao, ValorDaReceita> {
-    // CST já foi filtrado e pertence ao intervalo: 01 a 09.
+    // CST já foi filtrado e pertence ao intervalo: 01 a 49.
     let mut hashmap: HashMap<PeriodoDeApuracao, ValorDaReceita> = HashMap::new();
 
     receita_bruta.iter().for_each(|(chaves, valores)| {
@@ -730,7 +730,7 @@ fn apurar_receita_bruta(
             receitas.push(Some(ReceitaBruta::RbncTot));
             match chaves.cst {
                 Some(1 | 2 | 3 | 5) => receitas.push(Some(ReceitaBruta::RbnTrmi)),
-                Some(4 | 6 | 7 | 9) => receitas.push(Some(ReceitaBruta::RbnNtmi)),
+                Some(4 | 6 | 7 | 9 | 49) => receitas.push(Some(ReceitaBruta::RbnNtmi)),
                 Some(8) => {
                     if chaves.cfop_de_exportacao() {
                         receitas.push(Some(ReceitaBruta::RbnExpo))
@@ -738,7 +738,7 @@ fn apurar_receita_bruta(
                         receitas.push(Some(ReceitaBruta::RbnNtmi))
                     }
                 }
-                _ => panic!("1 <= CST <= 9; CST obtido: {:?}!", chaves.cst),
+                _ => panic!("1 <= CST <= 49; CST obtido: {:?}!", chaves.cst),
             }
         };
 
