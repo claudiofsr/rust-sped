@@ -142,7 +142,7 @@ fn get_file_info(
 }
 
 /// Check if the result is valid.
-fn is_valid_result<T, E>(result: Result<T, E>) -> Option<T>
+pub fn is_valid_result<T, E>(result: Result<T, E>) -> Option<T>
 where
     E: std::fmt::Display,
 {

@@ -8,3 +8,6 @@ efd_contribuicoes*
 *.txt
 src/csv_aggregation.rs
 .vscode
+src/registros/*
+src/model.rs
+src/parser.rs

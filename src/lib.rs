@@ -10,10 +10,17 @@ mod sped_registros;
 mod structures;
 mod traits;
 
+mod model;
+mod parser;
+mod registros;
+
 pub use self::{
     analyze_all::*, analyze_one::*, args::*, dispatch_table::*, error::*, excel_worksheets::*,
     regex::*, sped_efd::*, sped_registros::*, structures::analise_dos_creditos::*,
     structures::consolidacao_cst::*, structures::docs_fiscais::*, structures::info::*, traits::*,
+    model::*,
+    parser::*,
+    registros::*,
 };
 
 // https://crates.io/crates/cfg-if

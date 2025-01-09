@@ -115,3 +115,43 @@ impl From<ParseFloatError> for EFDError {
         EFDError::ParseFloatError(err)
     }
 }
+
+#[derive(Debug)]
+pub enum SpedError {
+    InvalidLine(String),
+    InvalidLenght(String, usize),
+    FieldConversion,
+    FileNotFound,
+    UnsupportedRecordType(String),
+    Io(std::io::Error),
+    Utf8(std::str::Utf8Error),
+}
+
+impl std::fmt::Display for SpedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            SpedError::InvalidLine(line) => writeln!(f, "Invalid Line!\nLine: {line:#?}"),
+            SpedError::InvalidLenght(reg, size) => writeln!(f, "Invalid Lenght!\nRegistro: {reg}\nLenght: {size}"),
+            SpedError::FieldConversion => writeln!(f, "Invalid Field Conversion!"),
+            SpedError::FileNotFound => writeln!(f, "File Not Found!"),
+            SpedError::UnsupportedRecordType(registro) => writeln!(f, "Unsupported Record Type!\nRegistro: {registro}"),
+            SpedError::Io(error) => writeln!(f, "Io Error: {error}"),
+            SpedError::Utf8(utf8_error) => writeln!(f, "Utf8 Error: {utf8_error}"),
+        }
+    }
+}
+
+/// If we want to use std::error::Error in main, we need to implement it for SpedError
+impl std::error::Error for SpedError {}
+
+impl From<std::io::Error> for SpedError {
+    fn from(err: std::io::Error) -> Self {
+        SpedError::Io(err)
+    }
+}
+
+impl From<std::str::Utf8Error> for SpedError {
+    fn from(err: std::str::Utf8Error) -> Self {
+        SpedError::Utf8(err)
+    }
+}
