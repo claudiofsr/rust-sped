@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 use std::collections::HashSet;
 use std::{
     cmp::Ordering::{Greater, Less},
@@ -282,13 +282,13 @@ impl Test {
 
 fn criterion_benchmark(c: &mut Criterion) {
     // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/randomness.html
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
-    let cst_range1 = Uniform::from(0..100);
-    let cst_range2 = Uniform::from(49..70);
+    let cst_range1 = Uniform::new(0, 100).expect("rand error!");
+    let cst_range2 = Uniform::new(49, 70).expect("rand error!");
 
-    let nat_range1 = Uniform::from(0..20);
-    let nat_range2 = Uniform::from(0..30);
+    let nat_range1 = Uniform::new(0, 20).expect("rand error!");
+    let nat_range2 = Uniform::new(0, 30).expect("rand error!");
 
     let mut lines: Vec<Test> = Vec::new();
 

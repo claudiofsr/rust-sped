@@ -1,7 +1,5 @@
 use rayon::prelude::*;
-
-use rand::{distributions::Uniform, Rng};
-
+use rand::{distr::Uniform, Rng};
 use std::{collections::HashMap, sync::Mutex, thread};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
@@ -207,9 +205,9 @@ fn consolidar_chaves_v4(lines: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
 
 fn criterion_benchmark(c: &mut Criterion) {
     // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/randomness.html
-    let mut rng = rand::thread_rng();
-    let range_cst = Uniform::new(40, 70); // 14 cst válidos
-    let range_nat = Uniform::new(0, 20); // 18 natureza_bc válidos
+    let mut rng = rand::rng();
+    let range_cst = Uniform::new(40, 70).expect("rand error!"); // 14 cst válidos
+    let range_nat = Uniform::new(0, 20).expect("rand error!"); // 18 natureza_bc válidos
 
     let mut data: Vec<Vec<DocsFiscais>> = Vec::new();
 
@@ -218,7 +216,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let list = [
         10_000, 20_000, 50_000, 80_000, 100_000, 150_000, 200_000, 400_000, 500_000, 800_000,
     ];
-    let choice = list[rng.gen_range(0..list.len())];
+    let choice = list[rng.random_range(0..list.len())];
     println!("choice: {choice}");
 
     for number_of_lines in list {

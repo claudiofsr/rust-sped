@@ -1,7 +1,8 @@
 use chrono::{DateTime, Local};
 use claudiofsr_lib::my_print;
 use efd_contribuicoes::{executar_programa, Arguments};
-use std::{error::Error, io::Write, time::Instant};
+use execution_time::ExecutionTime;
+use std::{error::Error, io::Write};
 
 /*
     cargo test --features old
@@ -18,7 +19,7 @@ use std::{error::Error, io::Write, time::Instant};
 */
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let time = Instant::now();
+    let timer = ExecutionTime::start();
     let mut args = Arguments::build()?;
 
     let mut write_buffer: Vec<u8> = Vec::new();
@@ -33,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let dt_local_now: DateTime<Local> = Local::now();
     writeln!(write, "Data Local: {}", dt_local_now.format("%d/%m/%Y"))?;
-    writeln!(write, "Tempo de Execução Total: {:?}", time.elapsed())?;
+    writeln!(write, "Tempo de Execução Total: {}", timer.get_elapsed_time())?;
 
     let output_file: String = [args.get_app_name(), "-output.txt".to_string()].concat();
     my_print(&write_buffer, output_file)?;
