@@ -104,6 +104,10 @@ pub struct Arguments {
 
     efd_contribuicoes -g zsh > /usr/local/share/zsh/site-functions/_efd_contribuicoes
 
+    rustup completions zsh > /usr/local/share/zsh/site-functions/_rustp
+
+    rustup completions zsh cargo > /usr/local/share/zsh/site-functions/_cargo
+
     compinit && zsh
 
     ```
