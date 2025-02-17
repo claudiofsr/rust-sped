@@ -109,29 +109,27 @@ fn get_file_info(
                     registro_valido(registros_efd, campos, line_number, arquivo)
                 })
                 .take_while(|(_line_number, campos)| campos[0] != "9999")
-                .try_for_each(
-                    |(line_number, campos)| -> LineResult<()> {
-                        let registro: &str = campos[0].as_str();
+                .try_for_each(|(line_number, campos)| -> LineResult<()> {
+                    let registro: &str = campos[0].as_str();
 
-                        if let Some(&ler_registro) = dispatch_table.get(registro) {
-                            let valores: HashMap<String, String> =
-                                obter_valores(registros_efd, &campos, line_number, arquivo)?;
-                            ler_registro(&mut info, valores)?;
-                        }
+                    if let Some(&ler_registro) = dispatch_table.get(registro) {
+                        let valores: HashMap<String, String> =
+                            obter_valores(registros_efd, &campos, line_number, arquivo)?;
+                        ler_registro(&mut info, valores)?;
+                    }
 
-                        atualizar_progressbar(
-                            &mut progressbar,
-                            &mut empty_msg,
-                            &info,
-                            file_number,
-                            num_len,
-                        );
+                    atualizar_progressbar(
+                        &mut progressbar,
+                        &mut empty_msg,
+                        &info,
+                        file_number,
+                        num_len,
+                    );
 
-                        progressbar.inc(1);
+                    progressbar.inc(1);
 
-                        Ok(())
-                    },
-                )?;
+                    Ok(())
+                })?;
         }
         Err(error) => return Err(Box::new(error)),
     }

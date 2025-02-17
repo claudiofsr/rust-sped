@@ -179,37 +179,37 @@ pub struct AnaliseDosCreditos {
     #[tabled(rename = "CNPJ Base")]
     pub cnpj_base: String,
     #[serde(rename = "Ano do Período de Apuração")]
-    #[tabled(rename = "Ano", display_with = "display_value")]
+    #[tabled(rename = "Ano", display = "display_value")]
     pub ano: Option<i32>,
     #[serde(rename = "Trimestre do Período de Apuração")]
-    #[tabled(rename = "Trim", display_with = "display_value")]
+    #[tabled(rename = "Trim", display = "display_value")]
     pub trimestre: Option<u32>,
     #[serde(
         rename = "Mês do Período de Apuração",
         serialize_with = "serialize_mes"
     )]
-    #[tabled(rename = "Mês", display_with = "display_mes")]
+    #[tabled(rename = "Mês", display = "display_mes")]
     pub mes: Option<u32>,
     #[serde(
         rename = "Tipo de Operação",
         serialize_with = "serialize_tipo_de_operacao"
     )]
-    #[tabled(rename = "Tipo de Operação", display_with = "display_tipo_de_operacao")]
+    #[tabled(rename = "Tipo de Operação", display = "display_tipo_de_operacao")]
     pub tipo_de_operacao: Option<u16>,
     #[serde(
         rename = "Tipo de Crédito",
         serialize_with = "serialize_tipo_de_credito"
     )]
-    #[tabled(rename = "Tipo de Crédito", display_with = "display_tipo_de_credito")]
+    #[tabled(rename = "Tipo de Crédito", display = "display_tipo_de_credito")]
     pub tipo_de_credito: Option<u16>,
     #[serde(rename = "CST", serialize_with = "serialize_cst")]
-    #[tabled(rename = "CST", display_with = "display_cst")]
+    #[tabled(rename = "CST", display = "display_cst")]
     pub cst: Option<u16>,
     #[serde(rename = "Alíquota de PIS/PASEP")]
-    #[tabled(rename = "Alíquota PIS/PASEP", display_with = "display_aliquota")]
+    #[tabled(rename = "Alíquota PIS/PASEP", display = "display_aliquota")]
     pub aliq_pis: Option<f64>,
     #[serde(rename = "Alíquota de COFINS")]
-    #[tabled(rename = "Alíquota COFINS", display_with = "display_aliquota")]
+    #[tabled(rename = "Alíquota COFINS", display = "display_aliquota")]
     pub aliq_cofins: Option<f64>,
     #[serde(
         rename = "Natureza da Base de Cálculo dos Créditos",
@@ -217,23 +217,23 @@ pub struct AnaliseDosCreditos {
     )]
     #[tabled(
         rename = "Natureza da Base de Cálculo dos Créditos",
-        display_with = "display_natureza"
+        display = "display_natureza"
     )]
     pub natureza_bc: Option<u16>,
     #[serde(rename = "Base de Cálculo")] // serialize_with = "serialize_f64"
-    #[tabled(rename = "Base de Cálculo", display_with = "display_f64")]
+    #[tabled(rename = "Base de Cálculo", display = "display_f64")]
     pub valor_bc: Option<f64>,
     #[serde(rename = "Crédito vinculado à Receita Bruta Não Cumulativa: Tributada")]
-    #[tabled(rename = "RBNC_Trib", display_with = "display_f64")]
+    #[tabled(rename = "RBNC_Trib", display = "display_f64")]
     pub valor_rbnc_trib: Option<f64>,
     #[serde(rename = "Crédito vinculado à Receita Bruta Não Cumulativa: Não Tributada")]
-    #[tabled(rename = "RBNC_NTrib", display_with = "display_f64")]
+    #[tabled(rename = "RBNC_NTrib", display = "display_f64")]
     pub valor_rbnc_ntrib: Option<f64>,
     #[serde(rename = "Crédito vinculado à Receita Bruta Não Cumulativa: de Exportação")]
-    #[tabled(rename = "RBNC_Exp", display_with = "display_f64")]
+    #[tabled(rename = "RBNC_Exp", display = "display_f64")]
     pub valor_rbnc_exp: Option<f64>,
     #[serde(rename = "Crédito vinculado à Receita Bruta Cumulativa")]
-    #[tabled(rename = "RB_Cum", display_with = "display_f64")]
+    #[tabled(rename = "RB_Cum", display = "display_f64")]
     pub valor_rb_cum: Option<f64>,
 }
 
@@ -443,31 +443,31 @@ pub struct TabelaValorDaReceita {
     #[tabled(rename = "CNPJ Base")]
     pub cnpj_base: String,
     #[serde(rename = "Ano do Período de Apuração")]
-    #[tabled(rename = "Ano", display_with = "display_value")]
+    #[tabled(rename = "Ano", display = "display_value")]
     pub ano: Option<i32>,
     #[serde(rename = "Trimestre do Período de Apuração")]
-    #[tabled(rename = "Trim", display_with = "display_value")]
+    #[tabled(rename = "Trim", display = "display_value")]
     pub trimestre: Option<u32>,
     #[serde(
         rename = "Mês do Período de Apuração",
         serialize_with = "serialize_mes"
     )]
-    #[tabled(rename = "Mês", display_with = "display_mes")]
+    #[tabled(rename = "Mês", display = "display_mes")]
     pub mes: Option<u32>,
     #[serde(rename = "CST")]
-    #[tabled(rename = "CST", display_with = "display_csts")]
+    #[tabled(rename = "CST", display = "display_csts")]
     pub csts: Vec<Option<u16>>,
     #[serde(rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos")]
     #[tabled(
         rename = "Receita Bruta Segregada para Fins de Rateio dos Créditos",
-        display_with = "display_value"
+        display = "display_value"
     )]
     pub rb_nome: Option<ReceitaBruta>,
     #[serde(rename = "Valor")]
-    #[tabled(rename = "Valor", display_with = "display_f64")]
+    #[tabled(rename = "Valor", display = "display_f64")]
     pub valor: Option<f64>,
     #[serde(rename = "Percentual")]
-    #[tabled(rename = "Percentual", display_with = "display_percentual")]
+    #[tabled(rename = "Percentual", display = "display_percentual")]
     pub pct: Option<f64>,
 }
 

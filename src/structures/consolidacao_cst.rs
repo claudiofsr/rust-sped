@@ -79,35 +79,35 @@ pub struct ConsolidacaoCST {
     #[tabled(rename = "CNPJ Base")]
     pub cnpj_base: String,
     #[serde(rename = "Ano do Período de Apuração")]
-    #[tabled(rename = "Ano", display_with = "display_value")]
+    #[tabled(rename = "Ano", display = "display_value")]
     pub ano: Option<i32>,
     #[serde(rename = "Trimestre do Período de Apuração")]
-    #[tabled(rename = "Trim", display_with = "display_value")]
+    #[tabled(rename = "Trim", display = "display_value")]
     pub trimestre: Option<u32>,
     #[serde(
         rename = "Mês do Período de Apuração",
         serialize_with = "serialize_mes"
     )]
-    #[tabled(rename = "Mês", display_with = "display_mes")]
+    #[tabled(rename = "Mês", display = "display_mes")]
     pub mes: Option<u32>,
     #[serde(
         rename = "Código de Situação Tributária (CST)",
         serialize_with = "serialize_cst"
     )]
-    #[tabled(rename = "CST", display_with = "display_cst")]
+    #[tabled(rename = "CST", display = "display_cst")]
     pub cst: Option<u16>,
 
     #[serde(rename = "Valor Total do Item")] // serialize_with = "serialize_f64"
-    #[tabled(rename = "Valor Total do Item", display_with = "display_f64")]
+    #[tabled(rename = "Valor Total do Item", display = "display_f64")]
     pub valor_item: Option<f64>,
     #[serde(rename = "Base de Cálculo")]
-    #[tabled(rename = "Base de Cálculo", display_with = "display_f64")]
+    #[tabled(rename = "Base de Cálculo", display = "display_f64")]
     pub valor_bc: Option<f64>,
     #[serde(rename = "Valor de PIS/PASEP")]
-    #[tabled(rename = "Valor de PIS/PASEP", display_with = "display_f64")]
+    #[tabled(rename = "Valor de PIS/PASEP", display = "display_f64")]
     pub valor_pis: Option<f64>,
     #[serde(rename = "Valor de COFINS")]
-    #[tabled(rename = "Valor de COFINS", display_with = "display_f64")]
+    #[tabled(rename = "Valor de COFINS", display = "display_f64")]
     pub valor_cofins: Option<f64>,
 }
 

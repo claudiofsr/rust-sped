@@ -1,5 +1,5 @@
-use rayon::prelude::*;
 use rand::{distr::Uniform, Rng};
+use rayon::prelude::*;
 use std::{collections::HashMap, sync::Mutex, thread};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};

@@ -131,10 +131,14 @@ impl std::fmt::Display for SpedError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             SpedError::InvalidLine(line) => writeln!(f, "Invalid Line!\nLine: {line:#?}"),
-            SpedError::InvalidLenght(reg, size) => writeln!(f, "Invalid Lenght!\nRegistro: {reg}\nLenght: {size}"),
+            SpedError::InvalidLenght(reg, size) => {
+                writeln!(f, "Invalid Lenght!\nRegistro: {reg}\nLenght: {size}")
+            }
             SpedError::FieldConversion => writeln!(f, "Invalid Field Conversion!"),
             SpedError::FileNotFound => writeln!(f, "File Not Found!"),
-            SpedError::UnsupportedRecordType(registro) => writeln!(f, "Unsupported Record Type!\nRegistro: {registro}"),
+            SpedError::UnsupportedRecordType(registro) => {
+                writeln!(f, "Unsupported Record Type!\nRegistro: {registro}")
+            }
             SpedError::Io(error) => writeln!(f, "Io Error: {error}"),
             SpedError::Utf8(utf8_error) => writeln!(f, "Utf8 Error: {utf8_error}"),
         }

@@ -34,7 +34,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let dt_local_now: DateTime<Local> = Local::now();
     writeln!(write, "Data Local: {}", dt_local_now.format("%d/%m/%Y"))?;
-    writeln!(write, "Tempo de Execução Total: {}", timer.get_elapsed_time())?;
+    writeln!(
+        write,
+        "Tempo de Execução Total: {}",
+        timer.get_elapsed_time()
+    )?;
 
     let output_file: String = [args.get_app_name(), "-output.txt".to_string()].concat();
     my_print(&write_buffer, output_file)?;

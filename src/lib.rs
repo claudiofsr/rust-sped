@@ -16,11 +16,9 @@ mod registros;
 
 pub use self::{
     analyze_all::*, analyze_one::*, args::*, dispatch_table::*, error::*, excel_worksheets::*,
-    regex::*, sped_efd::*, sped_registros::*, structures::analise_dos_creditos::*,
-    structures::consolidacao_cst::*, structures::docs_fiscais::*, structures::info::*, traits::*,
-    model::*,
-    parser::*,
-    registros::*,
+    model::*, parser::*, regex::*, registros::*, sped_efd::*, sped_registros::*,
+    structures::analise_dos_creditos::*, structures::consolidacao_cst::*,
+    structures::docs_fiscais::*, structures::info::*, traits::*,
 };
 
 // https://crates.io/crates/cfg-if
