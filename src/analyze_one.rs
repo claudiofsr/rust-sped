@@ -209,27 +209,55 @@ pub fn get_bufreader(file: File) -> BufReader<DecodeReaderBytes<File, Vec<u8>>> 
     reader
 }
 
-/// Converts a slice of bytes to a String.
-///
-/// Consider the case of files with differently encoded lines!
-///
-/// That is, one line in UTF-8 and another line in WINDOWS_1252.
+/**
+Converts a slice of bytes to a String, attempting to handle different encodings.
+
+It first tries to decode the bytes as UTF-8. If that fails, it attempts to decode
+them using WINDOWS_1252 encoding. If both fail, it returns an error.
+
+### Arguments
+
+* `slice_bytes` - A slice of bytes to convert to a String.
+* `line_number` - The line number where these bytes were read from (for error reporting).
+* `path` - The path to the file from which these bytes were read (for error reporting).
+
+### Returns
+
+A `Result` containing the decoded String if successful, or an error if decoding fails.
+
+```rust
+use std::error::Error;
+use efd_contribuicoes::get_string_utf8;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let bytes: &[u8] = "café".as_bytes();
+    let path = std::path::Path::new("my_file.txt");
+    // Use the ? operator to propagate the error
+    let result: String = get_string_utf8(bytes, 1, &path)?;
+
+    assert_eq!(result, "café");
+    Ok(())
+}
+```
+*/
 pub fn get_string_utf8(
     slice_bytes: &[u8],
     line_number: usize,
     path: &Path,
 ) -> Result<String, EFDError> {
-    // Try to decode the bytes as UTF-8
+    // Attempt to decode as UTF-8 first
     match str::from_utf8(slice_bytes) {
         Ok(str) => Ok(str.to_string()),
         Err(error1) => {
-            // If decoding as UTF-8 fails, try decoding as WINDOWS_1252
-            let mut data = DecodeReaderBytesBuilder::new()
+            // If UTF-8 decoding fails, attempt WINDOWS_1252 decoding
+            let mut decoder = DecodeReaderBytesBuilder::new()
                 .encoding(Some(WINDOWS_1252))
                 .build(slice_bytes);
+
             let mut buffer = String::new();
-            match data.read_to_string(&mut buffer) {
-                Ok(_number_of_bytes) => Ok(buffer),
+            match decoder.read_to_string(&mut buffer) {
+                Ok(_number_of_byte) => Ok(buffer),
+                // If WINDOWS_1252 decoding also fails, return a detailed error
                 Err(error2) => Err(EFDError::Utf8DecodeError(
                     path.to_path_buf(),
                     line_number,
