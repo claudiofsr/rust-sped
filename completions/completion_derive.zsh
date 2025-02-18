@@ -27,8 +27,8 @@ _efd_contribuicoes() {
 '--excluir-saidas[Delete output operations items from Excel and CSV files.]' \
 '-f[Find SPED EFD files]' \
 '--find[Find SPED EFD files]' \
-'-o[Retain only credit entries (CST 50 .. 66)]' \
-'--operacoes-de-creditos[Retain only credit entries (CST 50 .. 66)]' \
+'-o[Retain only credit entries (50 <= CST <= 66)]' \
+'--operacoes-de-creditos[Retain only credit entries (50 <= CST <= 66)]' \
 '-p[Print CSV (Comma Separated Values) file.]' \
 '--print-csv[Print CSV (Comma Separated Values) file.]' \
 '-h[Print help (see more with '\''--help'\'')]' \
