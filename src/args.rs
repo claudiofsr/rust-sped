@@ -307,7 +307,7 @@ impl Arguments {
     }
 
     /// Print shell completions to standard output
-    pub fn print_completions<G>(&self, gen: G)
+    pub fn print_completions<G>(&self, r#gen: G)
     where
         G: Generator + std::fmt::Debug,
     {
@@ -316,7 +316,7 @@ impl Arguments {
         let mut stdout = io::stdout();
 
         eprintln!("Generating completion file for {gen:?}...");
-        generate(gen, &mut cmd, cmd_name, &mut stdout);
+        generate(r#gen, &mut cmd, cmd_name, &mut stdout);
         process::exit(1);
     }
 }
