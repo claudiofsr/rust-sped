@@ -38,7 +38,7 @@ readme = "README.md"
 
 [dependencies]
 anstyle = "1.0" # used by clap color
-blake3 = { version = "1.6", features = ["rayon"] }
+blake3 = { version = "1.8", features = ["rayon"] }
 clap_complete = "4.5"
 cfg-if = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
@@ -59,7 +59,7 @@ rayon = "1.10"
 regex = "1.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
-serde-aux = "4.5"
+serde-aux = "4.6"
 struct_iterable = "0.1"
 tabled = { version = "0.18", features = ["ansi"] }
 
@@ -84,7 +84,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.84"
+version = "0.85"
 features = [ 
     # "constant_memory",
     "chrono", 
