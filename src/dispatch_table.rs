@@ -1352,7 +1352,11 @@ fn ler_registro_f130(
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
-    hmap.insert("VL_ITEM".to_string(), valores["VL_BC_CRED"].to_string());
+    // Considerar 
+    // VL_OPER_AQUIS: Valor de Aquisição dos Bens Incorporados ao Ativo Imobilizado
+    // dividido por
+    // Número de Parcelas a serem apropriadas
+    hmap.insert("VL_ITEM".to_string(), valores["VL_BC_COFINS"].to_string());
     hmap.insert(
         "Descr_Complementar".to_string(),
         valores["DESC_BEM_IMOB"].to_string(),
