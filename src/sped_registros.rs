@@ -450,7 +450,7 @@ static NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, &
             ),
             (
                 107,
-                "Base de Cálculo dos Créditos - Outros Créditos Presumidos (Soma)",
+                "Base de Cálculo dos Créditos - Demais Créditos Presumidos (Soma)",
             ),
             (108, "Base de Cálculo dos Créditos - Importação (Soma)"),
             (
@@ -554,7 +554,7 @@ pub static DESCRICAO_DO_TIPO_DE_CREDITO: LazyLock<HashMap<Option<u16>, &'static 
             (4, "Estoque de Abertura"),
             (5, "Aquisição Embalagens para Revenda"),
             (6, "Presumido da Agroindústria"),
-            (7, "Outros Créditos Presumidos"),
+            (7, "Demais Créditos Presumidos"),
             (8, "Importação"),
             (9, "Atividade Imobiliária"),
             (99, "Outros"), // código encerrado a partir de 31/03/2023
