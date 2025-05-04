@@ -519,18 +519,24 @@ pub fn parse_file_info(info: &mut Info) -> EFDResult<Vec<DocsFiscais>> {
                 .and_then(|v| v.select_first_digits().parse::<u32>().ok());
 
             let cod_item = hashmap.get("COD_ITEM").map_or("", |v| v);
-            let cod_tipo = info
+
+            let cod_tipo: &str = info
                 .produtos
                 .get(cod_item)
-                .map_or("", |hash| hash.get("TIPO_ITEM").map_or("", |v| v));
-            let descr_item = info
+                .and_then(|hash| hash.get("TIPO_ITEM"))
+                .map_or("", |s| s.as_str());
+
+            let descr_item: &str = info
                 .produtos
                 .get(cod_item)
-                .map_or("", |hash| hash.get("DESCR_ITEM").map_or("", |v| v));
-            let cod_ncm = info
+                .and_then(|hash| hash.get("DESCR_ITEM"))
+                .map_or("", |s| s.as_str());
+
+            let cod_ncm: &str = info
                 .produtos
                 .get(cod_item)
-                .map_or("", |hash| hash.get("COD_NCM").map_or("", |v| v));
+                .and_then(|hash| hash.get("COD_NCM"))
+                .map_or("", |s| s.as_str());
 
             let nat_operacao = match hashmap.get("COD_NAT") {
                 Some(cod_nat) => info.nat_operacao.get(cod_nat).map_or("", |v| v),
