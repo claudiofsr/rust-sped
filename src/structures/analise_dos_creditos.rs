@@ -64,20 +64,12 @@ impl Chaves {
     . Fim específico de exportação.
 
 
-    Returns `true` if `cfop` is `None` or if the value inside
-    matches one of the CFOP codes in the `CFOP_DE_EXPORTACAO` list.
     The `CFOP_DE_EXPORTACAO` constant array is assumed to be sorted
     for efficient binary search.
     */
     pub fn cfop_de_exportacao(&self) -> bool {
-        // Returns true if self.cfop is None, OR if self.cfop is Some(cfop_value)
-        // and the closure |cfop_value| { ... } returns true.
-        self.cfop.is_none_or(|cfop_value| {
-            // If we are here, cfop_value is the u16 value inside the Option.
-            // Perform the binary search directly on the u16 slice.
-            // is_ok() checks if the value was found.
-            CFOP_DE_EXPORTACAO.binary_search(&cfop_value).is_ok()
-        })
+        self.cfop
+            .is_some_and(|cfop_value| CFOP_DE_EXPORTACAO.binary_search(&cfop_value).is_ok())
     }
 }
 
