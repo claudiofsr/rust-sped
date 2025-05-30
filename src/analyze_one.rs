@@ -190,12 +190,11 @@ fn atualizar_progressbar(
 /// <https://stackoverflow.com/questions/64040851/how-can-i-read-a-non-utf8-file-line-by-line-in-rust>
 #[allow(dead_code)]
 pub fn get_bufreader(file: File) -> BufReader<DecodeReaderBytes<File, Vec<u8>>> {
-    let reader = BufReader::new(
+    BufReader::new(
         DecodeReaderBytesBuilder::new()
             .encoding(Some(WINDOWS_1252))
             .build(file),
-    );
-    reader
+    )
 }
 
 /**

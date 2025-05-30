@@ -28,12 +28,10 @@ static NOME_DO_MES: LazyLock<HashMap<Option<u32>, &'static str>> = LazyLock::new
 
 /// Convert month number to month name
 pub fn month_to_str(num: &Option<u32>) -> &'static str {
-    let mes_nome = match NOME_DO_MES.get(num) {
+    (match NOME_DO_MES.get(num) {
         Some(mes) => mes,
         None => "",
-    };
-
-    mes_nome
+    }) as _
 }
 
 static NUMERO_DO_MES: LazyLock<HashMap<&'static str, Option<u32>>> = LazyLock::new(|| {
@@ -72,12 +70,10 @@ static INDICADOR_DE_ORIGEM: LazyLock<HashMap<Option<u16>, &'static str>> = LazyL
 });
 
 pub fn indicador_de_origem_to_str(num: &Option<u16>) -> &'static str {
-    let origem = match INDICADOR_DE_ORIGEM.get(num) {
+    (match INDICADOR_DE_ORIGEM.get(num) {
         Some(nome) => nome,
         None => "",
-    };
-
-    origem
+    }) as _
 }
 
 static TIPO_DE_OPERACAO: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(|| {
@@ -119,12 +115,10 @@ pub static DESCRICAO_DO_TIPO_DE_RATEIO: LazyLock<HashMap<Option<u16>, &'static s
 
 #[allow(dead_code)]
 pub fn obter_tipo_de_rateio(cod: &Option<u16>) -> String {
-    let rateio_descricao = match DESCRICAO_DO_TIPO_DE_RATEIO.get(cod) {
+    match DESCRICAO_DO_TIPO_DE_RATEIO.get(cod) {
         Some(&descricao) => format!("{} - {}", cod.unwrap(), descricao),
         None => "".to_string(),
-    };
-
-    rateio_descricao
+    }
 }
 
 /// 4.3.6 – Tabela Código de Tipo de Crédito
@@ -169,12 +163,10 @@ static TIPOS_DOS_ITENS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock
 });
 
 pub fn obter_tipo_do_item(codigo: &str) -> String {
-    let tipo_do_item = match TIPOS_DOS_ITENS.get(codigo) {
+    match TIPOS_DOS_ITENS.get(codigo) {
         Some(&tipo) => [codigo, " - ", tipo].concat(),
         None => "".to_string(),
-    };
-
-    tipo_do_item
+    }
 }
 
 static GRUPO_DE_CONTAS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
@@ -191,12 +183,10 @@ static GRUPO_DE_CONTAS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock
 });
 
 pub fn obter_grupo_de_contas(codigo: &str) -> String {
-    let grupo_de_contas = match GRUPO_DE_CONTAS.get(codigo) {
+    match GRUPO_DE_CONTAS.get(codigo) {
         Some(&contas) => [codigo, " - ", contas].concat(),
         None => "".to_string(),
-    };
-
-    grupo_de_contas
+    }
 }
 
 static CORRELACAO_DE_ALIQUOTAS: LazyLock<HashMap<&'static str, f64>> = LazyLock::new(|| {
@@ -296,12 +286,10 @@ static MODELOS_DOCUMENTOS_FISCAIS: LazyLock<HashMap<&'static str, &'static str>>
     });
 
 pub fn obter_modelo_do_documento_fiscal(codigo: &str) -> String {
-    let modelo_do_documento_fiscal = match MODELOS_DOCUMENTOS_FISCAIS.get(codigo) {
+    match MODELOS_DOCUMENTOS_FISCAIS.get(codigo) {
         Some(&modelo) => [codigo, " - ", modelo].concat(),
         None => "".to_string(),
-    };
-
-    modelo_do_documento_fiscal
+    }
 }
 
 static CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, u16>> =
@@ -489,7 +477,7 @@ static NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, &
     });
 
 pub fn obter_descricao_da_natureza_da_bc_dos_creditos(cod: &Option<u16>) -> String {
-    let natureza = match NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS.get(cod) {
+    match NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS.get(cod) {
         Some(&descricao) => {
             if *cod <= Some(18) {
                 format!("{:02} - {}", cod.unwrap(), descricao)
@@ -499,9 +487,7 @@ pub fn obter_descricao_da_natureza_da_bc_dos_creditos(cod: &Option<u16>) -> Stri
             }
         }
         None => "".to_string(),
-    };
-
-    natureza
+    }
 }
 
 // https://doc.rust-lang.org/rust-by-example/std/hash/alt_key_types.html
@@ -571,7 +557,7 @@ pub static DESCRICAO_DO_TIPO_DE_CREDITO: LazyLock<HashMap<Option<u16>, &'static 
     });
 
 pub fn obter_descricao_do_tipo_de_credito(cod: &Option<u16>, formatar: bool) -> String {
-    let cred_descricao = match DESCRICAO_DO_TIPO_DE_CREDITO.get(cod) {
+    match DESCRICAO_DO_TIPO_DE_CREDITO.get(cod) {
         Some(&descricao) => {
             if formatar {
                 format!("{:02} - {}", cod.unwrap(), descricao)
@@ -580,9 +566,7 @@ pub fn obter_descricao_do_tipo_de_credito(cod: &Option<u16>, formatar: bool) -> 
             }
         }
         None => "".to_string(),
-    };
-
-    cred_descricao
+    }
 }
 
 static CODIGO_DA_SITUACAO_TRIBUTARIA: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(
@@ -680,12 +664,10 @@ static CODIGO_DA_SITUACAO_TRIBUTARIA: LazyLock<HashMap<Option<u16>, &'static str
 );
 
 pub fn obter_descricao_do_cst(cst: &Option<u16>) -> String {
-    let cst_descricao = match CODIGO_DA_SITUACAO_TRIBUTARIA.get(cst) {
+    match CODIGO_DA_SITUACAO_TRIBUTARIA.get(cst) {
         Some(&descricao) => format!("{:02} - {}", cst.unwrap(), descricao),
         None => "".to_string(),
-    };
-
-    cst_descricao
+    }
 }
 
 static CFOP_DESCRICAO_RESUMIDA: LazyLock<HashMap<Option<u16>, &'static str>> = LazyLock::new(
@@ -2955,12 +2937,10 @@ static CFOP_DESCRICAO_RESUMIDA: LazyLock<HashMap<Option<u16>, &'static str>> = L
 );
 
 pub fn obter_descricao_do_cfop(cfop: &Option<u16>) -> String {
-    let cfop_descricao = match CFOP_DESCRICAO_RESUMIDA.get(cfop) {
+    match CFOP_DESCRICAO_RESUMIDA.get(cfop) {
         Some(&descricao) => format!("{:04} - {}", cfop.unwrap(), descricao),
         None => "".to_string(),
-    };
-
-    cfop_descricao
+    }
 }
 
 #[cfg(test)]
