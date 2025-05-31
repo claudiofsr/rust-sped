@@ -108,6 +108,17 @@ pub fn make_dispatch_table() -> EFDResult<HashMap<&'static str, FuncaoLerRegistr
     Ok(dispatch_table)
 }
 
+/// Attempts to retrieve a value from a HashMap by `key`, and parse it as `usize`.
+/// Returns an `EFDError::NotFound` if the key is missing, or `EFDError::ParseIntError`
+/// if parsing fails, providing context about the key and value.
+pub fn get_and_parse_usize(valores: &HashMap<String, String>, key: &str) -> EFDResult<usize> {
+    valores
+        .get(key)
+        .ok_or_else(|| EFDError::NotFound)?
+        .parse::<usize>()
+        .map_err(|e| EFDError::ParseIntError(e, valores[key].to_string()))
+}
+
 fn ler_registro_0000(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     // Período de Apuração do Crédito na EFD: ddmmyyyy
     info.pa = get_naive_date(valores["DT_INI"].as_ref());
@@ -343,7 +354,7 @@ fn ler_registro_a100(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 }
 
 fn ler_registro_a170(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     let pairs: [(String, String); 3] = [
@@ -381,7 +392,7 @@ fn ler_registro_c100(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 }
 
 fn ler_registro_c170(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     let mut hmap = HashMap::from([
@@ -407,7 +418,7 @@ fn ler_registro_c170(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 }
 
 fn ler_registro_c175(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     let mut hmap = HashMap::from([
@@ -561,7 +572,7 @@ fn ler_registro_c181(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c185(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert(
@@ -604,7 +615,7 @@ fn ler_registro_c191(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c195(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert(
@@ -693,7 +704,7 @@ fn ler_registro_c381(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c385(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert(
@@ -723,7 +734,7 @@ fn ler_registro_c395(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c396(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     hmap.extend(info.reg_c395.clone());
     hmap.extend(valores);
@@ -756,7 +767,7 @@ fn ler_registro_c481(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c485(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     hmap.extend(info.reg_c400.clone());
     hmap.extend(info.reg_c405.clone());
@@ -788,7 +799,7 @@ fn ler_registro_c491(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c495(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert(
@@ -825,7 +836,7 @@ fn ler_registro_c501(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c505(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     let chv_doc = info.reg_c500.get("CHV_DOCe").map_or("", |v| v);
@@ -861,7 +872,7 @@ fn ler_registro_c601(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c605(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     hmap.extend(info.reg_c600.clone());
     hmap.extend(valores);
@@ -884,7 +895,7 @@ fn ler_registro_c860(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c870(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     hmap.extend(info.reg_c860.clone());
     hmap.extend(valores);
@@ -899,7 +910,7 @@ fn ler_registro_c870(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_c880(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     hmap.extend(valores);
 
@@ -932,7 +943,7 @@ fn ler_registro_d101(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_d105(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("CHV_NFE".to_string(), info.reg_d100["CHV_CTE"].to_string());
@@ -976,7 +987,7 @@ fn ler_registro_d201(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_d205(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.reg_d200["DT_REF"].to_string());
@@ -1001,7 +1012,7 @@ fn ler_registro_d205(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_d300(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("VL_ITEM".to_string(), valores["VL_DOC"].to_string());
@@ -1018,7 +1029,7 @@ fn ler_registro_d300(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_d350(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("VL_ITEM".to_string(), valores["VL_BRT"].to_string());
@@ -1047,7 +1058,7 @@ fn ler_registro_d501(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_d505(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // adicionar informações de alguns campos do reg D500 em hmap
     hmap.insert("dt_lan".to_string(), info.reg_d500["DT_A_P"].to_string());
@@ -1081,7 +1092,7 @@ fn ler_registro_d601(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_d605(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     hmap.extend(info.reg_d600.clone());
     hmap.extend(valores);
@@ -1111,7 +1122,7 @@ fn ler_registro_f010(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f100(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), valores["DT_OPER"].to_string());
@@ -1133,7 +1144,7 @@ fn ler_registro_f100(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f120(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1155,7 +1166,7 @@ fn ler_registro_f120(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f130(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1181,7 +1192,7 @@ fn ler_registro_f130(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f150(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1203,7 +1214,7 @@ fn ler_registro_f150(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f200(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), valores["DT_OPER"].to_string());
@@ -1229,7 +1240,7 @@ fn ler_registro_f200(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f205(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1254,7 +1265,7 @@ fn ler_registro_f205(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f210(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1276,7 +1287,7 @@ fn ler_registro_f210(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f500(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     //  inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1298,7 +1309,7 @@ fn ler_registro_f500(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f510(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     //  inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1320,7 +1331,7 @@ fn ler_registro_f510(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f550(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1342,7 +1353,7 @@ fn ler_registro_f550(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_f560(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1370,7 +1381,7 @@ fn ler_registro_i010(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
 fn ler_registro_i100(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1406,7 +1417,7 @@ fn ler_registro_m100(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
     info.reg_m100.clone_from(&valores); // reter info para posterior uso no reg M105
 
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     let mut ajuste_acres: f64 = valores["VL_AJUS_ACRES"].parse::<f64>().unwrap_or(0.0);
     let mut ajuste_reduc: f64 = valores["VL_AJUS_REDUC"].parse::<f64>().unwrap_or(0.0);
@@ -1594,7 +1605,7 @@ fn ler_registro_m500(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
     info.reg_m500.clone_from(&valores); // reter info para posterior uso no reg M505
 
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     let mut ajuste_acres: f64 = valores["VL_AJUS_ACRES"].parse::<f64>().unwrap_or(0.0);
     let mut ajuste_reduc: f64 = valores["VL_AJUS_REDUC"].parse::<f64>().unwrap_or(0.0);
@@ -1630,7 +1641,7 @@ fn ler_registro_m500(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 /// Registro M505: Detalhamento da Base de Calculo do Crédito Apurado no Período – Cofins
 fn ler_registro_m505(info: &mut Info, valores: HashMap<String, String>) -> EFDResult<()> {
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1686,7 +1697,7 @@ fn ler_registro_de_controle_de_creditos_fiscais(
     };
 
     let mut hmap = HashMap::new();
-    let linha_da_efd = valores["linha_da_efd"].parse::<usize>().unwrap();
+    let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1713,8 +1724,17 @@ fn ler_registro_de_controle_de_creditos_fiscais(
 
     let pa_de_origem_do_credito: Option<NaiveDate> =
         if valores["PER_APU_CRED"].contains_num_digits(6) {
-            let month = valores["PER_APU_CRED"][..2].parse::<u32>().unwrap();
-            let year = valores["PER_APU_CRED"][2..].parse::<i32>().unwrap();
+            let month_str = &valores["PER_APU_CRED"][..2];
+            let year_str = &valores["PER_APU_CRED"][2..];
+
+            let month = month_str
+                .parse::<u32>()
+                .map_err(|e| EFDError::ParseIntError(e, month_str.to_string()))?;
+
+            let year = year_str
+                .parse::<i32>()
+                .map_err(|e| EFDError::ParseIntError(e, year_str.to_string()))?;
+
             NaiveDate::from_ymd_opt(year, month, 1)
         } else {
             return Ok(());
