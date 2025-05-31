@@ -52,7 +52,7 @@ ilog = "1.0"
 indicatif = {version = "0.17", features = ["rayon"] } # ProgressBar
 itertools = "0.14"
 # memmap2 = "0.9"
-num_cpus = "1.16"
+num_cpus = "1.17"
 ordered-float = { version = "5.0", features = ["serde"] }
 rand = "0.9"
 rayon = "1.10"
