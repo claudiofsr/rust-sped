@@ -14,6 +14,8 @@ mod model;
 mod parser;
 mod registros;
 
+use chrono::NaiveDate;
+
 pub use self::{
     analyze_all::*, analyze_one::*, args::*, dispatch_table::*, error::*, excel_worksheets::*,
     model::*, parser::*, regex::*, registros::*, sped_efd::*, sped_registros::*,
@@ -43,3 +45,5 @@ pub const DECIMAL_ALIQ: usize = 4;
 pub const NEWLINE_BYTE: u8 = b'\n';
 pub const OUTPUT_DIRECTORY: &str = "novo";
 pub const OUTPUT_FILENAME: &str = "Info do Contribuinte EFD Contribuicoes";
+
+pub type Informacoes = (u32, NaiveDate, String, Vec<DocsFiscais>);

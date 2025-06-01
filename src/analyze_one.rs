@@ -22,14 +22,11 @@ use claudiofsr_lib::{
 // use memmap2::Mmap;
 
 use crate::{
-    ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DECIMAL_ALIQ, DECIMAL_VALOR, DocsFiscais, EFDError,
-    EFDResult, Info, NEWLINE_BYTE, SplitLine, Tipo, cred_presumido, obter_cod_da_natureza_da_bc,
-    obter_modelo_do_documento_fiscal, obter_tipo_do_item, registros_de_operacoes, sped_efd,
+    cred_presumido, obter_cod_da_natureza_da_bc, obter_modelo_do_documento_fiscal, obter_tipo_do_item, registros_de_operacoes, sped_efd, DocsFiscais, EFDError, EFDResult, Info, Informacoes, SplitLine, Tipo, ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DECIMAL_ALIQ, DECIMAL_VALOR, NEWLINE_BYTE
 };
 
 // Tipo utilizado em fn make_dispatch_table()
 type FuncaoLerRegistro = fn(&mut Info, HashMap<String, String>) -> EFDResult<()>;
-type Informacoes = (u32, NaiveDate, String, Vec<DocsFiscais>);
 
 pub fn analyze_one_file(
     registros_efd: &HashMap<&str, HashMap<u16, (&str, Tipo)>>,
@@ -52,7 +49,7 @@ pub fn analyze_one_file(
 
     Ok((
         info.cnpj_base,
-        info.pa.unwrap(),
+        info.pa.ok_or_else(|| EFDError::InvalidPA)?,
         info.messages,
         vec_docs_fiscais,
     ))
