@@ -835,9 +835,9 @@ fn gerar_tabela_rec<'a, T: Tabled + Deserialize<'a>>(lines: &[T]) -> String {
     // https://crates.io/crates/tabled
     Table::new(lines)
         .with(Modify::new(Columns::new(..4)).with(Alignment::center()))
-        .with(Modify::new(Columns::single(4)).with(Alignment::left()))
+        .with(Modify::new(Columns::one(4)).with(Alignment::left()))
         .with(Modify::new(Columns::new(5..)).with(Alignment::right()))
-        .with(Modify::new(Rows::single(0)).with(Alignment::center()))
+        .with(Modify::new(Rows::one(0)).with(Alignment::center()))
         .with(Style::rounded())
         .to_string()
 }
@@ -1644,10 +1644,10 @@ fn gerar_tabela_nat<'a, T: Tabled + Deserialize<'a>>(lines: &[T]) -> String {
     // https://crates.io/crates/tabled
     Table::new(lines)
         .with(Modify::new(Segment::all()).with(Alignment::center()))
-        .with(Modify::new(Columns::single(number_of_fields - 6)).with(Alignment::left()))
+        .with(Modify::new(Columns::one(number_of_fields - 6)).with(Alignment::left()))
         .with(Modify::new(Columns::new(number_of_fields - 5..)).with(Alignment::right()))
-        .with(Modify::new(Rows::single(0)).with(Alignment::center()))
-        //.with(Modify::new(Rows::single(0)).with(Format::new(|s| s.blue().to_string())))
+        .with(Modify::new(Rows::one(0)).with(Alignment::center()))
+        //.with(Modify::new(Rows::one(0)).with(Format::new(|s| s.blue().to_string())))
         //.with(Modify::new(Rows::new(..)).with(Format::new(|s| s.blue().to_string())))
         .with(Style::rounded())
         .to_string()
