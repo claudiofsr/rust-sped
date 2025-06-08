@@ -22,7 +22,10 @@ use claudiofsr_lib::{
 // use memmap2::Mmap;
 
 use crate::{
-    cred_presumido, obter_cod_da_natureza_da_bc, obter_modelo_do_documento_fiscal, obter_tipo_do_item, registros_de_operacoes, sped_efd, DocsFiscais, EFDError, EFDResult, Info, Informacoes, SplitLine, Tipo, ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DECIMAL_ALIQ, DECIMAL_VALOR, NEWLINE_BYTE
+    ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DECIMAL_ALIQ, DECIMAL_VALOR, DocsFiscais, EFDError,
+    EFDResult, Info, Informacoes, NEWLINE_BYTE, SplitLine, Tipo, cred_presumido,
+    obter_cod_da_natureza_da_bc, obter_modelo_do_documento_fiscal, obter_tipo_do_item,
+    registros_de_operacoes, sped_efd,
 };
 
 // Tipo utilizado em fn make_dispatch_table()

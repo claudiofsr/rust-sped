@@ -4,7 +4,7 @@ use claudiofsr_lib::{
     OUTRAS_RECEITAS_REGEX, StrExtension, match_cast,
 };
 use csv::StringRecord;
-use rust_xlsxwriter::serialize_chrono_option_naive_to_excel;
+use rust_xlsxwriter::serialize_option_datetime_to_excel;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_aux::prelude::serde_introspect;
 use struct_iterable::Iterable;
@@ -33,7 +33,7 @@ pub struct DocsFiscais {
     #[serde(
         rename = "Período de Apuração",
         //deserialize_with = "csv::invalid_option",
-        serialize_with = "serialize_chrono_option_naive_to_excel"
+        serialize_with = "serialize_option_datetime_to_excel"
     )]
     pub periodo_de_apuracao: Option<NaiveDate>,
 
@@ -138,13 +138,13 @@ pub struct DocsFiscais {
     #[serde(
         rename = "Data da Emissão do Documento Fiscal",
         //deserialize_with = "csv::invalid_option",
-        serialize_with = "serialize_chrono_option_naive_to_excel",
+        serialize_with = "serialize_option_datetime_to_excel",
     )]
     pub data_emissao: Option<NaiveDate>,
     #[serde(
         rename = "Data da Entrada / Aquisição / Execução ou da Saída / Prestação / Conclusão",
         //deserialize_with = "csv::invalid_option",
-        serialize_with = "serialize_chrono_option_naive_to_excel",
+        serialize_with = "serialize_option_datetime_to_excel",
     )]
     pub data_lancamento: Option<NaiveDate>,
 

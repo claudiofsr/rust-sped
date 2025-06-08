@@ -4,7 +4,11 @@ use rayon::prelude::*;
 use std::{fs, io::Write, path::PathBuf, thread};
 
 use crate::{
-    analyze_one_file, args::Arguments, create_xlsx, make_dispatch_table, sped_efd, structures::{analise_dos_creditos, consolidacao_cst}, DocsFiscais, EFDResult, Informacoes, DELIMITER_CHAR, OUTPUT_DIRECTORY, OUTPUT_FILENAME
+    DELIMITER_CHAR, DocsFiscais, EFDResult, Informacoes, OUTPUT_DIRECTORY, OUTPUT_FILENAME,
+    analyze_one_file,
+    args::Arguments,
+    create_xlsx, make_dispatch_table, sped_efd,
+    structures::{analise_dos_creditos, consolidacao_cst},
 };
 
 pub fn executar_programa(
