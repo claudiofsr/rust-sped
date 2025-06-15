@@ -1,8 +1,8 @@
 use rand::{Rng, distr::Uniform};
 use rayon::prelude::*;
-use std::{collections::HashMap, sync::Mutex, thread};
+use std::{collections::HashMap, hint::black_box, sync::Mutex, thread};
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 
 use efd_contribuicoes::{Chaves, DocsFiscais, Valores, obter_chaves_valores};
 

@@ -1,8 +1,9 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use rand::distr::{Distribution, Uniform};
-use std::collections::HashSet;
 use std::{
     cmp::Ordering::{Greater, Less},
+    collections::HashSet,
+    hint::black_box,
     sync::LazyLock,
 };
 

@@ -145,7 +145,7 @@ required-features = [ "old" ]
 [dev-dependencies]
 # cargo bench
 # ver resultado em: ... Rust/projects/efd_contribuicoes/target/criterion/report/index.html
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.6", features = ["html_reports"] }
 plotters = "0.3"
 
 [[bench]]

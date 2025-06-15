@@ -1,5 +1,6 @@
 use claudiofsr_lib::StrExtension;
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
+use std::hint::black_box;
 
 // Testar quais das funções seguintes é a mais rápida
 
