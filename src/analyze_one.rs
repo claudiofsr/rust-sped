@@ -686,7 +686,7 @@ fn obter_periodo_de_apuracao(
             let (month, year) = parse_mmyyyy(pa_origem)?;
 
             if !(1..=12).contains(&month) || year < 1900 {
-                eprintln!("Data inválida: ano: {}, mês: {}", year, month);
+                eprintln!("Data inválida: ano: {year}, mês: {month}");
                 return Err(EFDError::InvalidDate);
             }
             // Tentar criar a data para garantir a validade

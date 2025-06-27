@@ -1424,8 +1424,8 @@ fn ler_registro_m100(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
     let mut cred_descont: f64 = valores["VL_CRED_DESC"].parse::<f64>().unwrap_or(0.0);
 
     ajuste_acres = ajuste_acres.abs();
-    ajuste_reduc = -1.0 * ajuste_reduc.abs();
-    cred_descont = -1.0 * cred_descont.abs();
+    ajuste_reduc = -ajuste_reduc.abs();
+    cred_descont = -cred_descont.abs();
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1612,8 +1612,8 @@ fn ler_registro_m500(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
     let mut cred_descont: f64 = valores["VL_CRED_DESC"].parse::<f64>().unwrap_or(0.0);
 
     ajuste_acres = ajuste_acres.abs();
-    ajuste_reduc = -1.0 * ajuste_reduc.abs();
-    cred_descont = -1.0 * cred_descont.abs();
+    ajuste_reduc = -ajuste_reduc.abs();
+    cred_descont = -cred_descont.abs();
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("DT_DOC".to_string(), info.global["DT_INI"].to_string());
@@ -1709,7 +1709,7 @@ fn ler_registro_de_controle_de_creditos_fiscais(
         (Ok(vl_cred), Ok(cod_cred))
             if vl_cred > 0.0 && CODIGO_TIPO_DE_CREDITO.binary_search(&cod_cred).is_ok() =>
         {
-            (-1.0 * vl_cred.abs(), cod_cred)
+            (-vl_cred.abs(), cod_cred)
         }
         _ => return Ok(()),
     };

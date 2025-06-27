@@ -70,57 +70,52 @@ impl Display for EFDError {
             EFDError::InvalidCNPJ(filename, num) => write!(
                 f,
                 "Error processing file info: Failed to find establishment CNPJ.\n\
-                File: {}\nLine nº: {}\n",
-                filename, num
+                File: {filename}\nLine nº: {num}\n"
             ),
             EFDError::InvalidName(filename, num) => write!(
                 f,
                 "Error processing file info: Failed to find establishment Name.\n\
-                File: {}\nLine nº: {}\n",
-                filename, num
+                File: {filename}\nLine nº: {num}\n"
             ),
             EFDError::InvalidStyle => write!(f, "Invalid Style!"),
             EFDError::InvalidPA => write!(f, "Invalid Period (PA)!"),
             EFDError::ParseFloatError(error) => write!(
                 f,
                 "Error parsing float: The provided string could not be parsed as float.\n\
-                Source Error: {}\n",
-                error
+                Source Error: {error}\n"
             ),
             EFDError::ParseIntError(error, msg) => write!(
                 f,
-                "Error parsing integer: {}\n\
+                "Error parsing integer: {msg}\n\
                 The provided string could not be parsed as integer.\n\
-                Source Error: {}\n",
-                msg, error
+                Source Error: {error}\n"
             ),
             EFDError::Utf8DecodeError(path, line_number, utf8_error, io_error) => write!(
                 f,
-                "UTF-8 decode error in file '{:?}' at line {}:\n\
+                "UTF-8 decode error in file '{path:?}' at line {line_number}:\n\
                 Failed to decode bytes as UTF-8.\n\
                 Attempted encoding (likely): WINDOWS-1252.\n\
-                Utf8 Error: {}\n\
-                IO Error Context: {}\n\
-                Consider trying another encoding.",
-                path, line_number, utf8_error, io_error
+                Utf8 Error: {utf8_error}\n\
+                IO Error Context: {io_error}\n\
+                Consider trying another encoding."
             ),
             EFDError::InvalidFormat => write!(f, "Invalid Format (expected MMYYYY or similar)"),
             EFDError::InvalidDate => write!(f, "Invalid Date"),
             EFDError::NotFound => write!(f, "Item not found (e.g., Period not found)"),
-            EFDError::InvalidLine(line) => write!(f, "Invalid Line!\nLine: {:#?}\n", line),
+            EFDError::InvalidLine(line) => write!(f, "Invalid Line!\nLine: {line:#?}\n"),
             EFDError::InvalidLength(reg, size) => {
-                write!(f, "Invalid Length!\nRecord: {}\nLength: {}\n", reg, size)
+                write!(f, "Invalid Length!\nRecord: {reg}\nLength: {size}\n")
             }
             EFDError::FieldConversion => write!(f, "Invalid Field Conversion!"),
             EFDError::UnsupportedRecordType(registro) => {
-                write!(f, "Unsupported Record Type!\nRecord: {}\n", registro)
+                write!(f, "Unsupported Record Type!\nRecord: {registro}\n")
             }
-            EFDError::Io(error) => write!(f, "IO Error: {}", error),
-            EFDError::XlsxError(error) => write!(f, "Xlsx Error: {}", error),
-            EFDError::CsvError(error) => write!(f, "CSV Error: {}", error),
-            EFDError::TryFromIntError(error) => write!(f, "TryFromInt Error: {}", error),
-            EFDError::PatternError(error) => write!(f, "Pattern Error: {}", error),
-            EFDError::Other(error) => write!(f, "Other underlying error: {}", error),
+            EFDError::Io(error) => write!(f, "IO Error: {error}"),
+            EFDError::XlsxError(error) => write!(f, "Xlsx Error: {error}"),
+            EFDError::CsvError(error) => write!(f, "CSV Error: {error}"),
+            EFDError::TryFromIntError(error) => write!(f, "TryFromInt Error: {error}"),
+            EFDError::PatternError(error) => write!(f, "Pattern Error: {error}"),
+            EFDError::Other(error) => write!(f, "Other underlying error: {error}"),
         }
     }
 }

@@ -296,7 +296,7 @@ mod tests {
         // cargo test -- --show-output operacoes_com_vetores
 
         let mut vec_a = vec![1, 3, 5];
-        println!("vec_a: {:?}", vec_a);
+        println!("vec_a: {vec_a:?}");
 
         let vec_b = vec![2, 3, 4, 1];
         println!("vec_b: {:?}\n", vec_b);
