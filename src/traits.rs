@@ -191,10 +191,10 @@ pub trait Despise {
 impl<T: AllValues> Despise for T {
     fn despise_small_values(&mut self) {
         for value in self.get_all_values() {
-            if let Some(v) = value {
-                if v.abs() < SMALL_VALUE {
-                    *value = None;
-                }
+            if let Some(v) = value
+                && v.abs() < SMALL_VALUE
+            {
+                *value = None;
             }
         }
     }
