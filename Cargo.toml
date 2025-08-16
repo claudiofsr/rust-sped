@@ -55,7 +55,7 @@ itertools = "0.14"
 num_cpus = "1.17"
 ordered-float = { version = "5.0", features = ["serde"] }
 rand = "0.9"
-rayon = "1.10"
+rayon = "1.11"
 regex = "1.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
@@ -84,7 +84,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.89"
+version = "0.90"
 features = [ 
     # "constant_memory",
     "chrono", 
@@ -145,7 +145,7 @@ required-features = [ "old" ]
 [dev-dependencies]
 # cargo bench
 # ver resultado em: ... Rust/projects/efd_contribuicoes/target/criterion/report/index.html
-criterion = { version = "0.6", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 plotters = "0.3"
 
 [[bench]]
