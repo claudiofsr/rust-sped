@@ -201,6 +201,7 @@ static CORRELACAO_DE_ALIQUOTAS: LazyLock<HashMap<&'static str, f64>> = LazyLock:
         ("4.5600", 0.9900),
         ("5.7000", 1.2375), // PIS: 1,2375 % (1,65% x 75%) e. – COFINS: 5,70% (7,60% x 75%). Subcontratação Serviços de Transporte
         ("6.0800", 1.3200),
+        ("7.0000", 1.6500),
         ("7.6000", 1.6500),
         ("8.5400", 1.8600), // venda pelo atacadista ao varejista ou ao consumidor final
         ("9.6500", 2.1000),
