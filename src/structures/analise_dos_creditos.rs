@@ -503,6 +503,7 @@ pub fn consolidar_natureza_da_base_de_calculo(
 
     for (k, v) in chaves_consolidadas {
         match k.cst {
+            //Some(1..=9) => receita_bruta.insert(k, v), // Excluir CST 49 do Rateio da Receita Bruta
             Some(1..=49) => receita_bruta.insert(k, v),
             Some(50..=66) => base_creditos.insert(k, v),
             _ => continue,
