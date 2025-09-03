@@ -498,7 +498,7 @@ pub fn consolidar_natureza_da_base_de_calculo(
 ) -> EFDResult<(String, String, Vec<AnaliseDosCreditos>)> {
     let chaves_consolidadas: HashMap<Chaves, Valores> = consolidar_chaves(linhas); // 1 <= CST <= 99
 
-    let mut receita_bruta: HashMap<Chaves, Valores> = HashMap::new(); //  1 <= CST <=  9
+    let mut receita_bruta: HashMap<Chaves, Valores> = HashMap::new(); //  1 <= CST <= 49
     let mut base_creditos: HashMap<Chaves, Valores> = HashMap::new(); // 50 <= CST <= 66
 
     for (k, v) in chaves_consolidadas {
