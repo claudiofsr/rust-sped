@@ -27,7 +27,8 @@ use tabled::{
 };
 
 use crate::{
-    DECIMAL_ALIQ, DECIMAL_VALOR, Despise, DocsFiscais, EFDResult, InfoExtension, Mes, SMALL_VALUE,
+    Arguments, DECIMAL_ALIQ, DECIMAL_VALOR, Despise, DocsFiscais, EFDResult, InfoExtension, Mes,
+    SMALL_VALUE,
     Tributos::{Cofins, Pis},
     ZERO, get_tipo_de_operacao, month_to_str, obter_descricao_da_natureza_da_bc_dos_creditos,
     obter_descricao_do_tipo_de_credito, verificar_periodo_multiplo,
@@ -494,6 +495,7 @@ fn display_percentual(valor: &Option<f64>) -> String {
 }
 
 pub fn consolidar_natureza_da_base_de_calculo(
+    args: &Arguments,
     linhas: &[DocsFiscais],
 ) -> EFDResult<(String, String, Vec<AnaliseDosCreditos>)> {
     let chaves_consolidadas: HashMap<Chaves, Valores> = consolidar_chaves(linhas); // 1 <= CST <= 99
@@ -503,10 +505,27 @@ pub fn consolidar_natureza_da_base_de_calculo(
 
     for (k, v) in chaves_consolidadas {
         match k.cst {
-            //Some(1..=9) => receita_bruta.insert(k, v), // Excluir CST 49 do Rateio da Receita Bruta
-            Some(1..=49) => receita_bruta.insert(k, v),
-            Some(50..=66) => base_creditos.insert(k, v),
-            _ => continue,
+            Some(cst_value) => {
+                if args.excluir_cst_49 && cst_value == 49 {
+                    // Se excluir_cst_49 for true E o valor for 49,
+                    // então continue (ignora este CST para receita_bruta)
+                    continue;
+                }
+                // Se não for 49 (ou se excluir_cst_49 for false),
+                // verifica os intervalos normais
+                match cst_value {
+                    1..=49 => {
+                        // Este intervalo agora sempre pode ser 1..=49,
+                        // pois o 49 será ignorado pela guarda acima se necessário
+                        receita_bruta.insert(k, v);
+                    }
+                    50..=66 => {
+                        base_creditos.insert(k, v);
+                    }
+                    _ => continue, // Para outros valores de CST que não se encaixam
+                }
+            }
+            None => continue, // Se k.cst for None, continue
         };
     }
 

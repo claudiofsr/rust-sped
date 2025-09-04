@@ -77,6 +77,20 @@ pub struct Arguments {
     )]
     pub excluir_saidas: bool,
 
+    /// Excluir CST 49 do Rateio da Receita Bruta.
+    ///
+    /// Ou seja, restringir o intervalo de '1 <= CST <= 49'
+    /// para '1 <= CST <= 9' no cálculo da Receita Bruta utilizada
+    /// no rateio dos créditos.
+    #[arg(
+        short('t'),
+        long,
+        value_parser,
+        verbatim_doc_comment,
+        default_value_t = false
+    )]
+    pub excluir_cst_49: bool,
+
     /// Find SPED EFD files
     #[arg(
         short,

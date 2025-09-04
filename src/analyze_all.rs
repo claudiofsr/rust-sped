@@ -20,7 +20,7 @@ pub fn executar_programa(
         eprintln!("Error: {error}");
     }
 
-    let (mut pa_total, all_lines) = analyze_all_files(&args.all_files, &mut write)?;
+    let (mut pa_total, all_lines) = analyze_all_files(args, &mut write)?;
 
     let print_table: bool = pa_total.len() > 1;
 
@@ -42,7 +42,7 @@ pub fn executar_programa(
     }
 
     let (consolidacao_cst, consolidacao_nat) =
-        consolidar_resultados(&all_lines, print_table, &mut write)?;
+        consolidar_resultados(args, &all_lines, print_table, &mut write)?;
 
     // Aplicar filtros: excluir Saídas ou reter apenas operações de crédito.
     let filtered_lines: Vec<DocsFiscais> = all_lines
@@ -85,9 +85,10 @@ fn make_dir_recursively(dir_name: &str) -> std::io::Result<()> {
 }
 
 fn analyze_all_files(
-    arquivos_efd: &[PathBuf],
+    args: &Arguments,
     mut write: &mut dyn Write,
 ) -> EFDResult<(Vec<NaiveDate>, Vec<DocsFiscais>)> {
+    let arquivos_efd: &[PathBuf] = &args.all_files;
     print_arquivos_selecionados(arquivos_efd, &mut write)?;
 
     let registros_efd = sped_efd::registros(); // tabela de registros
@@ -143,7 +144,7 @@ fn analyze_all_files(
             )?;
             write!(write, "{info_msg}")?;
 
-            consolidar_resultados(&vec_docs_fiscais, true, &mut write)?;
+            consolidar_resultados(args, &vec_docs_fiscais, true, &mut write)?;
 
             Ok((pa, vec_docs_fiscais))
         })
@@ -193,6 +194,7 @@ fn print_arquivos_selecionados(arquivos: &[PathBuf], write: &mut dyn Write) -> E
 }
 
 fn consolidar_resultados(
+    args: &Arguments,
     database: &[DocsFiscais],
     print_table: bool,
     write: &mut dyn Write,
@@ -245,7 +247,7 @@ fn consolidar_resultados(
         });
 
         s.spawn(|| -> EFDResult<()> {
-            nat = analise_dos_creditos::consolidar_natureza_da_base_de_calculo(database)?;
+            nat = analise_dos_creditos::consolidar_natureza_da_base_de_calculo(args, database)?;
             Ok(())
         });
     });
@@ -339,6 +341,7 @@ mod tests {
             all_files: vec![arquivo.clone()],
             clear_terminal: false,
             excluir_saidas: false,
+            excluir_cst_49: false,
             find: false,
             generator: None,
             print_csv: true,
