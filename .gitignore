@@ -1,0 +1,13 @@
+/target
+/novo
+PISCOFINS*
+EFD_Contribuicoes*
+efd_contribuicoes*
+*.csv
+*.xlsx
+*.txt
+src/csv_aggregation.rs
+.vscode
+src/registros/*
+src/model.rs
+src/parser.rs
