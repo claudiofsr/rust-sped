@@ -52,7 +52,7 @@ pub fn analyze_one_file(
 
     Ok((
         info.cnpj_base,
-        info.pa.ok_or_else(|| EFDError::InvalidPA)?,
+        info.pa.ok_or(EFDError::InvalidPA)?,
         info.messages,
         vec_docs_fiscais,
     ))
@@ -379,20 +379,22 @@ fn formatar_casas_decimais(
     };
 
     if let Some(dec) = decimal {
-        let formatted: Result<f64, ParseFloatError> = valor
+        let parsed_value: Result<f64, ParseFloatError> = valor
             .replace('.', "") // remover separadores de milhar (se houver)
             .replace(',', ".") // alterar separador decimal de vírgula (",") para ponto (".")
             .parse::<f64>();
 
-        valor_formatado = match formatted {
+        valor_formatado = match parsed_value {
             Ok(number) => {
                 format!("{number:0.dec$}")
             }
-            Err(error) => {
-                eprintln!("fn formatar_casas_decimais()");
-                eprintln!("Linha nº {num_line} do arquivo '{arquivo:?}'.");
-                eprintln!("Erro na conversão de '{valor}' para Valor Numérico Float64.");
-                return Err(EFDError::ParseFloatError(error));
+            Err(source_error) => {
+                return Err(EFDError::ParseFloatError {
+                    source: source_error,
+                    valor_str: valor,
+                    arquivo: arquivo.to_path_buf(), // Converte &Path para PathBuf
+                    linha_num: num_line,
+                });
             }
         };
     }

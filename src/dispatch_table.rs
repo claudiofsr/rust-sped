@@ -114,7 +114,7 @@ pub fn make_dispatch_table() -> EFDResult<HashMap<&'static str, FuncaoLerRegistr
 pub fn get_and_parse_usize(valores: &HashMap<String, String>, key: &str) -> EFDResult<usize> {
     valores
         .get(key)
-        .ok_or_else(|| EFDError::NotFound)?
+        .ok_or(EFDError::NotFound)?
         .parse::<usize>()
         .map_err(|e| EFDError::ParseIntError(e, valores[key].to_string()))
 }
