@@ -1,0 +1,94 @@
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use rust_decimal::Decimal;
+use std::path::Path;
+
+#[derive(Debug)]
+pub struct RegistroM210Antigo {
+    /// Nível hierárquico
+    pub nivel: u16,
+
+    /// Organização do Arquivo da EFD Contribuições - Blocos e Registros
+    pub bloco: char,
+
+    /// Código de 4 caracteres do Registro
+    pub registro: String,
+
+    /// Número da linha do arquivo Sped EFD Contribuições
+    pub line_number: usize,
+
+    pub cod_cont: Option<String>,           // 2
+    pub vl_rec_brt: Option<Decimal>,        // 3
+    pub vl_bc_cont: Option<Decimal>,        // 4
+    pub aliq_pis: Option<Decimal>,          // 5
+    pub quant_bc_pis: Option<String>,       // 6 (Pode ser String ou Decimal)
+    pub aliq_pis_quant: Option<Decimal>,    // 7
+    pub vl_cont_apur: Option<Decimal>,      // 8
+    pub vl_ajus_acres: Option<Decimal>,     // 9
+    pub vl_ajus_reduc: Option<Decimal>,     // 10
+    pub vl_cont_difer: Option<Decimal>,     // 11
+    pub vl_cont_difer_ant: Option<Decimal>, // 12
+    pub vl_cont_per: Option<Decimal>,       // 13
+}
+
+impl_sped_record_trait!(RegistroM210Antigo);
+
+impl SpedParser for RegistroM210Antigo {
+    type Output = RegistroM210Antigo;
+
+    fn parse_reg(file_path: &Path, line_number: usize, fields: &[&str]) -> EFDResult<Self::Output> {
+        let registro = fields[1].to_uppercase();
+        let len: usize = fields.len();
+
+        // O registro M210_Antigo possui 13 campos de dados + 2 delimitadores = 15.
+        if len != 15 {
+            return Err(EFDError::InvalidLength {
+                arquivo: file_path.to_path_buf(),
+                linha_num: line_number,
+                registro: registro.clone(),
+                tamanho_esperado: 15,
+                tamanho_encontrado: len,
+            });
+        }
+
+        // Closure para campos decimais (Option<Decimal>)
+        let get_decimal_field = |idx: usize, field_name: &str| {
+            fields
+                .get(idx)
+                .to_decimal(file_path.to_path_buf(), line_number, field_name)
+        };
+
+        let cod_cont = fields.get(2).to_optional_string();
+        let vl_rec_brt = get_decimal_field(3, "VL_REC_BRT")?;
+        let vl_bc_cont = get_decimal_field(4, "VL_BC_CONT")?;
+        let aliq_pis = get_decimal_field(5, "ALIQ_PIS")?;
+        let quant_bc_pis = fields.get(6).to_optional_string();
+        let aliq_pis_quant = get_decimal_field(7, "ALIQ_PIS_QUANT")?;
+        let vl_cont_apur = get_decimal_field(8, "VL_CONT_APUR")?;
+        let vl_ajus_acres = get_decimal_field(9, "VL_AJUS_ACRES")?;
+        let vl_ajus_reduc = get_decimal_field(10, "VL_AJUS_REDUC")?;
+        let vl_cont_difer = get_decimal_field(11, "VL_CONT_DIFER")?;
+        let vl_cont_difer_ant = get_decimal_field(12, "VL_CONT_DIFER_ANT")?;
+        let vl_cont_per = get_decimal_field(13, "VL_CONT_PER")?;
+
+        let reg = RegistroM210Antigo {
+            nivel: 3,
+            bloco: 'M',
+            registro,
+            line_number,
+            cod_cont,
+            vl_rec_brt,
+            vl_bc_cont,
+            aliq_pis,
+            quant_bc_pis,
+            aliq_pis_quant,
+            vl_cont_apur,
+            vl_ajus_acres,
+            vl_ajus_reduc,
+            vl_cont_difer,
+            vl_cont_difer_ant,
+            vl_cont_per,
+        };
+
+        Ok(reg)
+    }
+}
