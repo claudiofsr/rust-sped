@@ -42,7 +42,7 @@ impl SpedParser for RegistroF150 {
 
         // O registro F150 possui 14 campos de dados + 2 delimitadores = 16.
         if len != 16 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

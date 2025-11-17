@@ -31,7 +31,7 @@ impl SpedParser for Registro0208 {
 
         // Considerando os campos corrigidos: REG, COD_TAB, COD_GRU, MARCA_COM + delimitadores
         if len != 6 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

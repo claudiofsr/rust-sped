@@ -10,19 +10,6 @@ pub enum SpedRecord {
     Unknown(String), // Para linhas que não correspondem a um registro conhecido
 }
 
-// Uma melhoria idiomática seria definir um trait que todos os structs de registro implementassem.
-// Por exemplo:
-// pub trait SpedRecordData {
-//     fn line_number(&self) -> usize;
-//     fn bloco(&self) -> char;
-//     fn registro_name(&self) -> &str;
-// }
-// E então SpedRecord poderia ter uma variante como:
-// SpedRecord::Generic(Box<dyn SpedRecordData + Send + Sync>)
-// No entanto, isso requer que cada struct de registro seja refatorada para implementar o trait,
-// o que está além do escopo da solicitação de "completar" e "melhorar o padrão".
-// Mantendo o padrão atual de match para evitar refatorações maiores.
-
 impl SpedRecord {
     /// Construtor conveniente para o caso Generic
     pub fn new_generic<T: SpedRecordTrait + Send + Sync + 'static>(record: T) -> Self {

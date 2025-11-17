@@ -32,7 +32,7 @@ impl SpedParser for RegistroM605 {
 
         // O registro M605 possui 4 campos de dados + 2 delimitadores = 6.
         if len != 6 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

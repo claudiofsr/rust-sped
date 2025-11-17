@@ -64,6 +64,7 @@ serde_derive = "1.0"
 serde-aux = "4.7"
 struct_iterable = "0.1"
 tabled = { version = "0.20", features = ["ansi"] }
+tempfile = "3.23"
 thiserror = "2.0"
 
 log = "0.4"
@@ -150,7 +151,6 @@ required-features = [ "old" ]
 
 [dev-dependencies]
 # Dependencies ONLY needed for testing
-tempfile = "3.23"
 # cargo bench
 # ver resultado em: ... Rust/projects/efd_contribuicoes/target/criterion/report/index.html
 criterion = { version = "0.7", features = ["html_reports"] }

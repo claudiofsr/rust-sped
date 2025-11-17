@@ -58,7 +58,7 @@ impl SpedParser for Registro1011 {
 
         // O registro 1011 possui 26 campos de dados + 2 delimitadores = 28.
         if len != 28 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

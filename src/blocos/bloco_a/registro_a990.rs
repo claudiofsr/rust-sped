@@ -29,7 +29,7 @@ impl SpedParser for RegistroA990 {
 
         // O registro A990 possui 2 campos de dados + 2 delimitadores = 4.
         if len != 4 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

@@ -32,24 +32,6 @@ use crate::{
 type FuncaoLerRegistro = fn(&mut Info, HashMap<String, String>) -> EFDResult<()>;
 
 /// Analyzes a single EFD file and extracts all relevant information.
-///
-/// This is the entry point for processing an individual EFD file, orchestrating
-/// the reading, parsing, and aggregation of data.
-///
-/// # Arguments
-/// * `registros_efd` - A map defining the structure and types of EFD records.
-/// * `dispatch_table` - A map linking record identifiers to their processing functions.
-/// * `multiprogressbar` - A reference to `MultiProgress` for progress bar management.
-/// * `arquivo` - The path to the EFD file.
-/// * `index` - The 0-based index of the current file in a batch.
-/// * `total` - The total number of files in the batch.
-///
-/// # Returns
-/// An `EFDResult<Informacoes>` which contains:
-/// * The base CNPJ.
-/// * The Periodo de Apuração (PA).
-/// * Accumulated messages/warnings.
-/// * A vector of `DocsFiscais` representing parsed fiscal documents.
 pub fn analyze_one_file(
     registros_efd: &HashMap<&'static str, HashMap<u16, (&'static str, Tipo)>>,
     dispatch_table: &HashMap<&str, FuncaoLerRegistro>,
@@ -1101,6 +1083,14 @@ mod analize_one_tests_v1 {
         Ok(())
     }
 }
+
+//----------------------------------------------------------------------------//
+//                                   Tests                                    //
+//----------------------------------------------------------------------------//
+//
+// cargo test -- --help
+// cargo test -- --nocapture
+// cargo test -- --show-output
 
 /// Run tests with:
 /// cargo test -- --show-output analize_one_tests_v2

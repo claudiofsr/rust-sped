@@ -41,7 +41,7 @@ impl SpedParser for RegistroC810 {
 
         // O registro C810 possui 13 campos de dados + 2 delimitadores = 15.
         if len != 15 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

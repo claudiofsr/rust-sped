@@ -34,7 +34,7 @@ impl SpedParser for Registro1220 {
         // O registro 1220 possui 4 campos de dados (PER_APU_CRED, ORIG_CRED, COD_CRED, VL_CRED)
         // + 2 delimitadores = 6.
         if len != 6 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

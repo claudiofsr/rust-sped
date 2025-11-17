@@ -203,16 +203,15 @@ pub fn parse_sped_fields(
 #[cfg(test)]
 mod parser_tests {
     use super::*;
-    use crate::{EFDResult, NEWLINE_BYTE, SpedFile, get_string_utf8};
+    use crate::{EFDResult, NEWLINE_BYTE, SpedFile, create_a_temp_file, get_string_utf8};
     use glob::glob;
     use rayon::prelude::*;
     use std::{
-        fs::{self, File},
-        io::{BufRead, BufReader, Write},
+        fs::File,
+        io::{BufRead, BufReader},
         path::PathBuf,
         sync::{Arc, Mutex},
     };
-    use tempfile::NamedTempFile;
 
     // Don't forget to initialize logging in your test setup if you want to see warnings
     // from tests. This can be done once in a `before_each` style setup if you have one,
@@ -261,27 +260,6 @@ mod parser_tests {
     |POS_9999_A|Linha que deve ser ignorada|\n\
     |POS_9999_B|Outra linha para ignorar|\n\
     ";
-
-    /// Create a named temporary file and write some data into it
-    fn create_a_temp_file(contents: &str, verbose: bool) -> EFDResult<NamedTempFile> {
-        // Create a file inside of `env::temp_dir()`.
-        let mut file = NamedTempFile::new()?;
-
-        // Write some test data to the file handle.
-        file.write_all(contents.as_bytes())?;
-
-        if verbose {
-            // Reading an entire file into a String:
-            let string = fs::read_to_string(file.path())?; // The '?' operator propagates errors
-            println!(
-                "Conteúdo do arquivo temporário [{:?}]:\n{}",
-                file.path(),
-                string
-            );
-        }
-
-        Ok(file)
-    }
 
     #[allow(dead_code)]
     fn get_efd_files() -> EFDResult<Vec<PathBuf>> {

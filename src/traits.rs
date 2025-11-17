@@ -315,8 +315,18 @@ impl ToOptionalNaiveDate for Option<&&str> {
     ) -> EFDResult<Option<NaiveDate>> {
         let original_s = self.map(|s| (*s).to_string());
 
-        self.filter(|s| !s.is_empty())
-            .map(|s| NaiveDate::parse_from_str(s, "%-d%-m%Y")) // Assuming DDMMYYYY format for SPED
+        self.filter(|date_str| date_str.len() == 6 || date_str.len() == 8)
+            .map(|date_str| {
+                let date_format = "%-d%-m%Y";
+                if date_str.len() == 8 {
+                    // Assuming DDMMYYYY format for SPED
+                    NaiveDate::parse_from_str(date_str, date_format)
+                } else {
+                    // Assuming MMYYYY format for SPED, assumed '01' for day
+                    let day_month_year = format!("01{}", date_str);
+                    NaiveDate::parse_from_str(&day_month_year, date_format)
+                }
+            })
             .transpose() // Convert Option<Result<T,E>> to Result<Option<T>,E>
             .map_err(|source| EFDError::ParseDateError {
                 source,
@@ -353,8 +363,18 @@ impl ToNaiveDate for Option<&&str> {
     ) -> EFDResult<NaiveDate> {
         let original_s = self.map(|s| (*s).to_string());
 
-        self.filter(|s| !s.is_empty()) // Filter out empty strings first
-            .map(|s| NaiveDate::parse_from_str(s, "%-d%-m%Y")) // Attempt to parse
+        self.filter(|date_str| date_str.len() == 6 || date_str.len() == 8)
+            .map(|date_str| {
+                let date_format = "%-d%-m%Y";
+                if date_str.len() == 8 {
+                    // Assuming DDMMYYYY format for SPED
+                    NaiveDate::parse_from_str(date_str, date_format)
+                } else {
+                    // Assuming MMYYYY format for SPED, assumed '01' for day
+                    let day_month_year = format!("01{}", date_str);
+                    NaiveDate::parse_from_str(&day_month_year, date_format)
+                }
+            })
             .transpose() // Convert Option<Result<T,E>> to Result<Option<T>,E>
             .map_err(|source| EFDError::ParseDateError {
                 // Map parsing errors

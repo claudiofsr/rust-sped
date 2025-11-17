@@ -10,6 +10,7 @@ mod sped_efd;
 mod sped_registros;
 mod structures;
 mod traits;
+mod utils;
 mod validate_line;
 
 mod blocos;
@@ -23,7 +24,7 @@ pub use self::{
     analyze_all::*, analyze_one::*, args::*, blocos::*, dispatch_table::*, error::*,
     excel_worksheets::*, line_iterator::*, model::*, parser::*, regex::*, sped_efd::*,
     sped_registros::*, structures::analise_dos_creditos::*, structures::consolidacao_cst::*,
-    structures::docs_fiscais::*, structures::info::*, traits::*, validate_line::*,
+    structures::docs_fiscais::*, structures::info::*, traits::*, utils::*, validate_line::*,
 };
 
 // https://crates.io/crates/cfg-if

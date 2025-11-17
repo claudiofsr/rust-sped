@@ -37,7 +37,7 @@ impl SpedParser for RegistroD601 {
 
         // O registro D601 possui 9 campos de dados + 2 delimitadores = 11.
         if len != 11 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

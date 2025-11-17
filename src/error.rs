@@ -198,14 +198,16 @@ pub enum EFDError {
         line: String,
     },
 
-    /// Registro com comprimento inesperado.
+    /// Nº incorreto de campos
     #[error(
-        "Comprimento inválido para o registro '{registro}'!\n\
-         Esperado: {tamanho_esperado}, Encontrado: {tamanho_encontrado}\n\
+        "Erro: Nº incorreto de campos\n\
          Arquivo: '{arquivo:?}'\n\
-         Nº da linha: {linha_num}"
+         Nº da linha: {linha_num}\n\
+         O Registro '{registro}' possui número incorreto de campos.\n\
+         Esperado: {tamanho_esperado}\n\
+         Encontrado: {tamanho_encontrado}\n"
     )]
-    InvalidLength {
+    InvalidFieldCount {
         arquivo: PathBuf,
         linha_num: usize,
         registro: String,
@@ -236,6 +238,14 @@ pub enum EFDError {
     /// Wrapper geral para `std::io::Error`.
     #[error("Erro de IO: {0}")]
     Io(#[from] io::Error), // source io::Error
+
+    /// Wrapper geral para `std::io::Error` verbose.
+    #[error("Erro de I/O em {path:?}: {source}")]
+    InOut {
+        #[source]
+        source: io::Error,
+        path: PathBuf,
+    },
 
     /// Wrapper geral para `glob::GlobError`.
     #[error("Erro de Glob: {0}")]

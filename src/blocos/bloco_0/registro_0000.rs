@@ -5,6 +5,8 @@ use crate::{
 use chrono::NaiveDate;
 use std::path::Path;
 
+const EXPECTED_FIELDS: usize = 16;
+
 #[derive(Debug)]
 pub struct Registro0000 {
     /// Nível hierárquico
@@ -46,12 +48,13 @@ impl SpedParser for Registro0000 {
         // O registro 0000 tipicamente tem 14 campos de dados (fora os delimitadores).
         // Se a linha começa com '|' e termina com '|', fields.len() deve ser 14 + 2 = 16.
         // Verifique o número real de campos para o seu formato SPED.
-        if len != 16 {
-            return Err(EFDError::InvalidLength {
+
+        if len != EXPECTED_FIELDS {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(), // Aqui precisa do clone porque `registro` será usado depois.
-                tamanho_esperado: 16,
+                tamanho_esperado: EXPECTED_FIELDS,
                 tamanho_encontrado: len,
             });
         }

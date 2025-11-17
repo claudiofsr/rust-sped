@@ -42,7 +42,10 @@ impl ValidatedLine {
         arquivo: &Path,
         registros_efd: &HashMap<&'static str, HashMap<u16, (&'static str, Tipo)>>,
     ) -> EFDResult<Option<Self>> {
-        let line_bytes = line_bytes_result?; // Propagate I/O error
+        let line_bytes = line_bytes_result.map_err(|source| EFDError::InOut {
+            source,
+            path: arquivo.to_path_buf(),
+        })?; // Propagate I/O error
 
         // Trim ASCII whitespace from both ends of the byte slice.
         let trimmed_bytes = line_bytes.trim_ascii();
@@ -194,8 +197,8 @@ mod validade_line_tests {
     use std::{io::ErrorKind, path::PathBuf};
 
     #[test]
+    /// cargo test -- --show-output analisar_linhas
     fn analisar_linhas() -> EFDResult<()> {
-        // cargo test -- --show-output analisar_linhas
         let registros_efd = sped_efd::registros(); // tabela de registros
         let arquivo = PathBuf::from("teste");
         let num_line = 1;
@@ -325,6 +328,7 @@ mod validade_line_tests {
     }
 
     #[test]
+    /// cargo test -- --show-output raw_bytes_io_error
     fn test_validated_line_try_from_raw_bytes_io_error() {
         let registros = create_dummy_registros_efd();
         let path = Path::new("test.efd");
@@ -333,11 +337,15 @@ mod validade_line_tests {
 
         let result = ValidatedLine::try_from_raw_bytes(line_bytes, line_number, path, &registros);
         assert!(result.is_err());
+
         // You might want to assert the specific error type if EFDError wrapped io::Error
-        if let Err(EFDError::Io(e)) = result {
-            assert_eq!(e.kind(), ErrorKind::InvalidData);
+        println!("result: {result:#?}");
+
+        if let Err(EFDError::InOut { source, path }) = result {
+            assert_eq!(source.kind(), ErrorKind::InvalidData);
+            assert_eq!(path, Path::new("test.efd"));
         } else {
-            panic!("Expected EFDError::Io");
+            panic!("result: {result:?}\nExpected EFDError::Io");
         }
     }
 

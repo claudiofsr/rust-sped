@@ -25,7 +25,7 @@ impl SpedParser for RegistroC490 {
         let len: usize = fields.len();
 
         if len != 6 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

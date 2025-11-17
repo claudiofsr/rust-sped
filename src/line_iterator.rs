@@ -193,6 +193,7 @@ mod line_iterator_tests {
     }
 
     #[test]
+    /// cargo test -- --show-output error_in_split
     fn test_efd_line_iterator_io_error_in_split() {
         struct FaultyReader {
             data: Cursor<&'static [u8]>,
@@ -259,10 +260,13 @@ mod line_iterator_tests {
         let err = iter.next().unwrap();
         assert!(err.is_err());
 
-        if let Err(EFDError::Io(e)) = err {
-            assert_eq!(e.kind(), ErrorKind::Other);
+        println!("Error: {err:#?}");
+
+        if let Err(EFDError::InOut { source, path }) = err {
+            assert_eq!(source.kind(), ErrorKind::Other);
+            assert_eq!(path, Path::new("test.efd"));
         } else {
-            panic!("Expected EFDError::Io");
+            panic!("Error: {err:?}\nExpected EFDError::Io");
         }
 
         assert!(iter.next().is_none()); // Iterator should be exhausted after the error and subsequent reads.

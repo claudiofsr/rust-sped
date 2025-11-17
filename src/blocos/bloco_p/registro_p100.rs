@@ -44,7 +44,7 @@ impl SpedParser for RegistroP100 {
 
         // O registro P100 possui 12 campos de dados + 2 delimitadores = 14.
         if len != 14 {
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),

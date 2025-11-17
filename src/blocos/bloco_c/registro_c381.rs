@@ -39,7 +39,7 @@ impl SpedParser for RegistroC381 {
         // O registro C381 possui 9 campos de dados + 2 delimitadores = 11.
         if len != 12 {
             // 10 fields + REG + |
-            return Err(EFDError::InvalidLength {
+            return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),
