@@ -282,7 +282,7 @@ impl<T: ToString> ToDecimal for Option<T> {
                         }
                     })
             }) // Result is now Option<Result<Decimal, EFDError>>
-            .transpose() // Convert Option<Result<Decimal, EFDError>> to Result<Option<Decimal>, EFDError>
+            .transpose() // Convert Option<EFDResult<Decimal>> to EFDResult<Option<Decimal>>
     }
 }
 
