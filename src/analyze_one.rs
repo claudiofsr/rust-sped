@@ -23,9 +23,9 @@ use claudiofsr_lib::{
 
 use crate::{
     ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DECIMAL_ALIQ, DECIMAL_VALOR, DocsFiscais, EFDError,
-    EFDLineIterator, EFDResult, Info, Informacoes, REGEX_REMOVE_NON_DIGITS, Tipo, cred_presumido,
-    obter_cod_da_natureza_da_bc, obter_modelo_do_documento_fiscal, obter_tipo_do_item,
-    registros_de_operacoes,
+    EFDLineIterator, EFDResult, Info, Informacoes, REGEX_REMOVE_NON_DIGITS, Tipo, ToCnpj,
+    cred_presumido, obter_cod_da_natureza_da_bc, obter_modelo_do_documento_fiscal,
+    obter_tipo_do_item, registros_de_operacoes,
 };
 
 // Tipo utilizado em fn make_dispatch_table()
@@ -374,21 +374,24 @@ pub fn parse_file_info(info: &mut Info) -> EFDResult<Vec<DocsFiscais>> {
             }
             */
 
+            let registro = hashmap.get("REG").unwrap();
+
             // Obter o Período de Apuração do campo PER_APU_CRED no caso dos Registros 1100 e 1500
             let periodo_de_apuracao =
                 obter_periodo_de_apuracao(info.pa, hashmap, info.path.clone(), num_linha_efd)?;
 
-            let estab_cnpj = hashmap.get("estab_cnpj").ok_or(EFDError::InvalidCNPJ(
-                arquivo_efd.to_string(),
+            let estabelecimento_cnpj: String = hashmap.get("estab_cnpj").to_cnpj(
+                arquivo_efd.into(),
                 num_linha_efd,
-            ))?;
+                registro,
+                "CNPJ",
+            )?;
 
             let estab_nome = hashmap.get("estab_nome").ok_or(EFDError::InvalidName(
                 arquivo_efd.to_string(),
                 num_linha_efd,
             ))?;
 
-            let registro = hashmap.get("REG").unwrap();
             let cfop = hashmap.get("CFOP").and_then(|v| v.parse::<u16>().ok());
             let cst_cofins = hashmap
                 .get("CST_COFINS")
@@ -552,7 +555,7 @@ pub fn parse_file_info(info: &mut Info) -> EFDResult<Vec<DocsFiscais>> {
                 linhas: 2, // contador, será posteriormente atualizado
                 arquivo_efd: arquivo_efd.to_string(),
                 num_linha_efd: Some(num_linha_efd),
-                estabelecimento_cnpj: estab_cnpj.to_string(),
+                estabelecimento_cnpj,
                 estabelecimento_nome: estab_nome.to_uppercase(),
                 periodo_de_apuracao: Some(periodo_de_apuracao),
                 ano: Some(periodo_de_apuracao.year()),
@@ -1367,17 +1370,20 @@ mod analize_one_tests_v2 {
     }
 
     #[test]
+    /// cargo test -- --show-output info_missing_cnpj_error
     fn test_parse_file_info_missing_cnpj_error() {
         let mut info = create_dummy_info(Some(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()));
         let mut line_data = HashMap::new();
         line_data.insert("REG".to_string(), "C100".to_string());
         line_data.insert("estab_nome".to_string(), "TESTE EMPRESA".to_string()); // CNPJ missing
         info.completa.insert(1, line_data);
+        println!("info: {info:#?}");
 
         let result = parse_file_info(&mut info);
+        println!("result: {result:#?}");
         assert!(result.is_err());
-        if let Err(EFDError::InvalidCNPJ(_, line_num)) = result {
-            assert_eq!(line_num, 1);
+        if let Err(EFDError::KeyNotFound(campo_nome)) = result {
+            assert_eq!(campo_nome, "CNPJ");
         } else {
             panic!("Expected InvalidCNPJ error");
         }

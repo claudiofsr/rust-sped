@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalInteger, ToOptionalString,
+    EFDError, EFDResult, SpedParser, ToCnpj, ToNaiveDate, ToOptionalInteger, ToOptionalString,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
@@ -28,7 +28,7 @@ pub struct Registro0000 {
     pub dt_ini: NaiveDate,                // 6
     pub dt_fin: NaiveDate,                // 7
     pub nome: Option<String>,             // 8
-    pub cnpj: Option<String>,             // 9
+    pub cnpj: String,                     // 9
     pub uf: Option<String>,               // 10
     pub cod_mun: Option<String>,          // 11
     pub suframa: Option<String>,          // 12
@@ -75,6 +75,13 @@ impl SpedParser for Registro0000 {
                 .to_optional_integer(file_path.to_path_buf(), line_number, field_name)
         };
 
+        // --- Closure auxiliar para obter CNPJ ---
+        let get_cnpj_field = |idx: usize, field_name: &str| {
+            fields
+                .get(idx) // fields.get(idx) retorna Option<&&str>
+                .to_cnpj(file_path.to_path_buf(), line_number, &registro, field_name)
+        };
+
         let cod_ver = get_integer_field(2, "COD_VER")?; // O '?' propagará o erro se houver
         let tipo_escrit = get_integer_field(3, "TIPO_ESCRIT")?;
         let ind_sit_esp = get_integer_field(4, "IND_SIT_ESP")?;
@@ -85,7 +92,7 @@ impl SpedParser for Registro0000 {
         let dt_fin = get_required_date_field(7, "DT_FIN")?;
 
         let nome = fields.get(8).to_optional_string();
-        let cnpj = fields.get(9).to_optional_string();
+        let cnpj = get_cnpj_field(9, "CNPJ")?;
         let uf = fields.get(10).to_optional_string();
         let cod_mun = fields.get(11).to_optional_string();
         let suframa = fields.get(12).to_optional_string();

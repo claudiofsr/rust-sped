@@ -240,53 +240,49 @@ where
     }
 }
 
-/// Um trait para converter um `Option<&&str>` para `EFDResult<Option<Decimal>>`.
-/// Lida com campos ausentes, campos vazios e erros de parsing de Decimal.
+/// A trait to convert an `Option<T>` into an `EFDResult<Option<Decimal>>`.
+/// Handles missing/empty fields and Decimal parsing errors.
 pub trait ToDecimal {
-    /// Converte o `Option<&&str>` em `EFDResult<Option<Decimal>>`.
+    /// Converts `self` (an `Option<T>`) into `EFDResult<Option<Decimal>>`.
     ///
-    /// # Retorna
-    /// - `Ok(None)` se o `Option` original for `None` ou se a string interna (após `trim()`) estiver vazia.
-    /// - `Ok(Some(Decimal))` se o parsing for bem-sucedido.
-    /// - `Err(EFDError::ParseDecimalError)` se a string não puder ser parseada como Decimal.
+    /// # Returns
+    /// - `Ok(None)` if `self` is `None` or contains an empty string.
+    /// - `Ok(Some(Decimal))` if parsing is successful.
+    /// - `Err(EFDError::ParseDecimalError)` if the string cannot be parsed as a Decimal.
     fn to_decimal(
-        self,               // self agora é por valor
-        file_path: PathBuf, // Mantém PathBuf aqui para o contexto de erro
+        self,
+        file_path: PathBuf,
         line_number: usize,
         field_name: &str,
     ) -> EFDResult<Option<Decimal>>;
 }
 
-// Implementação para Option<&&str>
-impl ToDecimal for Option<&&str> {
-    // <--- Implementação para Option<&&str>
+impl<T: ToString> ToDecimal for Option<T> {
     fn to_decimal(
         self,
         file_path: PathBuf,
         line_number: usize,
         field_name: &str,
     ) -> EFDResult<Option<Decimal>> {
-        match self {
-            None => Ok(None), // Se o Option original for None (campo ausente), retorna Ok(None)
-            Some(s) => {
-                if s.is_empty() {
-                    return Ok(None); // Se a string estiver vazia, retorna Ok(None)
-                }
+        self.map(|s| s.to_string()) // Convert Option<T> to Option<String>
+            .filter(|s| !s.is_empty()) // Convert Some("") to None, treating empty as missing
+            .map(|s| {
+                // If Some(s) is still present, attempt parsing
+                let s_parsed = s.replace('.', "").replace(',', "."); // SPED-specific parsing logic
 
-                let s_parsed = s.replace('.', "").replace(',', "."); // Lógica de parsing do SPED
-
-                Decimal::from_str_exact(&s_parsed)
-                    .map(Some) // Se Ok(decimal), transforma em Ok(Some(decimal))
-                    .map_err(|source| EFDError::ParseDecimalError {
-                        // Se Err(parse_err), transforma em Err(EFDError)
-                        source,
-                        valor_str: s.to_string(), // Usa o valor trimado para o erro
-                        campo_nome: field_name.to_string(),
-                        arquivo: file_path,
-                        linha_num: line_number,
+                Decimal::from_str_exact(&s_parsed) // Attempt to parse into Decimal
+                    .map_err(|source| {
+                        // Map parsing error to EFDError::ParseDecimalError
+                        EFDError::ParseDecimalError {
+                            source,
+                            valor_str: s, // Use the original string for error context
+                            campo_nome: field_name.to_string(),
+                            arquivo: file_path,
+                            linha_num: line_number,
+                        }
                     })
-            }
-        }
+            }) // Result is now Option<Result<Decimal, EFDError>>
+            .transpose() // Convert Option<Result<Decimal, EFDError>> to Result<Option<Decimal>, EFDError>
     }
 }
 
@@ -306,35 +302,34 @@ pub trait ToOptionalNaiveDate {
     ) -> EFDResult<Option<NaiveDate>>;
 }
 
-impl ToOptionalNaiveDate for Option<&&str> {
+impl<T: ToString> ToOptionalNaiveDate for Option<T> {
     fn to_optional_date(
         self,
         file_path: PathBuf,
         line_number: usize,
         field_name: &str,
     ) -> EFDResult<Option<NaiveDate>> {
-        let original_s = self.map(|s| (*s).to_string());
-
-        self.filter(|date_str| date_str.len() == 6 || date_str.len() == 8)
+        self.map(|s| s.to_string()) // Option<T> -> Option<String>
+            .filter(|s| s.len() == 6 || s.len() == 8)
             .map(|date_str| {
                 let date_format = "%-d%-m%Y";
                 if date_str.len() == 8 {
                     // Assuming DDMMYYYY format for SPED
-                    NaiveDate::parse_from_str(date_str, date_format)
+                    NaiveDate::parse_from_str(&date_str, date_format)
                 } else {
                     // Assuming MMYYYY format for SPED, assumed '01' for day
                     let day_month_year = format!("01{}", date_str);
                     NaiveDate::parse_from_str(&day_month_year, date_format)
                 }
+                .map_err(|source| EFDError::ParseDateError {
+                    source,
+                    data_str: date_str,
+                    campo_nome: field_name.to_string(),
+                    arquivo: file_path,
+                    line_number,
+                })
             })
             .transpose() // Convert Option<Result<T,E>> to Result<Option<T>,E>
-            .map_err(|source| EFDError::ParseDateError {
-                source,
-                data_str: original_s.unwrap_or_default(),
-                campo_nome: field_name.to_string(),
-                arquivo: file_path,
-                line_number,
-            })
     }
 }
 
@@ -354,36 +349,34 @@ pub trait ToNaiveDate {
     ) -> EFDResult<NaiveDate>;
 }
 
-impl ToNaiveDate for Option<&&str> {
+impl<T: ToString> ToNaiveDate for Option<T> {
     fn to_date(
         self,
         file_path: PathBuf,
         line_number: usize,
         field_name: &str,
     ) -> EFDResult<NaiveDate> {
-        let original_s = self.map(|s| (*s).to_string());
-
-        self.filter(|date_str| date_str.len() == 6 || date_str.len() == 8)
+        self.map(|s| s.to_string()) // Option<T> -> Option<String>
+            .filter(|s| s.len() == 6 || s.len() == 8)
             .map(|date_str| {
                 let date_format = "%-d%-m%Y";
                 if date_str.len() == 8 {
                     // Assuming DDMMYYYY format for SPED
-                    NaiveDate::parse_from_str(date_str, date_format)
+                    NaiveDate::parse_from_str(&date_str, date_format)
                 } else {
                     // Assuming MMYYYY format for SPED, assumed '01' for day
                     let day_month_year = format!("01{}", date_str);
                     NaiveDate::parse_from_str(&day_month_year, date_format)
                 }
+                .map_err(|source| EFDError::ParseDateError {
+                    source,
+                    data_str: date_str,
+                    campo_nome: field_name.to_string(),
+                    arquivo: file_path,
+                    line_number,
+                })
             })
-            .transpose() // Convert Option<Result<T,E>> to Result<Option<T>,E>
-            .map_err(|source| EFDError::ParseDateError {
-                // Map parsing errors
-                source,
-                data_str: original_s.unwrap_or_default(),
-                campo_nome: field_name.to_string(),
-                arquivo: file_path.to_path_buf(), // Clonar PathBuf aqui
-                line_number,
-            })? // Propagate ParseDateError immediately if parsing fails
+            .transpose()? // Convert Option<Result<T,E>> to Result<Option<T>,E>
             .ok_or_else(|| EFDError::KeyNotFound(field_name.to_string())) // If it's Ok(None), means it was empty/None
     }
 }
@@ -401,65 +394,161 @@ pub trait ToOptionalString {
 }
 
 // Implementação para Option<&&str> (o tipo retornado por fields.get(index))
-impl ToOptionalString for Option<&&str> {
+impl<T: ToString> ToOptionalString for Option<T> {
     fn to_optional_string(self) -> Option<String> {
-        self.and_then(|s| {
-            if s.is_empty() {
-                None
-            } else {
-                Some(s.to_string())
-            }
-        })
+        self.map(|s| s.to_string()) // Option<T> -> Option<String>
+            .and_then(|s| {
+                if s.is_empty() {
+                    None
+                } else {
+                    Some(s.to_string())
+                }
+            })
     }
 }
 
-/// Trait para converter um `Option<&&str>` em `Result<Option<T>>`, onde `T` é um tipo inteiro.
-///
-/// Este trait é genérico para qualquer tipo `T` que possa ser parseado de uma string
-/// e cujo erro de parse possa ser convertido para `std::num::ParseIntError`.
-pub trait ToOptionalInteger<T>
+/// A trait for converting an `Option` of a string-like type to an `EFDResult<Option<U>>`,
+/// where `U` is an integer type.
+/// Handles missing/empty fields and integer parsing errors.
+pub trait ToOptionalInteger<U>
 where
-    T: FromStr + Debug, // T deve ser capaz de ser parseado de uma string e ser debugável
-    <T as FromStr>::Err: Into<std::num::ParseIntError>,
+    U: FromStr + Debug, // U must be parsable from a string and debuggable
+    <U as FromStr>::Err: Into<std::num::ParseIntError>,
 {
-    /// Analisa o slice de string em um `Option<T>`.
+    /// Converts `self` into `EFDResult<Option<U>>`.
     ///
-    /// - Retorna `Ok(Some(T))` se a string for um número válido.
-    /// - Retorna `Ok(None)` se a string for vazia ou o `Option` em si for `None`.
-    /// - Retorna `Err(EFDError::ParseIntError)` se a string for não vazia com `T` inválido.
+    /// # Returns
+    /// - `Ok(None)` if `self` is `None` or contains an empty string.
+    /// - `Ok(Some(U))` if parsing is successful.
+    /// - `Err(EFDError::ParseIntegerError)` if the string cannot be parsed into `U`.
     fn to_optional_integer(
         self,
         file_path: PathBuf,
         line_number: usize,
         field_name: &str,
-    ) -> Result<Option<T>, EFDError>;
+    ) -> Result<Option<U>, EFDError>;
 }
 
-// Implementação do trait para `Option<&&str>` para qualquer tipo `T` que atenda às restrições.
-impl<T> ToOptionalInteger<T> for Option<&&str>
+// Implement ToOptionalInteger<U> for Option<T> where T is string-like (e.g., &&str, String)
+impl<T, U> ToOptionalInteger<U> for Option<T>
 where
-    T: FromStr + Debug,
-    <T as FromStr>::Err: Into<std::num::ParseIntError>,
+    T: ToString,                                        // T must be convertible to String
+    U: FromStr + Debug, // U must be parsable from a string and debuggable
+    <U as FromStr>::Err: Into<std::num::ParseIntError>, // U's parsing error must convert to ParseIntError
 {
     fn to_optional_integer(
         self,
         file_path: PathBuf,
         line_number: usize,
         field_name: &str,
-    ) -> Result<Option<T>, EFDError> {
-        // Captura a string original para relatórios de erro detalhados, se necessário.
-        let original_s = self.map(|s| (*s).to_string());
+    ) -> Result<Option<U>, EFDError> {
+        self.map(|s| s.to_string()) // Convert Option<T> to Option<String>
+            .filter(|s| !s.is_empty()) // Filter out empty strings, converting Some("") to None
+            .map(|s| {
+                // If Some(s) is still present, attempt parsing
+                s.parse::<U>() // Attempt to parse the String into U
+                    .map_err(|source_err| EFDError::ParseIntegerError {
+                        // Map parsing error to EFDError
+                        source: source_err.into(), // Convert specific parse error to std::num::ParseIntError
+                        data_str: s,               // Use the original string for error context
+                        campo_nome: field_name.to_string(),
+                        arquivo: file_path,
+                        line_number,
+                    })
+            }) // Result is now Option<Result<U, EFDError>>
+            .transpose() // Convert Option<Result<U, EFDError>> to Result<Option<U>, EFDError>
+    }
+}
 
-        self.filter(|s| !s.is_empty()) // Converte Some("") em None
-            .map(|s| s.parse::<T>()) // Tenta parsear a string para T, resultando em Option<Result<T, Err>>
-            .transpose() // Converte Option<Result<T, Err>> para Result<Option<T>, Err>
-            .map_err(|source_err| EFDError::ParseIntegerError {
-                // Mapeia o erro de parse para o seu EFDError
-                source: source_err.into(), // Converte o erro específico de parse para std::num::ParseIntError
-                data_str: original_s.unwrap_or_default(), // Usa a string original para contexto de erro
-                campo_nome: field_name.to_string(),
-                arquivo: file_path,
-                line_number,
+/// Para converter um `Option<&&str>` em `EFDResult<Option<String>>` para o CNPJ.
+/// Lida com campos ausentes, campos vazios e validação de comprimento do CNPJ,
+/// retornando `EFDError::InvalidCNPJ` se o comprimento não for 14.
+pub trait ToOptionalCnpj {
+    /// Converte o `Option<&&str>` em `EFDResult<Option<String>>`.
+    ///
+    /// # Retorna
+    /// - `Ok(None)` se o `Option` original for `None` ou se a string interna estiver vazia.
+    /// - `Ok(Some(String))` se a string tiver comprimento 14.
+    /// - `Err(EFDError::InvalidCNPJ)` se a string não estiver vazia, mas tiver um comprimento diferente de 14.
+    fn to_optional_cnpj(
+        self,
+        file_path: PathBuf,
+        line_number: usize,
+        registro: &str,
+        field_name: &str,
+    ) -> EFDResult<Option<String>>;
+}
+
+// Implementação do trait ToOptionalCnpj para Option<&&str>
+impl<T: ToString> ToOptionalCnpj for Option<T> {
+    fn to_optional_cnpj(
+        self,
+        file_path: PathBuf,
+        line_number: usize,
+        registro: &str,
+        field_name: &str,
+    ) -> EFDResult<Option<String>> {
+        self.map(|s| s.to_string()) // Option<&&str> -> Option<String>
+            .filter(|s| !s.is_empty()) // Some("") -> None
+            .map(|s| {
+                // Agora `s` é garantido ser uma String não vazia, se presente
+                if s.len() == 14 {
+                    Ok(s) // Comprimento válido, envolve em Ok
+                } else {
+                    // Comprimento inválido, envolve erro em Err
+                    Err(EFDError::InvalidCNPJ {
+                        arquivo: file_path,
+                        linha_num: line_number,
+                        registro: registro.to_string(),
+                        campo_nome: field_name.to_string(),
+                        cnpj: s,
+                    })
+                }
+            })
+            .transpose() // Converte Option<Result<String, EFDError>> para Result<Option<String>, EFDError>
+    }
+}
+
+/// Para converter um `Option<&&str>` em `EFDResult<String>` para o CNPJ.
+pub trait ToCnpj {
+    fn to_cnpj(
+        self,
+        file_path: PathBuf,
+        line_number: usize,
+        registro: &str,
+        field_name: &str,
+    ) -> EFDResult<String>;
+}
+
+impl<T: ToString> ToCnpj for Option<T> {
+    fn to_cnpj(
+        self,
+        file_path: PathBuf,
+        line_number: usize,
+        registro: &str,
+        field_name: &str,
+    ) -> EFDResult<String> {
+        self.map(|s| s.to_string()) // Option<T> -> Option<String>
+            .filter(|s| !s.is_empty()) // Filter out empty strings, converting Some("") to None
+            .ok_or_else(|| {
+                // This converts the Option<String> into a Result<String, EFDError>.
+                // Se for None aqui, significa que o campo estava ausente ou vazio.
+                EFDError::KeyNotFound(field_name.to_string())
+            }) // This converts the Option<String> into a Result<String, EFDError>.
+            .and_then(|s| {
+                // `s` here is the String from the Ok variant of the Result
+                if s.len() == 14 {
+                    Ok(s) // Valid length, wrap in Ok
+                } else {
+                    // Invalid length, wrap error in Err
+                    Err(EFDError::InvalidCNPJ {
+                        arquivo: file_path,
+                        linha_num: line_number,
+                        registro: registro.to_string(),
+                        campo_nome: field_name.to_string(),
+                        cnpj: s,
+                    })
+                }
             })
     }
 }
@@ -537,7 +626,7 @@ mod optional_integer_tests {
         let line = 1;
         let field = "ID";
 
-        let input: Option<&&str> = Some(&"12345");
+        let input: Option<&str> = Some("12345");
         let result: Option<u64> = input.to_optional_integer(path.clone(), line, field)?;
         assert_eq!(result, Some(12345u64));
         Ok(())

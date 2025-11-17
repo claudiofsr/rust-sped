@@ -43,10 +43,20 @@ pub enum EFDError {
 
     /// Erro de formato ou conteúdo específico do arquivo/linha: CNPJ inválido encontrado.
     #[error(
-        "Erro ao processar informações do arquivo: CNPJ do estabelecimento não encontrado.\n\
-         Arquivo: {0}\nLinha nº: {1}"
+        "CNPJ inválido.\n\
+         Arquivo: {arquivo:?}\n\
+         Linha nº: {linha_num}\n\
+         Registro: {registro}\n\
+         Campo: {campo_nome}\n\
+         CNPJ: {cnpj}\n"
     )]
-    InvalidCNPJ(String, usize), // filename, line_number
+    InvalidCNPJ {
+        arquivo: PathBuf,
+        linha_num: usize,
+        registro: String,
+        campo_nome: String,
+        cnpj: String,
+    },
 
     /// Erro de formato ou conteúdo específico do arquivo/linha: Nome da empresa inválido encontrado.
     #[error(
