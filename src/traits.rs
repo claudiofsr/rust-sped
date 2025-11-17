@@ -286,10 +286,10 @@ impl<T: ToString> ToDecimal for Option<T> {
     }
 }
 
-/// A trait to convert an `Option<&&str>` to `EFDResult<Option<NaiveDate>>`.
+/// A trait to convert an `Option<T>` to `EFDResult<Option<NaiveDate>>`.
 /// Handles missing fields, empty fields, and date parsing errors.
 pub trait ToOptionalNaiveDate {
-    /// Converts the `Option<&&str>` into `Option<NaiveDate>`.
+    /// Converts the `Option<T>` into `Option<NaiveDate>`.
     ///
     /// - Returns `Ok(Some(NaiveDate))` if the string is a valid date.
     /// - Returns `Ok(None)` if the string is empty or the `Option` itself is `None`.
@@ -333,10 +333,10 @@ impl<T: ToString> ToOptionalNaiveDate for Option<T> {
     }
 }
 
-/// A trait to convert an `Option<&&str>` to `EFDResult<NaiveDate>`.
+/// A trait to convert an `Option<T>` to `EFDResult<NaiveDate>`.
 /// Designed for mandatory date fields, returning an error if the field is missing or empty.
 pub trait ToNaiveDate {
-    /// Converts the `Option<&&str>` into `NaiveDate`.
+    /// Converts the `Option<T>` into `NaiveDate`.
     ///
     /// - Returns `Ok(NaiveDate)` if the string is a valid date.
     /// - Returns `Err(EFDError::KeyNotFound)` if the string is empty or the `Option` itself is `None`.
@@ -356,27 +356,7 @@ impl<T: ToString> ToNaiveDate for Option<T> {
         line_number: usize,
         field_name: &str,
     ) -> EFDResult<NaiveDate> {
-        self.map(|s| s.to_string()) // Option<T> -> Option<String>
-            .filter(|s| s.len() == 6 || s.len() == 8)
-            .map(|date_str| {
-                let date_format = "%-d%-m%Y";
-                if date_str.len() == 8 {
-                    // Assuming DDMMYYYY format for SPED
-                    NaiveDate::parse_from_str(&date_str, date_format)
-                } else {
-                    // Assuming MMYYYY format for SPED, assumed '01' for day
-                    let day_month_year = format!("01{}", date_str);
-                    NaiveDate::parse_from_str(&day_month_year, date_format)
-                }
-                .map_err(|source| EFDError::ParseDateError {
-                    source,
-                    data_str: date_str,
-                    campo_nome: field_name.to_string(),
-                    arquivo: file_path,
-                    line_number,
-                })
-            })
-            .transpose()? // Convert Option<Result<T,E>> to Result<Option<T>,E>
+        self.to_optional_date(file_path, line_number, field_name)?
             .ok_or_else(|| EFDError::KeyNotFound(field_name.to_string())) // If it's Ok(None), means it was empty/None
     }
 }
@@ -385,7 +365,7 @@ impl<T: ToString> ToNaiveDate for Option<T> {
 /// Retorna `None` se a string, após `trim()`, tiver comprimento zero.
 /// Caso contrário, retorna `Some(String)`.
 pub trait ToOptionalString {
-    /// Converte o `Option<&&str>` em `Option<String>`.
+    /// Converte o `Option<T>` em `Option<String>`.
     ///
     /// # Retorna
     /// - `None` se o `Option` original for `None` ou se a string interna estiver vazia.
@@ -393,7 +373,7 @@ pub trait ToOptionalString {
     fn to_optional_string(self) -> Option<String>; // `self` por valor para consumir o Option
 }
 
-// Implementação para Option<&&str> (o tipo retornado por fields.get(index))
+// Implementação para Option<T> (o tipo retornado por fields.get(index))
 impl<T: ToString> ToOptionalString for Option<T> {
     fn to_optional_string(self) -> Option<String> {
         self.map(|s| s.to_string()) // Option<T> -> Option<String>
@@ -429,7 +409,7 @@ where
     ) -> Result<Option<U>, EFDError>;
 }
 
-// Implement ToOptionalInteger<U> for Option<T> where T is string-like (e.g., &&str, String)
+// Implement ToOptionalInteger<U> for Option<T> where T is string-like (e.g., T, String)
 impl<T, U> ToOptionalInteger<U> for Option<T>
 where
     T: ToString,                                        // T must be convertible to String
@@ -460,11 +440,11 @@ where
     }
 }
 
-/// Para converter um `Option<&&str>` em `EFDResult<Option<String>>` para o CNPJ.
+/// Para converter um `Option<T>` em `EFDResult<Option<String>>` para o CNPJ.
 /// Lida com campos ausentes, campos vazios e validação de comprimento do CNPJ,
 /// retornando `EFDError::InvalidCNPJ` se o comprimento não for 14.
 pub trait ToOptionalCnpj {
-    /// Converte o `Option<&&str>` em `EFDResult<Option<String>>`.
+    /// Converte o `Option<T>` em `EFDResult<Option<String>>`.
     ///
     /// # Retorna
     /// - `Ok(None)` se o `Option` original for `None` ou se a string interna estiver vazia.
@@ -479,7 +459,7 @@ pub trait ToOptionalCnpj {
     ) -> EFDResult<Option<String>>;
 }
 
-// Implementação do trait ToOptionalCnpj para Option<&&str>
+// Implementação do trait ToOptionalCnpj para Option<T>
 impl<T: ToString> ToOptionalCnpj for Option<T> {
     fn to_optional_cnpj(
         self,
@@ -488,7 +468,7 @@ impl<T: ToString> ToOptionalCnpj for Option<T> {
         registro: &str,
         field_name: &str,
     ) -> EFDResult<Option<String>> {
-        self.map(|s| s.to_string()) // Option<&&str> -> Option<String>
+        self.map(|s| s.to_string()) // Option<T> -> Option<String>
             .filter(|s| !s.is_empty()) // Some("") -> None
             .map(|s| {
                 // Agora `s` é garantido ser uma String não vazia, se presente
@@ -505,11 +485,11 @@ impl<T: ToString> ToOptionalCnpj for Option<T> {
                     })
                 }
             })
-            .transpose() // Converte Option<Result<String, EFDError>> para Result<Option<String>, EFDError>
+            .transpose() // Converte Option<EFDResult<String>> para EFDResult<Option<String>>
     }
 }
 
-/// Para converter um `Option<&&str>` em `EFDResult<String>` para o CNPJ.
+/// Para converter um `Option<T>` em `EFDResult<String>` para o CNPJ.
 pub trait ToCnpj {
     fn to_cnpj(
         self,
@@ -528,28 +508,12 @@ impl<T: ToString> ToCnpj for Option<T> {
         registro: &str,
         field_name: &str,
     ) -> EFDResult<String> {
-        self.map(|s| s.to_string()) // Option<T> -> Option<String>
-            .filter(|s| !s.is_empty()) // Filter out empty strings, converting Some("") to None
+        self.to_optional_cnpj(file_path, line_number, registro, field_name)?
             .ok_or_else(|| {
                 // This converts the Option<String> into a Result<String, EFDError>.
                 // Se for None aqui, significa que o campo estava ausente ou vazio.
                 EFDError::KeyNotFound(field_name.to_string())
             }) // This converts the Option<String> into a Result<String, EFDError>.
-            .and_then(|s| {
-                // `s` here is the String from the Ok variant of the Result
-                if s.len() == 14 {
-                    Ok(s) // Valid length, wrap in Ok
-                } else {
-                    // Invalid length, wrap error in Err
-                    Err(EFDError::InvalidCNPJ {
-                        arquivo: file_path,
-                        linha_num: line_number,
-                        registro: registro.to_string(),
-                        campo_nome: field_name.to_string(),
-                        cnpj: s,
-                    })
-                }
-            })
     }
 }
 
