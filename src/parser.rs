@@ -424,8 +424,14 @@ mod parser_tests {
                 }
             })?;
 
+        let mut final_sped_file = Arc::try_unwrap(sped_file_data)
+            .expect("Mutex still has multiple strong references after parallel processing")
+            .into_inner()
+            .expect("Mutex poisoned");
+
         // Desbloqueia e obtém a SpedFile para ordenação e impressão
-        let mut final_sped_file = sped_file_data.lock().unwrap();
+        // let mut final_sped_file = sped_file_data.lock().unwrap();
+
         final_sped_file.sort_records_by_line_number();
         final_sped_file.print_structure();
 

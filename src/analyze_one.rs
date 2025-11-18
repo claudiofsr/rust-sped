@@ -103,7 +103,12 @@ fn read_and_process_file_lines(
     // when the period of 'apuracao' becomes available.
     let mut empty_msg_for_progressbar: bool = true;
 
-    let file = File::open(arquivo)?; // Propagates any I/O error.
+    // let file = File::open(arquivo)?; // Propagates any I/O error.
+    let file = File::open(arquivo).map_err(|e| EFDError::InOut {
+        source: e,
+        path: arquivo.to_path_buf(),
+    })?;
+
     let reader = BufReader::new(file);
 
     let mut efd_lines = EFDLineIterator::new(reader, arquivo, registros_efd);

@@ -3,7 +3,7 @@ name = "efd_contribuicoes"
 authors = ["Claudio F S Rodrigues <claudiofsrodrigues@gmail.com>"]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.91"
+rust-version = "1.91.1"
 description = """
 Analisar informações contidas em arquivos de SPED EFD Contribuições
 https://github.com/claudiofsr/rust-sped
