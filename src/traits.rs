@@ -249,6 +249,7 @@ pub trait SpedRecordTrait: Debug + Send + Sync {
     fn registro_name(&self) -> &str;
     fn line_number(&self) -> usize;
     fn as_any(&self) -> &dyn std::any::Any; // Adicionado para downcasting, se necessário
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any; // Adicionado para downcasting mutável, se necessário
 }
 
 /// A trait to convert an `Option<T>` into an `EFDResult<Option<Decimal>>`.
