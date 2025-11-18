@@ -86,6 +86,71 @@ impl Info {
     }
 }
 
+/// `get_the_most_frequent_value` takes a BTreeMap of full CNPJs to company names
+/// and returns a HashMap mapping 8-digit CNPJ bases to their most frequent company name.
+///
+/// This function processes the data in a single, efficient functional pipeline:
+///
+/// 1.  **`filter`**: Removes entries with empty company names, ensuring only valid names are processed.
+/// 2.  **`fold`**: Groups company names by their 8-digit CNPJ base. For each unique name (case-insensitive)
+///     within a CNPJ base, it counts occurrences and stores an example of its original casing.
+///     *   Uses `entry().and_modify().or_insert_with()` for concise and efficient counting:
+///         *   If a name already exists for a CNPJ base, its count is incremented (`and_modify`).
+///         *   If it's a new name, it's inserted with a count of 1 and its original casing (`or_insert_with`).
+/// 3.  **`into_iter`**: Prepares the accumulated data (CNPJ bases with their name counts) for the next step.
+/// 4.  **`filter_map`**: For each CNPJ base, it finds the company name that appeared most frequently.
+///     *   `max_by_key`: Identifies the name with the highest count. In case of ties, `BTreeMap`'s
+///         lexicographical order provides a consistent tie-breaking rule.
+///     *   `map`: Extracts the original-cased name corresponding to the most frequent one.
+/// 5.  **`collect`**: Gathers all results into the final `HashMap<String, String>`, which is then returned.
+pub fn get_the_most_frequent_value(
+    nome_do_cnpj: &BTreeMap<String, String>,
+) -> HashMap<String, String> {
+    nome_do_cnpj
+        .iter()
+        // 1. Filter out entries where the name is empty.
+        .filter(|(_cnpj, name)| !name.trim().is_empty())
+        // 2. Group by CNPJ base and count name frequencies, preserving original case.
+        .fold(
+            HashMap::new(), // Outer map: cnpj_base -> (inner map of name counts)
+            |mut acc: HashMap<String, BTreeMap<String, (u32, String)>>, (cnpj_full, name_str)| {
+                // Extract the 8-digit CNPJ base.
+                let cnpj_base: &str = &cnpj_full[0..8];
+                // Convert name to lowercase for case-insensitive counting.
+                let name_lower = name_str.to_lowercase();
+
+                // Get or create the inner BTreeMap for this cnpj_base.
+                let entry_counts: &mut BTreeMap<String, (u32, String)> = acc
+                    .entry(cnpj_base.to_string()) // CNPJ base as a String key.
+                    .or_default();
+
+                // Increment count if name exists, or insert with count 1 and original case if new.
+                entry_counts
+                    .entry(name_lower)
+                    .and_modify(|(count, _name)| {
+                        *count += 1; // If entry exists, increment count.
+                    })
+                    .or_insert((1, name_str.to_string())); // If new, insert with count 1 and original name.
+
+                acc // Return the accumulator for the next iteration.
+            },
+        )
+        // 3. Convert the intermediate HashMap into an iterator.
+        .into_iter()
+        // 4. For each CNPJ base, find its most frequent name and map it to the final output format.
+        .filter_map(|(cnpj_base, entry_counts)| {
+            entry_counts
+                .into_iter()
+                // Find the entry with the maximum count.
+                // BTreeMap's order provides deterministic tie-breaking for names with same max count.
+                .max_by_key(|&(_, (count, _))| count)
+                // If a most frequent name is found, extract its original casing name.
+                .map(|(_, (_, name))| (cnpj_base, name))
+        })
+        // 5. Collect all results into the final HashMap.
+        .collect()
+}
+
 /**
 Tipo de Programação:
 Esta versão é um exemplo de programação imperativa e procedural.
@@ -94,13 +159,14 @@ Esta versão é um exemplo de programação imperativa e procedural.
 * Declara e muta variáveis (frequencia, hashmap, counts) em vários pontos.
 * O fluxo de controle é mais sequencial e explícito, passo a passo, como uma receita.
 */
-pub fn get_the_most_frequent_value_v1(
+#[allow(dead_code)]
+fn get_the_most_frequent_value_v2(
     nome_do_cnpj: &BTreeMap<String, String>,
 ) -> HashMap<String, String> {
     let mut frequencia: HashMap<String, Vec<String>> = HashMap::new();
 
     for (cnpj, nome) in nome_do_cnpj {
-        if nome.is_empty() {
+        if nome.trim().is_empty() {
             continue;
         };
 
@@ -147,71 +213,6 @@ pub fn get_the_most_frequent_value_v1(
     hashmap
 }
 
-/// `get_the_most_frequent_value` takes a BTreeMap of full CNPJs to company names
-/// and returns a HashMap mapping 8-digit CNPJ bases to their most frequent company name.
-///
-/// This function processes the data in a single, efficient functional pipeline:
-///
-/// 1.  **`filter`**: Removes entries with empty company names, ensuring only valid names are processed.
-/// 2.  **`fold`**: Groups company names by their 8-digit CNPJ base. For each unique name (case-insensitive)
-///     within a CNPJ base, it counts occurrences and stores an example of its original casing.
-///     *   Uses `entry().and_modify().or_insert_with()` for concise and efficient counting:
-///         *   If a name already exists for a CNPJ base, its count is incremented (`and_modify`).
-///         *   If it's a new name, it's inserted with a count of 1 and its original casing (`or_insert_with`).
-/// 3.  **`into_iter`**: Prepares the accumulated data (CNPJ bases with their name counts) for the next step.
-/// 4.  **`filter_map`**: For each CNPJ base, it finds the company name that appeared most frequently.
-///     *   `max_by_key`: Identifies the name with the highest count. In case of ties, `BTreeMap`'s
-///         lexicographical order provides a consistent tie-breaking rule.
-///     *   `map`: Extracts the original-cased name corresponding to the most frequent one.
-/// 5.  **`collect`**: Gathers all results into the final `HashMap<String, String>`, which is then returned.
-pub fn get_the_most_frequent_value(
-    nome_do_cnpj: &BTreeMap<String, String>,
-) -> HashMap<String, String> {
-    nome_do_cnpj
-        .iter()
-        // 1. Filter out entries where the name is empty.
-        .filter(|(_cnpj, name)| !name.is_empty())
-        // 2. Group by CNPJ base and count name frequencies, preserving original case.
-        .fold(
-            HashMap::new(), // Outer map: cnpj_base -> (inner map of name counts)
-            |mut acc: HashMap<String, BTreeMap<String, (u32, String)>>, (cnpj_full, name_str)| {
-                // Extract the 8-digit CNPJ base.
-                let cnpj_base: &str = &cnpj_full[0..8];
-                // Convert name to lowercase for case-insensitive counting.
-                let name_lower = name_str.to_lowercase();
-
-                // Get or create the inner BTreeMap for this cnpj_base.
-                let entry_counts: &mut BTreeMap<String, (u32, String)> = acc
-                    .entry(cnpj_base.to_string()) // CNPJ base as a String key.
-                    .or_default();
-
-                // Increment count if name exists, or insert with count 1 and original case if new.
-                entry_counts
-                    .entry(name_lower)
-                    .and_modify(|(count, _name)| {
-                        *count += 1; // If entry exists, increment count.
-                    })
-                    .or_insert_with(|| (1, name_str.to_string())); // If new, insert with count 1 and original name.
-
-                acc // Return the accumulator for the next iteration.
-            },
-        )
-        // 3. Convert the intermediate HashMap into an iterator.
-        .into_iter()
-        // 4. For each CNPJ base, find its most frequent name and map it to the final output format.
-        .filter_map(|(cnpj_base, entry_counts)| {
-            entry_counts
-                .into_iter()
-                // Find the entry with the maximum count.
-                // BTreeMap's order provides deterministic tie-breaking for names with same max count.
-                .max_by_key(|&(_, (count, _))| count)
-                // If a most frequent name is found, extract its original casing name.
-                .map(|(_, (_, name))| (cnpj_base, name))
-        })
-        // 5. Collect all results into the final HashMap.
-        .collect()
-}
-
 //----------------------------------------------------------------------------//
 //                                   Tests                                    //
 //----------------------------------------------------------------------------//
@@ -245,7 +246,8 @@ mod info_tests {
             ("00000000000004", "NoMe 01"),
             ("11111111000000", "Unique Name"), // Test with a unique name
             ("11111111000001", "Unique Name"),
-            ("99999999000000", ""), // Teste com nome vazio
+            ("22222222000000", " "), // Teste com nome com espaços em branco
+            ("99999999000000", ""),  // Teste com nome vazio
         ]
         .map(|(cnpj, nome)| (cnpj.to_string(), nome.to_string()));
 
