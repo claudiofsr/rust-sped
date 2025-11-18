@@ -19,6 +19,7 @@ macro_rules! impl_sped_record_trait {
                 self.line_number
             }
 
+            // Implementação mágica para permitir voltar ao tipo original
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }

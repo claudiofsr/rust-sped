@@ -251,6 +251,7 @@ pub trait SpedRecordTrait: Debug + Any + Send + Sync {
     fn line_number(&self) -> usize;
 
     // Úteis para downcasting se necessário
+    // Permite o downcasting para o tipo concreto (Ex: Registro0000)
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }

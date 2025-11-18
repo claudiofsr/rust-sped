@@ -291,6 +291,17 @@ pub enum EFDError {
         fields: Vec<String>,
     },
 
+    /// Erro quando um registro específico solicitado não é encontrado no arquivo.
+    #[error("Registro '{0}' não encontrado.")]
+    RecordNotFound(String),
+
+    /// Erro ao tentar converter (downcast) um registro encontrado para o tipo Rust esperado.
+    /// Ex: Encontrou o registro "C100", mas tentou converter para "Registro0000".
+    #[error(
+        "Erro de tipo: O registro '{0}' foi encontrado, mas não corresponde à struct solicitada."
+    )]
+    RecordCastError(String),
+
     /// Um catch-all para outros erros menos específicos não cobertos por variantes específicas.
     #[error("Outro erro subjacente: {0}")]
     Other(String), // Wrapped boxed error

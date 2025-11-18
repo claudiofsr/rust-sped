@@ -438,62 +438,29 @@ mod parser_tests {
             final_sped_file.blocos[&'C'].registros
         );
 
-        let registro_0000: Option<&Registro0000> =
-            final_sped_file
-                .blocos
-                .get(&'0')
-                .and_then(|bloco_registros| {
-                    bloco_registros
-                        .registros
-                        .iter()
-                        .filter(|record| record.registro_name() == "0000")
-                        .filter_map(|registro| {
-                            if let SpedRecord::Generic(reg) = &registro {
-                                reg.as_any().downcast_ref::<Registro0000>()
-                            } else {
-                                None
-                            }
-                        })
-                        //.collect()
-                        .next() // Get the first one, if any
-                });
-        println!("registro_0000: {registro_0000:?}");
-
-        let registros_c100: Vec<&RegistroC100> = final_sped_file
-            .blocos
-            .get(&'C')
-            .iter()
-            .flat_map(|bloco_registros| {
-                bloco_registros
-                    .registros
-                    .iter()
-                    .filter(|record| record.registro_name() == "C100")
-                    .filter_map(|registro| {
-                        if let SpedRecord::Generic(reg) = &registro {
-                            reg.as_any().downcast_ref::<RegistroC100>()
-                        } else {
-                            None
-                        }
-                    })
-            })
-            .collect();
-        println!("registros_c100: {registros_c100:?}");
-
         // Se for o Registro 0000, podemos extrair o PA e o CNPJ base para o progress bar
-        if let Some(bloco_0) = final_sped_file.blocos.get(&'0') {
-            bloco_0
-                .registros
-                .iter()
-                .filter(|reg| reg.registro_name() == "0000")
-                .for_each(|registro| {
-                    if let SpedRecord::Generic(reg) = &registro
-                        && let Some(r0000) = reg.as_any().downcast_ref::<Registro0000>()
-                    {
-                        println!("registro_0000: {r0000:?}");
-                        println!("registro_0000.dt_ini: {:?}", r0000.dt_ini);
-                        println!("registro_0000.cnpj: {:?}", r0000.cnpj);
-                    }
-                });
+        // Retorna Result<&Registro0000, EFDError>
+        // O '?' já trata o erro se não encontrar ou se o tipo estiver errado
+        let registro_0000: &Registro0000 =
+            final_sped_file.obter_registro::<Registro0000>("0000")?;
+
+        println!("Registro 0000 encontrado:");
+        println!("registro_0000: {registro_0000:?}");
+        println!("registro_0000.dt_ini: {:?}", registro_0000.dt_ini);
+        println!("registro_0000.cnpj: {:?}", registro_0000.cnpj);
+
+        // Retorna Vec<&RegistroC100>
+        let registros_c100: Vec<&RegistroC100> =
+            final_sped_file.obter_lista_registros::<RegistroC100>("C100");
+        println!("Total de RegistroC100: {}", registros_c100.len());
+        println!("registros_C100: {registros_c100:?}");
+
+        // Iteração direta no resultado
+        for registro_c100 in registros_c100 {
+            println!(
+                "registro_c100 Linha {}: ValorDoc {:?}",
+                registro_c100.line_number, registro_c100.vl_doc
+            ); // Exemplo
         }
 
         Ok(())
