@@ -315,8 +315,18 @@ fn write_csv(data: &[DocsFiscais], path: &PathBuf) -> EFDResult<()> {
     Ok(())
 }
 
+//----------------------------------------------------------------------------//
+//                                   Tests                                    //
+//----------------------------------------------------------------------------//
+//
+// cargo test -- --help
+// cargo test -- --nocapture
+// cargo test -- --show-output
+
+/// Run tests with:
+/// cargo test -- --show-output analyze_all
 #[cfg(test)]
-mod tests {
+mod tests_analyze_all {
     use super::*;
     use claudiofsr_lib::{blake3_hash, my_print};
 

@@ -40,6 +40,17 @@ impl SpedRecord {
         }
     }
 
+    /// Retorna uma referência ao trait interno, se disponível.
+    /// Retorna None se o registro for do tipo Unknown.
+    pub fn inner(&self) -> Option<&dyn SpedRecordTrait> {
+        match self {
+            // Box<T> implementa Deref, então podemos pegar a referência interna
+            SpedRecord::Generic(b) => Some(b.as_ref()),
+            // Unknown não possui um trait object associado
+            SpedRecord::Unknown(_) => None,
+        }
+    }
+
     /// Método de impressão para visualização
     pub fn println2(&self) {
         println!("{:#?}", self);

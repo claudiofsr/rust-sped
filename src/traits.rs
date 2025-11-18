@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     collections::{HashMap, HashSet},
     fmt::Debug,
     ops::Deref,
@@ -243,13 +244,15 @@ where
 /// This trait provides a common interface for all SPED record structs,
 /// enabling polymorphism and allowing you to interact with different
 /// records in a generic way (e.g., getting line_number, bloco, registro_name).
-pub trait SpedRecordTrait: Debug + Send + Sync {
+pub trait SpedRecordTrait: Debug + Any + Send + Sync {
     fn nivel(&self) -> u16;
     fn bloco(&self) -> char;
     fn registro_name(&self) -> &str;
     fn line_number(&self) -> usize;
-    fn as_any(&self) -> &dyn std::any::Any; // Adicionado para downcasting, se necessário
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any; // Adicionado para downcasting mutável, se necessário
+
+    // Úteis para downcasting se necessário
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 /// A trait to convert an `Option<T>` into an `EFDResult<Option<Decimal>>`.
