@@ -240,6 +240,17 @@ where
     }
 }
 
+/// This trait provides a common interface for all SPED record structs,
+/// enabling polymorphism and allowing you to interact with different
+/// records in a generic way (e.g., getting line_number, bloco, registro_name).
+pub trait SpedRecordTrait: Debug + Send + Sync {
+    fn nivel(&self) -> u16;
+    fn bloco(&self) -> char;
+    fn registro_name(&self) -> &str;
+    fn line_number(&self) -> usize;
+    fn as_any(&self) -> &dyn std::any::Any; // Adicionado para downcasting, se necessário
+}
+
 /// A trait to convert an `Option<T>` into an `EFDResult<Option<Decimal>>`.
 /// Handles missing/empty fields and Decimal parsing errors.
 pub trait ToDecimal {
@@ -288,7 +299,7 @@ impl<T: ToString> ToDecimal for Option<T> {
 
 /// A trait to convert an `Option<T>` to `EFDResult<Option<NaiveDate>>`.
 /// Handles missing fields, empty fields, and date parsing errors.
-pub trait ToOptionalNaiveDate {
+pub trait ToNaiveDate {
     /// Converts the `Option<T>` into `Option<NaiveDate>`.
     ///
     /// - Returns `Ok(Some(NaiveDate))` if the string is a valid date.
@@ -300,9 +311,21 @@ pub trait ToOptionalNaiveDate {
         line_number: usize,
         field_name: &str,
     ) -> EFDResult<Option<NaiveDate>>;
+
+    /// Converts the `Option<T>` into `NaiveDate`.
+    ///
+    /// - Returns `Ok(NaiveDate)` if the string is a valid date.
+    /// - Returns `Err(EFDError::KeyNotFound)` if the string is empty or the `Option` itself is `None`.
+    /// - Returns `Err(EFDError::ParseDateError)` if the string is non-empty but contains an invalid date format.
+    fn to_date(
+        self,
+        file_path: PathBuf,
+        line_number: usize,
+        field_name: &str,
+    ) -> EFDResult<NaiveDate>;
 }
 
-impl<T: ToString> ToOptionalNaiveDate for Option<T> {
+impl<T: ToString> ToNaiveDate for Option<T> {
     fn to_optional_date(
         self,
         file_path: PathBuf,
@@ -331,25 +354,7 @@ impl<T: ToString> ToOptionalNaiveDate for Option<T> {
             })
             .transpose() // Convert Option<Result<T,E>> to Result<Option<T>,E>
     }
-}
 
-/// A trait to convert an `Option<T>` to `EFDResult<NaiveDate>`.
-/// Designed for mandatory date fields, returning an error if the field is missing or empty.
-pub trait ToNaiveDate {
-    /// Converts the `Option<T>` into `NaiveDate`.
-    ///
-    /// - Returns `Ok(NaiveDate)` if the string is a valid date.
-    /// - Returns `Err(EFDError::KeyNotFound)` if the string is empty or the `Option` itself is `None`.
-    /// - Returns `Err(EFDError::ParseDateError)` if the string is non-empty but contains an invalid date format.
-    fn to_date(
-        self,
-        file_path: PathBuf,
-        line_number: usize,
-        field_name: &str,
-    ) -> EFDResult<NaiveDate>;
-}
-
-impl<T: ToString> ToNaiveDate for Option<T> {
     fn to_date(
         self,
         file_path: PathBuf,
@@ -443,7 +448,7 @@ where
 /// Para converter um `Option<T>` em `EFDResult<Option<String>>` para o CNPJ.
 /// Lida com campos ausentes, campos vazios e validação de comprimento do CNPJ,
 /// retornando `EFDError::InvalidCNPJ` se o comprimento não for 14.
-pub trait ToOptionalCnpj {
+pub trait ToCNPJ {
     /// Converte o `Option<T>` em `EFDResult<Option<String>>`.
     ///
     /// # Retorna
@@ -457,10 +462,19 @@ pub trait ToOptionalCnpj {
         registro: &str,
         field_name: &str,
     ) -> EFDResult<Option<String>>;
+
+    /// Para converter um `Option<T>` em `EFDResult<String>` para o CNPJ.
+    fn to_cnpj(
+        self,
+        file_path: PathBuf,
+        line_number: usize,
+        registro: &str,
+        field_name: &str,
+    ) -> EFDResult<String>;
 }
 
-// Implementação do trait ToOptionalCnpj para Option<T>
-impl<T: ToString> ToOptionalCnpj for Option<T> {
+// Implementação do trait ToCNPJ para Option<T>
+impl<T: ToString> ToCNPJ for Option<T> {
     fn to_optional_cnpj(
         self,
         file_path: PathBuf,
@@ -487,20 +501,7 @@ impl<T: ToString> ToOptionalCnpj for Option<T> {
             })
             .transpose() // Converte Option<EFDResult<String>> para EFDResult<Option<String>>
     }
-}
 
-/// Para converter um `Option<T>` em `EFDResult<String>` para o CNPJ.
-pub trait ToCnpj {
-    fn to_cnpj(
-        self,
-        file_path: PathBuf,
-        line_number: usize,
-        registro: &str,
-        field_name: &str,
-    ) -> EFDResult<String>;
-}
-
-impl<T: ToString> ToCnpj for Option<T> {
     fn to_cnpj(
         self,
         file_path: PathBuf,
@@ -515,17 +516,6 @@ impl<T: ToString> ToCnpj for Option<T> {
                 EFDError::KeyNotFound(field_name.to_string())
             }) // This converts the Option<String> into a Result<String, EFDError>.
     }
-}
-
-/// This trait provides a common interface for all SPED record structs,
-/// enabling polymorphism and allowing you to interact with different
-/// records in a generic way (e.g., getting line_number, bloco, registro_name).
-pub trait SpedRecordTrait: Debug + Send + Sync {
-    fn nivel(&self) -> u16;
-    fn bloco(&self) -> char;
-    fn registro_name(&self) -> &str;
-    fn line_number(&self) -> usize;
-    fn as_any(&self) -> &dyn std::any::Any; // Adicionado para downcasting, se necessário
 }
 
 //----------------------------------------------------------------------------//

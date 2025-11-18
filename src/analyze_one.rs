@@ -23,7 +23,7 @@ use claudiofsr_lib::{
 
 use crate::{
     ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DECIMAL_ALIQ, DECIMAL_VALOR, DocsFiscais, EFDError,
-    EFDLineIterator, EFDResult, Info, Informacoes, REGEX_REMOVE_NON_DIGITS, Tipo, ToCnpj,
+    EFDLineIterator, EFDResult, Info, Informacoes, REGEX_REMOVE_NON_DIGITS, Tipo, ToCNPJ,
     cred_presumido, obter_cod_da_natureza_da_bc, obter_modelo_do_documento_fiscal,
     obter_tipo_do_item, registros_de_operacoes,
 };

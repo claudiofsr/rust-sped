@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToOptionalNaiveDate, ToOptionalString, impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use std::path::Path;

@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToCnpj, ToNaiveDate, ToOptionalInteger, ToOptionalString,
+    EFDError, EFDResult, SpedParser, ToCNPJ, ToNaiveDate, ToOptionalInteger, ToOptionalString,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
