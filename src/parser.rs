@@ -56,7 +56,7 @@ pub fn parse_sped_fields(
     line: &str,
 ) -> EFDResult<Option<SpedRecord>> {
     // Split the line by the delimiter and trim whitespace from each field.
-    let fields: Vec<&str> = line.split(DELIMITER_CHAR).map(|s| s.trim()).collect();
+    let fields: Vec<&str> = line.split(DELIMITER_CHAR).map(str::trim).collect();
 
     // Basic validation: A valid SPED record line must have at least 4 fields:
     // '|', RECORD_TYPE, FIELD1, FIELD2, ..., '|'.

@@ -43,9 +43,24 @@ impl SpedRecord {
         }
     }
 
-    /// Método de impressão para visualização
-    pub fn println2(&self) {
-        println!("{:#?}", self);
+    /// Tenta converter (downcast) o registro genérico para um tipo concreto `T`.
+    ///
+    /// Se o registro atual não for do tipo `T`, retorna `EFDError::RecordCastError`
+    /// contendo o nome do registro que **realmente** está armazenado.
+    pub fn downcast_ref<T: 'static>(&self) -> EFDResult<&T> {
+        match self {
+            SpedRecord::Generic(inner) => {
+                // Tenta fazer o downcast usando as_any() definido no Trait
+                inner.as_any().downcast_ref::<T>().ok_or_else(|| {
+                    // Se falhar, retorna erro com o nome do registro encontrado
+                    EFDError::RecordCastError(inner.registro_name().to_string())
+                })
+            }
+            SpedRecord::Unknown(reg_name) => {
+                // Se for Unknown, definitivamente não é T
+                Err(EFDError::RecordCastError(reg_name.clone()))
+            }
+        }
     }
 
     /// Método de impressão para visualização
@@ -87,9 +102,8 @@ impl SpedFile {
     }
 
     pub fn add_record(&mut self, record: SpedRecord) {
-        let bloco_char = record.bloco();
         self.blocos
-            .entry(bloco_char)
+            .entry(record.bloco())
             .or_default()
             .add_record(record);
     }
@@ -124,54 +138,43 @@ impl SpedFile {
             .map(|bloco_registros| &bloco_registros.registros)
     }
 
-    /// Tenta obter uma referência para um único registro específico (ex: "0000").
-    /// Estilo Funcional: Option chain -> Result conversion.
+    /// Obtém um registro específico usando o método downcast_ref
     pub fn obter_registro<T: 'static>(&self, nome_registro: &str) -> EFDResult<&T> {
-        let bloco_char = nome_registro.chars().next().unwrap_or(' ');
+        let bloco_char = nome_registro.chars().next().unwrap_or('?');
 
         self.blocos
             .get(&bloco_char)
-            // 1. Tenta encontrar o registro pelo nome dentro do bloco
-            .and_then(|bloco_registros| {
-                bloco_registros
+            .and_then(|bloco| {
+                // Procura o primeiro registro com o nome solicitado
+                bloco
                     .registros
                     .iter()
                     .find(|r| r.registro_name() == nome_registro)
             })
-            // 2. Se não achou o bloco ou o registro, converte Option::None em Erro
+            // Se não encontrar o registro na lista, erro NotFound
             .ok_or_else(|| EFDError::RecordNotFound(nome_registro.to_string()))
-            // 3. Se achou, tenta fazer o downcast
-            .and_then(|record| {
-                match record {
-                    SpedRecord::Generic(inner) => inner
-                        .as_any()
-                        .downcast_ref::<T>()
-                        // Se falhar o cast, retorna erro específico
-                        .ok_or_else(|| EFDError::RecordCastError(nome_registro.to_string())),
-                    // Se for Unknown ou outro tipo
-                    _ => Err(EFDError::RecordCastError(nome_registro.to_string())),
-                }
-            })
+            // Se encontrar, tenta o downcast (pode retornar RecordCastError)
+            .and_then(|record| record.downcast_ref::<T>())
     }
 
-    /// Retorna um Vec com referências para todos os registros de um tipo (ex: "C100").
-    /// Estilo Funcional: Iterator flattening e FilterMap.
-    pub fn obter_lista_registros<T: 'static>(&self, nome_registro: &str) -> Vec<&T> {
-        let bloco_char = nome_registro.chars().next().unwrap_or(' ');
+    /// Retorna lista de registros de um tipo específico usando filter_map e downcast
+    pub fn obter_lista_registros<T: 'static + Sync>(&self, nome_registro: &str) -> Vec<&T> {
+        let bloco_char = nome_registro.chars().next().unwrap_or('?');
 
         self.blocos
             .get(&bloco_char)
-            .into_iter() // Converte Option<&Bloco> em Iterator (0 ou 1 item)
-            .flat_map(|b| b.registros.iter()) // Abre o Vec de registros
-            .filter(|r| r.registro_name() == nome_registro) // Filtra pelo nome (String)
-            .filter_map(|r| {
-                // Tenta o downcast e descarta os que falharem (retorna Option)
-                match r {
-                    SpedRecord::Generic(inner) => inner.as_any().downcast_ref::<T>(),
-                    _ => None,
-                }
+            .map(|bloco_registros| {
+                bloco_registros
+                    .registros
+                    .par_iter()
+                    .filter(|r| r.registro_name() == nome_registro)
+                    // Aqui usamos ok() para transformar o Result em Option,
+                    // descartando silenciosamente erros de cast (filter_map),
+                    // pois queremos apenas os que correspondem a T.
+                    .filter_map(|r| r.downcast_ref::<T>().ok())
+                    .collect()
             })
-            .collect()
+            .unwrap_or_default()
     }
 
     // Método para imprimir a estrutura da SpedFile (opcional, para debug)
