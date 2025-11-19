@@ -111,11 +111,11 @@ fn read_and_process_file_lines(
 
     let reader = BufReader::new(file);
 
-    let mut efd_lines = EFDLineIterator::new(reader, arquivo, registros_efd);
+    let mut efd_lines_iterator = EFDLineIterator::new(reader, arquivo, registros_efd);
 
     // Iterate over valid, processed lines, dispatching them for specific record handling.
     // `try_for_each` stops on the first `Err` and propagates it.
-    efd_lines.try_for_each(|processed_line_result| -> EFDResult<()> {
+    efd_lines_iterator.try_for_each(|processed_line_result| -> EFDResult<()> {
         let processed_line = processed_line_result?; // Unpack `Ok` or propagate `EFDError`.
 
         let registro: &str = processed_line.fields[0].as_str();
