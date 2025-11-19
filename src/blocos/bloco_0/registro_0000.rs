@@ -7,7 +7,7 @@ use std::path::Path;
 
 const EXPECTED_FIELDS: usize = 16;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Registro0000 {
     /// Nível hierárquico
     pub nivel: u16,
