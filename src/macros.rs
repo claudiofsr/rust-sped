@@ -149,3 +149,33 @@ macro_rules! dispatch_sped_parsers {
         }
     };
 }
+
+#[macro_export]
+macro_rules! dispatch_records {
+    (
+        $target_name:expr, $inner:expr, $self:expr,
+        // Lista de registros padrão: "NOME" => Struct => funcao
+        simple => [
+            $( ($reg_str:literal, $struct_name:ty, $fn_name:ident) ),* $(,)?
+        ],
+        // Casos especiais que exigem argumentos extras ou lógica diferente
+        conditional => {
+            $( $pat:pat => $body:expr ),* $(,)?
+        }
+    ) => {
+        match $target_name {
+            $(
+                $reg_str => {
+                    let reg_typed = $inner.as_any()
+                        .downcast_ref::<$struct_name>()
+                        .ok_or_else(|| EFDError::RecordCastError($reg_str.to_string()))?;
+                    $self.$fn_name(reg_typed)
+                }
+            )*
+            // Injeta os casos especiais
+            $( $pat => $body, )*
+
+            _ => Ok(()),
+        }
+    };
+}

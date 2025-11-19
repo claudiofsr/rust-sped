@@ -1,6 +1,30 @@
 use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
 use std::path::Path;
 
+const EXPECTED_FIELDS: usize = 4;
+
+/*
+Registro 0001: Abertura do Bloco 0
+
+Nº Campo    Descrição                   Tipo    Tam     Dec Obrig
+01 REG      Texto fixo contendo “0001”. C       004*    -   S
+02 IND_MOV  Indicador de movimento:     N       001     -   S
+            0 - Bloco com dados informados;
+            1 – Bloco sem dados informados.
+
+Observações: Registro obrigatório. Deve ser gerado para abertura do Bloco 0 e indica se há informações previstas para este bloco.
+
+Nível hierárquico - 1
+Ocorrência - um (por arquivo)
+
+Campo 01 - Valor Válido: [0001]
+
+Campo 02 - Valor Válido: [0,1]
+Considerando que na escrituração do Bloco “0” deve ser escriturado, no mínimo, os registros “0110 - Regimes de
+Apuração da Contribuição Social e de Apropriação de Crédito” e “0140 – Tabela de Cadastro de Estabelecimento”,
+deve sempre ser informado, no Campo 02, o indicador “0 – Bloco com dados informados”.
+*/
+
 #[derive(Debug)]
 pub struct Registro0001 {
     /// Nível hierárquico
@@ -27,12 +51,16 @@ impl SpedParser for Registro0001 {
         let registro = fields[1].to_uppercase();
         let len: usize = fields.len();
 
-        if len != 4 {
+        // O registro 0001 tipicamente tem 2 campos de dados (fora os delimitadores).
+        // Se a linha começa com '|' e termina com '|', fields.len() deve ser 2 + 2 = 4.
+        // Verifique o número real de campos para o seu formato SPED.
+
+        if len != EXPECTED_FIELDS {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(), // Aqui precisa do clone porque `registro` será usado depois.
-                tamanho_esperado: 4,
+                tamanho_esperado: EXPECTED_FIELDS,
                 tamanho_encontrado: len,
             });
         }

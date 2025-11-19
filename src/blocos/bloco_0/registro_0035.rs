@@ -1,6 +1,8 @@
 use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
 use std::path::Path;
 
+const EXPECTED_FIELDS: usize = 6;
+
 #[derive(Debug)]
 pub struct Registro0035 {
     /// Nível hierárquico
@@ -30,12 +32,12 @@ impl SpedParser for Registro0035 {
         let len: usize = fields.len();
 
         // O registro 0035 possui 4 campos de dados + 2 delimitadores = 6.
-        if len != 6 {
+        if len != EXPECTED_FIELDS {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),
-                tamanho_esperado: 6,
+                tamanho_esperado: EXPECTED_FIELDS,
                 tamanho_encontrado: len,
             });
         }

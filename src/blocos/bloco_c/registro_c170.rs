@@ -2,6 +2,8 @@ use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_s
 use rust_decimal::Decimal;
 use std::path::Path;
 
+const EXPECTED_FIELDS: usize = 39;
+
 #[derive(Debug)]
 pub struct RegistroC170 {
     /// Nível hierárquico
@@ -64,12 +66,12 @@ impl SpedParser for RegistroC170 {
         let len: usize = fields.len();
 
         // O registro C170 possui 37 campos de dados + 2 delimitadores = 39.
-        if len != 39 {
+        if len != EXPECTED_FIELDS {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
                 registro: registro.clone(),
-                tamanho_esperado: 39,
+                tamanho_esperado: EXPECTED_FIELDS,
                 tamanho_encontrado: len,
             });
         }
