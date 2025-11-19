@@ -1,9 +1,12 @@
 use crate::{EFDError, EFDResult, SpedRecordTrait};
+use rayon::prelude::*;
 use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum SpedRecord {
     /// Contém qualquer registro SPED que implemente SpedRecordTrait
+    ///
+    /// Send + Sync necessários para Rayon
     Generic(Box<dyn SpedRecordTrait + Send + Sync>),
 
     // Adicionar outros registros aqui
@@ -92,10 +95,27 @@ impl SpedFile {
     }
 
     /// Ordena todos os registros dentro de cada bloco pelo número da linha.
+    pub fn sort_records_by_line_number_serial(&mut self) {
+        self.blocos
+            .iter_mut()
+            .for_each(|(_bloco_char, bloco_registros)| {
+                bloco_registros
+                    .registros
+                    .sort_by_key(|sped_record| sped_record.line_number());
+            });
+    }
+
+    /// Ordena todos os registros dentro de cada bloco pelo número da linha em paralelo.
     pub fn sort_records_by_line_number(&mut self) {
-        for (_, block) in self.blocos.iter_mut() {
-            block.registros.sort_by_key(|record| record.line_number());
-        }
+        // par_iter_mut: Itera sobre os blocos simultaneamente
+        self.blocos
+            .par_iter_mut()
+            .for_each(|(_bloco_char, bloco_registros)| {
+                // par_sort_by_key: Ordena o vetor gigante do bloco (ex: Bloco C) usando várias threads
+                bloco_registros
+                    .registros
+                    .par_sort_unstable_by_key(|sped_record| sped_record.line_number());
+            });
     }
 
     pub fn obter_bloco_option(&self, name: char) -> Option<&Vec<SpedRecord>> {
