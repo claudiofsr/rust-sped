@@ -30,21 +30,32 @@ impl fmt::Display for Tributos {
 pub struct Info {
     pub path: PathBuf,
     pub messages: String,
+
+    // --- Metadados Globais (Registro 0000 e afins) ---
     pub pa: Option<NaiveDate>, // Período de Apuração conforme EFD
     pub cnpj_base: u32,
     pub cnpj_do_estabelecimento: String,
-    pub linhas_inseridas: Vec<usize>,
+
     pub global: HashMap<String, String>,
+
+    // --- Tabelas de Referência ---
+    pub complementar: HashMap<String, String>,
+    pub contabil: HashMap<String, HashMap<String, String>>,
     pub estabelecimentos: HashMap<String, String>,
+    pub nat_operacao: HashMap<String, String>,
+    pub nome_do_cnpj: BTreeMap<String, String>,
+    pub nome_do_cpf: BTreeMap<String, String>,
     pub participantes: BTreeMap<String, HashMap<String, String>>,
     pub produtos: BTreeMap<String, HashMap<String, String>>,
     pub unidade_de_medida: HashMap<String, String>,
-    pub nat_operacao: HashMap<String, String>,
-    pub complementar: HashMap<String, String>,
-    pub contabil: HashMap<String, HashMap<String, String>>,
-    pub nome_do_cnpj: BTreeMap<String, String>,
-    pub nome_do_cpf: BTreeMap<String, String>,
+
+    // Auxiliares de processamento
+    // Correlação de Alíquotas (Cache)
+    // Chave: String gerada (Chave Fraca/Forte), Valor: [AliqPis, VlPis]
     pub correlacao: HashMap<String, [String; 2]>, // arrays [type; number] are fastest than vectors
+    pub linhas_inseridas: Vec<usize>,
+
+    // Registros "State" para processamento hierárquico Pai -> Filho
     pub reg_a100: HashMap<String, String>,
     pub reg_c100: HashMap<String, String>,
     pub reg_c180: HashMap<String, String>,
@@ -63,6 +74,7 @@ pub struct Info {
     pub reg_d600: HashMap<String, String>,
     pub reg_m100: HashMap<String, String>,
     pub reg_m500: HashMap<String, String>,
+
     pub completa: BTreeMap<usize, HashMap<String, String>>,
 }
 
