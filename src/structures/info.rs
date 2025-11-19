@@ -113,24 +113,15 @@ pub fn get_the_most_frequent_value(
         // 2. Group by CNPJ base and count name frequencies, preserving original case.
         .fold(
             HashMap::new(), // Outer map: cnpj_base -> (inner map of name counts)
-            |mut acc: HashMap<String, BTreeMap<String, (u32, String)>>, (cnpj_full, name_str)| {
+            |mut acc: HashMap<String, BTreeMap<String, (u32, String)>>, (cnpj, name)| {
                 // Extract the 8-digit CNPJ base.
-                let cnpj_base: &str = &cnpj_full[0..8];
-                // Convert name to lowercase for case-insensitive counting.
-                let name_lower = name_str.to_lowercase();
+                let cnpj_base: &str = &cnpj[0..8];
 
-                // Get or create the inner BTreeMap for this cnpj_base.
-                let entry_counts: &mut BTreeMap<String, (u32, String)> = acc
-                    .entry(cnpj_base.to_string()) // CNPJ base as a String key.
-                    .or_default();
-
-                // Increment count if name exists, or insert with count 1 and original case if new.
-                entry_counts
-                    .entry(name_lower)
-                    .and_modify(|(count, _name)| {
-                        *count += 1; // If entry exists, increment count.
-                    })
-                    .or_insert((1, name_str.to_string())); // If new, insert with count 1 and original name.
+                acc.entry(cnpj_base.to_string())
+                    .or_default()
+                    .entry(name.to_lowercase())
+                    .and_modify(|(count, _name)| *count += 1)
+                    .or_insert((1, name.to_string()));
 
                 acc // Return the accumulator for the next iteration.
             },
@@ -140,12 +131,12 @@ pub fn get_the_most_frequent_value(
         // 4. For each CNPJ base, find its most frequent name and map it to the final output format.
         .filter_map(|(cnpj_base, entry_counts)| {
             entry_counts
-                .into_iter()
+                .into_values()
                 // Find the entry with the maximum count.
                 // BTreeMap's order provides deterministic tie-breaking for names with same max count.
-                .max_by_key(|&(_, (count, _))| count)
+                .max_by_key(|(count, _name)| *count)
                 // If a most frequent name is found, extract its original casing name.
-                .map(|(_, (_, name))| (cnpj_base, name))
+                .map(|(_count, name)| (cnpj_base, name))
         })
         // 5. Collect all results into the final HashMap.
         .collect()
@@ -231,14 +222,15 @@ mod info_tests {
     /// cargo test -- --show-output most_frequent_value
     fn test_most_frequent_value() {
         let cnpjs = [
-            ("12345678901231", "Nome 04"),
             ("12345678901232", "Nome 02"),
+            ("12345678901261", "Nome 03"),
+            ("12345678901257", "NOME 04"), // frequencia 3
+            ("12345678901239", "nome 03"),
             ("12345678901233", "Nome 02"),
             ("12345678901234", "Nome 01"),
-            ("12345678901235", "NomE 04"),
             ("12345678901236", "nome 03"),
-            ("12345678901237", "nome 04"),
-            ("12345678901257", "NOME 04"),
+            ("12345678901237", "nome 04"), // frequencia 3
+            ("12345678901235", "NomE 04"), // frequencia 3
             ("00000000000000", "Nome 01"),
             ("00000000000001", "Nome 02"),
             ("00000000000002", "nome 01"),
@@ -254,17 +246,17 @@ mod info_tests {
         println!("cnpjs: {cnpjs:?}");
 
         let nome_do_cnpj: BTreeMap<String, String> = BTreeMap::from(cnpjs);
-        let hash_map: HashMap<String, String> = get_the_most_frequent_value(&nome_do_cnpj);
+        let result: HashMap<String, String> = get_the_most_frequent_value(&nome_do_cnpj);
 
         println!("nome_do_cnpj: {nome_do_cnpj:#?}");
-        println!("the_most_frequent_value: {hash_map:#?}");
+        println!("the_most_frequent_value result: {result:#?}");
 
-        let result = HashMap::from([
+        let expected = HashMap::from([
             ("00000000".to_string(), "Nome 01".to_string()),
-            ("12345678".to_string(), "Nome 04".to_string()),
+            ("12345678".to_string(), "NomE 04".to_string()),
             ("11111111".to_string(), "Unique Name".to_string()),
         ]);
 
-        assert_eq!(result, hash_map);
+        assert_eq!(result, expected);
     }
 }
