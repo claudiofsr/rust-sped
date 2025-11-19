@@ -25,7 +25,7 @@ Apuração da Contribuição Social e de Apropriação de Crédito” e “0140 
 deve sempre ser informado, no Campo 02, o indicador “0 – Bloco com dados informados”.
 */
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Registro0001 {
     /// Nível hierárquico
     pub nivel: u16,

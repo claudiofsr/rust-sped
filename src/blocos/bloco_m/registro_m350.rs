@@ -2,7 +2,7 @@ use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegistroM350 {
     /// Nível hierárquico
     pub nivel: u16,

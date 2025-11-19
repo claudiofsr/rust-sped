@@ -4,7 +4,7 @@ use crate::{
 use chrono::NaiveDate;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegistroC490 {
     pub nivel: u16,
     pub bloco: char,

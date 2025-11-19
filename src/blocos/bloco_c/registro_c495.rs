@@ -2,7 +2,7 @@ use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_s
 use rust_decimal::Decimal;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegistroC495 {
     pub nivel: u16,
     pub bloco: char,

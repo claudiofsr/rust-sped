@@ -1,7 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegistroC110 {
     pub nivel: u16,
     pub bloco: char,

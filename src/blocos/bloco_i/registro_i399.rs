@@ -1,7 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RegistroI399 {
     /// Nível hierárquico
     pub nivel: u16,
