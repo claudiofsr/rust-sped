@@ -1,9 +1,5 @@
 use crate::{EFDResult, NEWLINE_BYTE, Tipo, ValidatedLine};
-use std::{
-    collections::HashMap,
-    io::BufRead,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, io::BufRead, path::Path};
 
 /// `EFDLineIterator` is a custom iterator adapter designed to read, parse,
 /// and validate lines from an EFD (Escrituração Fiscal Digital) file.
@@ -13,36 +9,31 @@ use std::{
 /// decoding issues and filtering of ignorable lines.
 ///
 /// The iterator stops when the "9999" record is encountered, signaling the end of the file.
-pub struct EFDLineIterator<'a, R> {
+pub struct EFDLineIterator<'a, 'b, R> {
     /// The inner iterator, pairing raw byte lines with their 1-based line numbers.
     inner: std::iter::Zip<std::io::Split<R>, std::ops::RangeFrom<usize>>,
     /// The path to the EFD file, used for detailed error reporting.
-    arquivo: PathBuf,
+    arquivo: &'a Path,
     /// A reference to the EFD schema definitions, used for record validation.
-    registros_efd: &'a HashMap<&'static str, HashMap<u16, (&'static str, Tipo)>>,
+    registros_efd: &'b HashMap<&'static str, HashMap<u16, (&'static str, Tipo)>>,
 }
 
-impl<'a, R: BufRead> EFDLineIterator<'a, R> {
+impl<'a, 'b, R: BufRead> EFDLineIterator<'a, 'b, R> {
     /// Creates a new `EFDLineIterator`.
-    ///
-    /// # Arguments
-    /// * `reader` - A `BufRead` implementor (e.g., `BufReader<File>`) that provides the file content.
-    /// * `arquivo_ref` - A reference to the path of the EFD file.
-    /// * `registros_efd` - A reference to the HashMap containing EFD record definitions.
     pub fn new(
         reader: R,
-        arquivo_ref: &Path,
-        registros_efd: &'a HashMap<&'static str, HashMap<u16, (&'static str, Tipo)>>,
+        arquivo: &'a Path,
+        registros_efd: &'b HashMap<&'static str, HashMap<u16, (&'static str, Tipo)>>,
     ) -> Self {
         Self {
             inner: reader.split(NEWLINE_BYTE).zip(1..),
-            arquivo: arquivo_ref.to_path_buf(),
+            arquivo,
             registros_efd,
         }
     }
 }
 
-impl<'a, R: BufRead> Iterator for EFDLineIterator<'a, R> {
+impl<'a, 'b, R: BufRead> Iterator for EFDLineIterator<'a, 'b, R> {
     /// The type of items yielded by this iterator: a `Result` that can contain
     /// a `ValidatedLine` or an `EFDError`.
     type Item = EFDResult<ValidatedLine>;
@@ -67,7 +58,7 @@ impl<'a, R: BufRead> Iterator for EFDLineIterator<'a, R> {
             match ValidatedLine::try_from_raw_bytes(
                 line_bytes_result,
                 line_number,
-                &self.arquivo,
+                self.arquivo,
                 self.registros_efd,
             ) {
                 // Successfully processed a line that is not ignorable.

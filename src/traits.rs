@@ -491,7 +491,7 @@ impl<T: ToString> ToCNPJ for Option<T> {
             .filter(|s| !s.is_empty()) // Some("") -> None
             .map(|s| {
                 // Agora `s` é garantido ser uma String não vazia, se presente
-                if s.len() == 14 {
+                if s.chars().count() == 14 {
                     Ok(s) // Comprimento válido, envolve em Ok
                 } else {
                     // Comprimento inválido, envolve erro em Err
