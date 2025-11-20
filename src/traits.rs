@@ -517,9 +517,8 @@ impl<T: ToString> ToCNPJ for Option<T> {
         self.to_optional_cnpj(file_path, line_number, registro, field_name)?
             .ok_or_else(|| {
                 // This converts the Option<String> into a Result<String, EFDError>.
-                // Se for None aqui, significa que o campo estava ausente ou vazio.
                 EFDError::KeyNotFound(field_name.to_string())
-            }) // This converts the Option<String> into a Result<String, EFDError>.
+            })
     }
 }
 

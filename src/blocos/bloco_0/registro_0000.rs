@@ -21,6 +21,7 @@ pub struct Registro0000 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
+    // dt_ini, dt_fin e cnpj são itens obrigatórios
     pub cod_ver: Option<u8>,              // 2
     pub tipo_escrit: Option<u8>,          // 3
     pub ind_sit_esp: Option<u8>,          // 4
@@ -37,6 +38,18 @@ pub struct Registro0000 {
 }
 
 impl_sped_record_trait!(Registro0000);
+
+impl Registro0000 {
+    /// Extrai o CNPJ Base (8 primeiros caracteres).
+    pub fn get_cnpj_base(&self) -> String {
+        self.cnpj[..8].to_string()
+    }
+
+    /// Retorna o nome da empresa, ou uma string vazia/padrão se for None
+    pub fn get_nome(&self) -> &str {
+        self.nome.as_deref().unwrap_or("")
+    }
+}
 
 impl SpedParser for Registro0000 {
     type Output = Registro0000;
