@@ -600,8 +600,18 @@ mod option_date {
     }
 }
 
+//----------------------------------------------------------------------------//
+//                                   Tests                                    //
+//----------------------------------------------------------------------------//
+//
+// cargo test -- --help
+// cargo test -- --nocapture
+// cargo test -- --show-output
+
+/// Run tests with:
+/// cargo test -- --show-output docs_fiscais
 #[cfg(test)]
-mod tests {
+mod docs_fiscais_tests {
     use super::*;
     use claudiofsr_lib::print_split;
 
