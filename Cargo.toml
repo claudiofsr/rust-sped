@@ -71,7 +71,7 @@ log = "0.4"
 env_logger = "0.11" # Or any other logger you prefer (simple_logger, tracing, etc.)
 
 [dependencies.claudiofsr_lib]
-version = "0.16"
+version = "0.17"
 # git = "https://github.com/claudiofsr/claudiofsr_lib"
 
 [dependencies.cc]

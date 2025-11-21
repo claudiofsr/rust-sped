@@ -163,7 +163,7 @@ fn initialize_progressbar(
     index: usize,
     arquivo: &Path,
 ) -> EFDResult<ProgressBar> {
-    let mut file: File = open_file(arquivo)?;
+    let file: File = open_file(arquivo)?;
     let number_of_lines: u64 = file.count_lines()?;
 
     let progressbar: ProgressBar =
