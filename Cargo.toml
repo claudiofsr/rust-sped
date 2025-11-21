@@ -51,7 +51,7 @@ glob = "0.3"
 ilog = "1.0"
 indicatif = {version = "0.18", features = ["rayon"] } # ProgressBar
 itertools = "0.14"
-# memmap2 = "0.9"
+memmap2 = "0.9"
 num_cpus = "1.17"
 ordered-float = { version = "5.1", features = ["serde"] }
 rand = "0.9"
@@ -70,9 +70,12 @@ thiserror = "2.0"
 log = "0.4"
 env_logger = "0.11" # Or any other logger you prefer (simple_logger, tracing, etc.)
 
+# git = "https://github.com/claudiofsr/claudiofsr_lib"
 [dependencies.claudiofsr_lib]
 version = "0.17"
-# git = "https://github.com/claudiofsr/claudiofsr_lib"
+features = [
+    "fast-lines"
+]
 
 [dependencies.cc]
 version = "1.2"

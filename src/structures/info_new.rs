@@ -151,18 +151,20 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 "C170" => {
                     if let Some(r) = inner.as_any().downcast_ref::<RegistroC170>()
                         && let Some(parent) = state.c100
-                            && let Some(doc) = from_c170(r, parent, ctx) {
-                                docs.push(doc);
-                            }
+                        && let Some(doc) = from_c170(r, parent, ctx)
+                    {
+                        docs.push(doc);
+                    }
                 }
                 "C175" => {
                     if let Some(r) = inner.as_any().downcast_ref::<RegistroC175>()
-                        && let Some(parent) = state.c100 {
-                            // Lógica similar ao C170
-                            if let Some(doc) = from_c175(r, parent, ctx) {
-                                docs.push(doc);
-                            }
+                        && let Some(parent) = state.c100
+                    {
+                        // Lógica similar ao C170
+                        if let Some(doc) = from_c175(r, parent, ctx) {
+                            docs.push(doc);
                         }
+                    }
                 }
 
                 // --- BLOCO M (Exemplo de Apuração) ---
