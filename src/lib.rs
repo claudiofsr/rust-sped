@@ -1,4 +1,4 @@
-mod analyse_one_new;
+mod analyze_one_new;
 mod analyze_all;
 mod analyze_one;
 mod args;
@@ -22,7 +22,7 @@ mod parser;
 use chrono::NaiveDate;
 
 pub use self::{
-    analyse_one_new::*, analyze_all::*, analyze_one::*, args::*, blocos::*, dispatch_table::*,
+    analyze_one_new::*, analyze_all::*, analyze_one::*, args::*, blocos::*, dispatch_table::*,
     error::*, excel_worksheets::*, line_iterator::*, model::*, parser::*, regex::*, sped_efd::*,
     sped_registros::*, structures::*, traits::*, utils::*, validate_line::*,
 };

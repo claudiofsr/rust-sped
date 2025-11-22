@@ -1,6 +1,6 @@
 use crate::{
     DocsFiscais, EFDError, EFDResult, Informacoes, NEWLINE_BYTE, SpedFile,
-    info_new::{build_sped_context, process_block_lines},
+    info_new::{SpedContext, process_block_lines},
     parser::parse_sped_fields,
 };
 
@@ -36,7 +36,8 @@ pub fn analyze_one_file_new(
 
     // 3. Construção do Contexto (Bloco 0 e tabelas globais)
     // Necessário processar sequencialmente o Bloco 0 antes dos demais.
-    let context = Arc::new(build_sped_context(&sped_file_arc, arquivo)?);
+    let sped_context = SpedContext::new(&sped_file_arc, arquivo)?;
+    let context = Arc::new(sped_context);
 
     // 4. Processamento dos Blocos de Movimento em Paralelo
     // Definimos a ordem de blocos. Bloco 0 já foi processado no contexto.
@@ -62,7 +63,7 @@ pub fn analyze_one_file_new(
     Ok((
         cnpj_base,
         context.pa.unwrap_or_default(),
-        context.messages.clone(), // Mensagens acumuladas
+        context.messages.join("\n"), // Mensagens acumuladas
         all_docs,
     ))
 }
