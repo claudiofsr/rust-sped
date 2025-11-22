@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 use rust_decimal::prelude::ToPrimitive;
 use std::{
     collections::{BTreeMap, HashMap},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use crate::{
@@ -46,7 +46,7 @@ pub struct SpedContext {
 
 impl SpedContext {
     /// Constrói o contexto lendo apenas o Bloco 0 do arquivo SPED.
-    pub fn new(file: &SpedFile, path: &std::path::Path) -> EFDResult<Self> {
+    pub fn new(file: &SpedFile, path: &Path) -> EFDResult<Self> {
         let mut ctx = SpedContext {
             arquivo_path: path.to_path_buf(),
             cnpj_base: String::new(),
@@ -62,13 +62,13 @@ impl SpedContext {
             nome_do_cpf: BTreeMap::new(),
         };
 
-        let records_0 = match file.obter_bloco_option('0') {
+        let bloco_0 = match file.obter_bloco_option('0') {
             Some(recs) => recs,
             None => return Ok(ctx),
         };
 
         // Itera sobre os registros do Bloco 0 para popular as tabelas
-        for record in records_0 {
+        for record in bloco_0 {
             // Usa o SpedRecord::downcast_ref via helper interno ou match direto se exposto
             // Assumindo a estrutura do model.rs fornecido:
             if let SpedRecord::Generic(inner) = record {
@@ -77,9 +77,7 @@ impl SpedContext {
                     "0000" => {
                         if let Ok(r) = record.downcast_ref::<Registro0000>() {
                             ctx.pa = Some(r.dt_ini);
-                            if r.cnpj.len() >= 8 {
-                                ctx.cnpj_base = r.cnpj[0..8].to_string();
-                            }
+                            ctx.cnpj_base = r.get_cnpj_base();
                         }
                     }
                     "0140" => {
