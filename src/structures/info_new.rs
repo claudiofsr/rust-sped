@@ -82,9 +82,10 @@ impl SpedContext {
                     }
                     "0140" => {
                         if let Ok(r) = record.downcast_ref::<Registro0140>()
-                            && let Some(cnpj) = &r.cnpj {
-                                ctx.estabelecimentos.insert(cnpj.clone(), r.clone());
-                            }
+                            && let Some(cnpj) = &r.cnpj
+                        {
+                            ctx.estabelecimentos.insert(cnpj.clone(), r.clone());
+                        }
                     }
                     "0150" => {
                         if let Ok(r) = record.downcast_ref::<Registro0150>() {
@@ -103,27 +104,31 @@ impl SpedContext {
                     }
                     "0200" => {
                         if let Ok(r) = record.downcast_ref::<Registro0200>()
-                            && let Some(cod_item) = &r.cod_item {
-                                ctx.produtos.insert(cod_item.clone(), r.clone());
-                            }
+                            && let Some(cod_item) = &r.cod_item
+                        {
+                            ctx.produtos.insert(cod_item.clone(), r.clone());
+                        }
                     }
                     "0400" => {
                         if let Ok(r) = record.downcast_ref::<Registro0400>()
-                            && let Some(cod_nat) = &r.cod_nat {
+                            && let Some(cod_nat) = &r.cod_nat
+                        {
                             ctx.naturezas.insert(cod_nat.clone(), r.clone());
-                            }
+                        }
                     }
                     "0450" => {
                         if let Ok(r) = record.downcast_ref::<Registro0450>()
-                            && let Some(cod_inf) = &r.cod_inf {
+                            && let Some(cod_inf) = &r.cod_inf
+                        {
                             ctx.info_complementar.insert(cod_inf.clone(), r.clone());
-                            }
+                        }
                     }
                     "0500" => {
                         if let Ok(r) = record.downcast_ref::<Registro0500>()
-                            && let Some(cod_cta) = &r.cod_cta {
+                            && let Some(cod_cta) = &r.cod_cta
+                        {
                             ctx.contas.insert(cod_cta.clone(), r.clone());
-                            }
+                        }
                     }
                     _ => {}
                 }
@@ -144,13 +149,14 @@ impl SpedContext {
                 let cnpj_base = c[0..8].to_string();
                 // A lógica complexa de "most frequent value" pode ser aplicada aqui se desejar,
                 // mas por simplicidade retornamos vazio ou busca exata.
-                return cnpj_base
+                return cnpj_base;
             }
         }
         if let Some(c) = cpf
-            && let Some(nome) = self.nome_do_cpf.get(c) {
-                return nome.clone();
-            }
+            && let Some(nome) = self.nome_do_cpf.get(c)
+        {
+            return nome.clone();
+        }
         String::new()
     }
 }
@@ -229,9 +235,10 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "A170" => {
                     if let Ok(r) = record.downcast_ref::<RegistroA170>()
-                        && let Some(parent) = state.a100 {
-                            docs.push(mappers::from_a170(r, parent, ctx));
-                        }
+                        && let Some(parent) = state.a100
+                    {
+                        docs.push(mappers::from_a170(r, parent, ctx));
+                    }
                 }
 
                 // --- BLOCO C ---
@@ -242,15 +249,17 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "C170" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC170>()
-                        && let Some(parent) = state.c100 {
-                            docs.push(mappers::from_c170(r, parent, ctx));
-                        }
+                        && let Some(parent) = state.c100
+                    {
+                        docs.push(mappers::from_c170(r, parent, ctx));
+                    }
                 }
                 "C175" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC175>()
-                        && let Some(parent) = state.c100 {
-                            docs.push(mappers::from_c175(r, parent, ctx));
-                        }
+                        && let Some(parent) = state.c100
+                    {
+                        docs.push(mappers::from_c175(r, parent, ctx));
+                    }
                 }
 
                 // C180 - C188 (Visão Consolidada)
@@ -276,9 +285,10 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "C185" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC185>()
-                        && let Some(parent) = state.c180 {
-                            docs.push(mappers::from_c185(r, parent, &state.correlation_cache, ctx));
-                        }
+                        && let Some(parent) = state.c180
+                    {
+                        docs.push(mappers::from_c185(r, parent, &state.correlation_cache, ctx));
+                    }
                 }
 
                 // C190 - C199 (Analítico)
@@ -304,13 +314,14 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "C195" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC195>()
-                        && let Some(parent) = state.c190 {
-                            // Processa C195 aplicando correlação do C191
-                            let doc = mappers::from_c195(r, parent, &state.correlation_cache, ctx);
-                            docs.push(doc);
-                            // Salva índice para possível atualização pelo C199 (filho posterior)
-                            state.linhas_inseridas.push(docs.len() - 1);
-                        }
+                        && let Some(parent) = state.c190
+                    {
+                        // Processa C195 aplicando correlação do C191
+                        let doc = mappers::from_c195(r, parent, &state.correlation_cache, ctx);
+                        docs.push(doc);
+                        // Salva índice para possível atualização pelo C199 (filho posterior)
+                        state.linhas_inseridas.push(docs.len() - 1);
+                    }
                 }
                 "C199" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC199>() {
@@ -318,17 +329,18 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                         // se ela corresponder ao pai deste registro.
                         // Lógica simplificada: Atualiza o último Docs inserido se compatível.
                         if let Some(&last_idx) = state.linhas_inseridas.last()
-                            && let Some(doc) = docs.get_mut(last_idx) {
-                                mappers::update_with_c199(doc, r);
-                            }
+                            && let Some(doc) = docs.get_mut(last_idx)
+                        {
+                            mappers::update_with_c199(doc, r);
+                        }
                     }
                 }
 
                 // Outros grupos C
                 "C380" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC380>() {
-                    state.c380 = Some(r);
-                    state.clear_correlation();
+                        state.c380 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "C381" => {
@@ -346,32 +358,34 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "C385" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC385>()
-                        && let Some(p) = state.c380 {
-                            docs.push(mappers::from_c385(r, p, &state.correlation_cache, ctx));
-                        }
+                        && let Some(p) = state.c380
+                    {
+                        docs.push(mappers::from_c385(r, p, &state.correlation_cache, ctx));
+                    }
                 }
 
                 "C395" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC395>() {
-                    state.c395 = Some(r);
+                        state.c395 = Some(r);
                     }
                 }
                 "C396" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC396>()
-                        && let Some(p) = state.c395 {
-                            docs.push(mappers::from_c396(r, p, ctx));
-                        }
+                        && let Some(p) = state.c395
+                    {
+                        docs.push(mappers::from_c396(r, p, ctx));
+                    }
                 }
 
                 "C400" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC400>() {
-                    state.c400 = Some(r);
-                    state.clear_correlation();
+                        state.c400 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "C405" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC405>() {
-                    state.c405 = Some(r);
+                        state.c405 = Some(r);
                     }
                 }
                 "C481" => {
@@ -390,22 +404,23 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 "C485" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC485>()
                         && let Some(p400) = state.c400
-                            && let Some(p405) = state.c405 {
-                                // C485 precisa de C400 e C405
-                                docs.push(mappers::from_c485(
-                                    r,
-                                    p400,
-                                    p405,
-                                    &state.correlation_cache,
-                                    ctx,
-                                ));
-                            }
+                        && let Some(p405) = state.c405
+                    {
+                        // C485 precisa de C400 e C405
+                        docs.push(mappers::from_c485(
+                            r,
+                            p400,
+                            p405,
+                            &state.correlation_cache,
+                            ctx,
+                        ));
+                    }
                 }
 
                 "C490" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC490>() {
-                    state.c490 = Some(r);
-                    state.clear_correlation();
+                        state.c490 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "C491" => {
@@ -423,15 +438,16 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "C495" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC495>()
-                        && let Some(p) = state.c490 {
-                            docs.push(mappers::from_c495(r, p, &state.correlation_cache, ctx));
-                        }
+                        && let Some(p) = state.c490
+                    {
+                        docs.push(mappers::from_c495(r, p, &state.correlation_cache, ctx));
+                    }
                 }
 
                 "C500" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC500>() {
-                    state.c500 = Some(r);
-                    state.clear_correlation();
+                        state.c500 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "C501" => {
@@ -449,15 +465,16 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "C505" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC505>()
-                        && let Some(p) = state.c500 {
-                            docs.push(mappers::from_c505(r, p, &state.correlation_cache, ctx));
-                        }
+                        && let Some(p) = state.c500
+                    {
+                        docs.push(mappers::from_c505(r, p, &state.correlation_cache, ctx));
+                    }
                 }
 
                 "C600" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC600>() {
-                    state.c600 = Some(r);
-                    state.clear_correlation();
+                        state.c600 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "C601" => {
@@ -475,21 +492,23 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "C605" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC605>()
-                        && let Some(p) = state.c600 {
-                            docs.push(mappers::from_c605(r, p, &state.correlation_cache, ctx));
-                        }
+                        && let Some(p) = state.c600
+                    {
+                        docs.push(mappers::from_c605(r, p, &state.correlation_cache, ctx));
+                    }
                 }
 
                 "C860" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC860>() {
-                    state.c860 = Some(r);
+                        state.c860 = Some(r);
                     }
                 }
                 "C870" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC870>()
-                        && let Some(p) = state.c860 {
-                            docs.push(mappers::from_c870(r, p, ctx));
-                        }
+                        && let Some(p) = state.c860
+                    {
+                        docs.push(mappers::from_c870(r, p, ctx));
+                    }
                 }
                 "C880" => {
                     if let Ok(r) = record.downcast_ref::<RegistroC880>() {
@@ -500,8 +519,8 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 // --- BLOCO D ---
                 "D100" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD100>() {
-                    state.d100 = Some(r);
-                    state.clear_correlation();
+                        state.d100 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "D101" => {
@@ -519,15 +538,16 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "D105" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD105>()
-                        && let Some(p) = state.d100 {
-                            docs.push(mappers::from_d105(r, p, &state.correlation_cache, ctx));
-                        }
+                        && let Some(p) = state.d100
+                    {
+                        docs.push(mappers::from_d105(r, p, &state.correlation_cache, ctx));
+                    }
                 }
 
                 "D200" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD200>() {
-                    state.d200 = Some(r);
-                    state.clear_correlation();
+                        state.d200 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "D201" => {
@@ -539,9 +559,10 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "D205" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD205>()
-                        && let Some(p) = state.d200 {
-                            docs.push(mappers::from_d205(r, p, ctx));
-                        }
+                        && let Some(p) = state.d200
+                    {
+                        docs.push(mappers::from_d205(r, p, ctx));
+                    }
                 }
 
                 "D300" => {
@@ -557,8 +578,8 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
 
                 "D500" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD500>() {
-                    state.d500 = Some(r);
-                    state.clear_correlation();
+                        state.d500 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "D501" => {
@@ -576,15 +597,16 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "D505" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD505>()
-                        && let Some(p) = state.d500 {
-                            docs.push(mappers::from_d505(r, p, &state.correlation_cache, ctx));
-                        }
+                        && let Some(p) = state.d500
+                    {
+                        docs.push(mappers::from_d505(r, p, &state.correlation_cache, ctx));
+                    }
                 }
 
                 "D600" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD600>() {
-                    state.d600 = Some(r);
-                    state.clear_correlation();
+                        state.d600 = Some(r);
+                        state.clear_correlation();
                     }
                 }
                 "D601" => {
@@ -602,9 +624,10 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "D605" => {
                     if let Ok(r) = record.downcast_ref::<RegistroD605>()
-                        && let Some(p) = state.d600 {
-                            docs.push(mappers::from_d605(r, p, &state.correlation_cache, ctx));
-                        }
+                        && let Some(p) = state.d600
+                    {
+                        docs.push(mappers::from_d605(r, p, &state.correlation_cache, ctx));
+                    }
                 }
 
                 // --- BLOCO F ---
@@ -674,8 +697,8 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 // --- BLOCO M ---
                 "M100" => {
                     if let Ok(r) = record.downcast_ref::<RegistroM100>() {
-                    state.m100 = Some(r);
-                    docs.extend(mappers::from_m100(state.m100.unwrap(), ctx));
+                        state.m100 = Some(r);
+                        docs.extend(mappers::from_m100(state.m100.unwrap(), ctx));
                     }
                 }
                 "M105" => {
@@ -685,29 +708,32 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
                 }
                 "M500" => {
                     if let Ok(r) = record.downcast_ref::<RegistroM500>() {
-                    state.m500 = Some(r);
-                    docs.extend(mappers::from_m500(state.m500.unwrap(), ctx));
+                        state.m500 = Some(r);
+                        docs.extend(mappers::from_m500(state.m500.unwrap(), ctx));
                     }
                 }
                 "M505" => {
                     if let Ok(r) = record.downcast_ref::<RegistroM505>()
-                        && let Some(p) = state.m500 {
-                            docs.push(mappers::from_m505(r, p, ctx));
-                        }
+                        && let Some(p) = state.m500
+                    {
+                        docs.push(mappers::from_m505(r, p, ctx));
+                    }
                 }
 
                 // --- BLOCO 1 ---
                 "1100" => {
                     if let Ok(r) = record.downcast_ref::<Registro1100>()
-                        && let Some(d) = mappers::from_1100(r, ctx) {
-                            docs.push(d);
-                        }
+                        && let Some(d) = mappers::from_1100(r, ctx)
+                    {
+                        docs.push(d);
+                    }
                 }
                 "1500" => {
                     if let Ok(r) = record.downcast_ref::<Registro1500>()
-                        && let Some(d) = mappers::from_1500(r, ctx) {
-                            docs.push(d);
-                        }
+                        && let Some(d) = mappers::from_1500(r, ctx)
+                    {
+                        docs.push(d);
+                    }
                 }
 
                 _ => {}
@@ -723,8 +749,8 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
 // ============================================================================
 
 mod mappers {
-    use super::*;
     use super::helpers::*;
+    use super::*;
 
     pub fn from_a170(reg: &RegistroA170, parent: &RegistroA100, ctx: &SpedContext) -> DocsFiscais {
         let mut doc = create_base_doc(ctx, reg.line_number);
@@ -1606,14 +1632,15 @@ mod helpers {
 
         // Indicador de Origem
         if doc.indicador_de_origem.is_none()
-            && let Some(cfop) = doc.cfop {
-                // 3000-3999 = Importação
-                if (3000..=3999).contains(&cfop) {
-                    doc.indicador_de_origem = Some(1);
-                } else {
-                    doc.indicador_de_origem = Some(0); // Mercado Interno default
-                }
+            && let Some(cfop) = doc.cfop
+        {
+            // 3000-3999 = Importação
+            if (3000..=3999).contains(&cfop) {
+                doc.indicador_de_origem = Some(1);
+            } else {
+                doc.indicador_de_origem = Some(0); // Mercado Interno default
             }
+        }
 
         // Tipo de Crédito
         doc.tipo_de_credito = determinar_tipo_de_credito(
@@ -1633,14 +1660,15 @@ mod helpers {
         cod_cred_str: Option<&str>,
     ) {
         if let Some(cod) = cod_cred_str
-            && let Ok(c) = cod.parse::<u16>() {
-                // Extrai o tipo pelo resto da divisão: 101 -> 01
-                let tipo = c % 100;
-                if tipo == 8 {
-                    doc.indicador_de_origem = Some(1);
-                } // Importação
-                doc.tipo_de_credito = Some(tipo);
-            }
+            && let Ok(c) = cod.parse::<u16>()
+        {
+            // Extrai o tipo pelo resto da divisão: 101 -> 01
+            let tipo = c % 100;
+            if tipo == 8 {
+                doc.indicador_de_origem = Some(1);
+            } // Importação
+            doc.tipo_de_credito = Some(tipo);
+        }
     }
 
     pub fn enrich_participant(
@@ -1649,22 +1677,23 @@ mod helpers {
         cod_part_opt: &Option<String>,
     ) {
         if let Some(cod_part) = cod_part_opt
-            && !cod_part.is_empty() {
-                if let Some(p) = ctx.participantes.get(cod_part) {
-                    doc.particante_cnpj = p.cnpj.clone().unwrap_or_default();
-                    doc.particante_cpf = p.cpf.clone().unwrap_or_default();
-                    doc.particante_nome = p.nome.clone().unwrap_or_default();
-                    return;
-                }
-                // Se não achou no map, mas é um CPF/CNPJ direto (casos de C191/C195)
-                if cod_part.len() == 14 {
-                    doc.particante_cnpj = cod_part.clone();
-                    doc.particante_nome = ctx.obter_nome_participante(Some(cod_part), None);
-                } else if cod_part.len() == 11 {
-                    doc.particante_cpf = cod_part.clone();
-                    doc.particante_nome = ctx.obter_nome_participante(None, Some(cod_part));
-                }
+            && !cod_part.is_empty()
+        {
+            if let Some(p) = ctx.participantes.get(cod_part) {
+                doc.particante_cnpj = p.cnpj.clone().unwrap_or_default();
+                doc.particante_cpf = p.cpf.clone().unwrap_or_default();
+                doc.particante_nome = p.nome.clone().unwrap_or_default();
+                return;
             }
+            // Se não achou no map, mas é um CPF/CNPJ direto (casos de C191/C195)
+            if cod_part.len() == 14 {
+                doc.particante_cnpj = cod_part.clone();
+                doc.particante_nome = ctx.obter_nome_participante(Some(cod_part), None);
+            } else if cod_part.len() == 11 {
+                doc.particante_cpf = cod_part.clone();
+                doc.particante_nome = ctx.obter_nome_participante(None, Some(cod_part));
+            }
+        }
     }
 
     // Utilitários de Parsing e Lookup
@@ -1847,11 +1876,12 @@ mod helpers {
                     origem_str[0..2].parse::<u32>(),
                     origem_str[2..6].parse::<i32>(),
                 )
-                    && let Some(date_origem) = NaiveDate::from_ymd_opt(y, m, 1)
-                        && date_origem != atual {
-                            doc.complementar =
-                                format!("{} [Origem Diferente: {}]", doc.complementar, origem_str);
-                        }
+                && let Some(date_origem) = NaiveDate::from_ymd_opt(y, m, 1)
+                && date_origem != atual
+            {
+                doc.complementar =
+                    format!("{} [Origem Diferente: {}]", doc.complementar, origem_str);
+            }
         }
     }
 }

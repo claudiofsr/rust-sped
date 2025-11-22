@@ -1,6 +1,6 @@
-mod analyze_one_new;
 mod analyze_all;
 mod analyze_one;
+mod analyze_one_new;
 mod args;
 mod dispatch_table;
 mod error;
@@ -22,7 +22,7 @@ mod parser;
 use chrono::NaiveDate;
 
 pub use self::{
-    analyze_one_new::*, analyze_all::*, analyze_one::*, args::*, blocos::*, dispatch_table::*,
+    analyze_all::*, analyze_one::*, analyze_one_new::*, args::*, blocos::*, dispatch_table::*,
     error::*, excel_worksheets::*, line_iterator::*, model::*, parser::*, regex::*, sped_efd::*,
     sped_registros::*, structures::*, traits::*, utils::*, validate_line::*,
 };
