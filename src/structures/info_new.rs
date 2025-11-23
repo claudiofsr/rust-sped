@@ -26,18 +26,21 @@ use crate::{
 /// É construído uma vez e passado como referência imutável para os processadores de blocos.
 #[derive(Debug)]
 pub struct SpedContext {
-    pub arquivo_path: PathBuf,
-    pub cnpj_base: String,
-    pub pa: Option<NaiveDate>, // Período de Apuração
+    pub path: PathBuf,
     pub messages: Vec<String>, // Mensagens de erro/aviso coletadas na construção
 
-    // Tabelas de consulta (Lookups)
+    // --- Metadados Globais (Registro 0000 e afins) ---
+    pub pa: Option<NaiveDate>, // Período de Apuração
+    pub cnpj_base: String,
+    pub cnpj_do_estabelecimento: String,
+
+    // --- Tabelas de consulta (Lookups) ---
+    pub complementar: HashMap<String, Registro0450>,
+    pub contas: HashMap<String, Registro0500>,
+    pub estabelecimentos: HashMap<String, Registro0140>,
+    pub nat_operacao: HashMap<String, Registro0400>,
     pub participantes: HashMap<String, Registro0150>,
     pub produtos: HashMap<String, Registro0200>,
-    pub contas: HashMap<String, Registro0500>,
-    pub naturezas: HashMap<String, Registro0400>,
-    pub estabelecimentos: HashMap<String, Registro0140>,
-    pub info_complementar: HashMap<String, Registro0450>,
 
     // Cache de Nomes
     pub nome_do_cnpj: BTreeMap<String, String>,
@@ -48,16 +51,17 @@ impl SpedContext {
     /// Constrói o contexto lendo apenas o Bloco 0 do arquivo SPED.
     pub fn new(file: &SpedFile, path: &Path) -> EFDResult<Self> {
         let mut ctx = SpedContext {
-            arquivo_path: path.to_path_buf(),
-            cnpj_base: String::new(),
-            pa: None,
+            path: path.to_path_buf(),
             messages: Vec::new(),
+            pa: None,
+            cnpj_base: String::new(),
+            cnpj_do_estabelecimento: String::new(),
             participantes: HashMap::new(),
             produtos: HashMap::new(),
             contas: HashMap::new(),
-            naturezas: HashMap::new(),
+            nat_operacao: HashMap::new(),
             estabelecimentos: HashMap::new(),
-            info_complementar: HashMap::new(),
+            complementar: HashMap::new(),
             nome_do_cnpj: BTreeMap::new(),
             nome_do_cpf: BTreeMap::new(),
         };
@@ -77,6 +81,7 @@ impl SpedContext {
                     "0000" => {
                         if let Ok(r) = record.downcast_ref::<Registro0000>() {
                             ctx.pa = Some(r.dt_ini);
+                            ctx.cnpj_do_estabelecimento = r.cnpj.clone();
                             ctx.cnpj_base = r.get_cnpj_base();
                         }
                     }
@@ -113,14 +118,14 @@ impl SpedContext {
                         if let Ok(r) = record.downcast_ref::<Registro0400>()
                             && let Some(cod_nat) = &r.cod_nat
                         {
-                            ctx.naturezas.insert(cod_nat.clone(), r.clone());
+                            ctx.nat_operacao.insert(cod_nat.clone(), r.clone());
                         }
                     }
                     "0450" => {
                         if let Ok(r) = record.downcast_ref::<Registro0450>()
                             && let Some(cod_inf) = &r.cod_inf
                         {
-                            ctx.info_complementar.insert(cod_inf.clone(), r.clone());
+                            ctx.complementar.insert(cod_inf.clone(), r.clone());
                         }
                     }
                     "0500" => {
@@ -1578,7 +1583,7 @@ mod helpers {
 
     pub fn create_base_doc(ctx: &SpedContext, line_num: usize) -> DocsFiscais {
         let mut doc = DocsFiscais {
-            arquivo_efd: ctx.arquivo_path.to_string_lossy().to_string(),
+            arquivo_efd: ctx.path.to_string_lossy().to_string(),
             num_linha_efd: Some(line_num),
             estabelecimento_cnpj: ctx.cnpj_base.clone(),
             periodo_de_apuracao: ctx.pa,
@@ -1741,7 +1746,7 @@ mod helpers {
     pub fn get_nat_operacao(ctx: &SpedContext, cod_nat: &Option<String>) -> String {
         cod_nat
             .as_ref()
-            .and_then(|c| ctx.naturezas.get(c))
+            .and_then(|c| ctx.nat_operacao.get(c))
             .and_then(|n| n.descr_nat.clone())
             .unwrap_or_default()
     }

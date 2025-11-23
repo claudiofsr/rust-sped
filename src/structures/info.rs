@@ -38,7 +38,7 @@ pub struct Info {
 
     pub global: HashMap<String, String>,
 
-    // --- Tabelas de Referência ---
+    // --- Tabelas de consulta (Lookups) ---
     pub complementar: HashMap<String, String>,
     pub contabil: HashMap<String, HashMap<String, String>>,
     pub estabelecimentos: HashMap<String, String>,

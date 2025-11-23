@@ -74,7 +74,7 @@ env_logger = "0.11" # Or any other logger you prefer (simple_logger, tracing, et
 [dependencies.claudiofsr_lib]
 version = "0.17"
 features = [
-    # "fast-lines"
+    "fast-lines"
 ]
 
 [dependencies.cc]

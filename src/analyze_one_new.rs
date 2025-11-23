@@ -1,5 +1,5 @@
 use crate::{
-    DocsFiscais, EFDError, EFDResult, Informacoes, NEWLINE_BYTE, SpedFile,
+    DocsFiscais, EFDError, EFDResult, Informacoes, NEWLINE_BYTE, SpedFile, get_string_utf8,
     info_new::{SpedContext, process_block_lines},
     parser::parse_sped_fields,
 };
@@ -14,10 +14,14 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use encoding_rs::WINDOWS_1252;
-use encoding_rs_io::DecodeReaderBytesBuilder;
-
-/// Analisa um único arquivo EFD extraindo as informações para DocsFiscais.
+/// Analisa um único arquivo EFD, extraindo informações e gerando
+/// documentos fiscais, DocsFiscais.
+///
+/// O processo é dividido em:
+/// 1. Leitura e Parsing Paralelo do arquivo para memória (`SpedFile`).
+/// 2. Ordenação dos registros para garantir integridade hierárquica.
+/// 3. Criação do Contexto (Lookup Tables) baseado no Bloco 0.
+/// 4. Processamento Paralelo dos Blocos de Movimento (A, C, D, F, I, M, P, 1, 9).
 pub fn analyze_one_file_new(
     multiprogressbar: &MultiProgress,
     arquivo: &Path,
@@ -43,23 +47,20 @@ pub fn analyze_one_file_new(
     // Definimos a ordem de blocos. Bloco 0 já foi processado no contexto.
     let blocks_to_process = vec!['A', 'C', 'D', 'F', 'I', 'M', 'P', '1', '9'];
 
-    let result_vecs: Vec<Vec<DocsFiscais>> = blocks_to_process
+    let all_docs: Vec<DocsFiscais> = blocks_to_process
         .par_iter()
-        .map(|&bloco| {
-            // Cada bloco processa seus registros de forma independente,
-            // mas com acesso somente leitura ao Contexto e ao Arquivo Completo.
+        .flat_map_iter(|&bloco| {
+            // O retorno aqui é tratado como iterador serial
             process_block_lines(bloco, &sped_file_arc, &context)
         })
         .collect();
-
-    // 5. Consolidação dos Resultados
-    let all_docs: Vec<DocsFiscais> = result_vecs.into_iter().flatten().collect();
 
     let cnpj_base = context
         .cnpj_base
         .parse::<u32>()
         .map_err(|e| EFDError::ParseIntError(e, context.cnpj_base.clone()))?;
 
+    // Return the aggregated results.
     Ok((
         cnpj_base,
         context.pa.unwrap_or_default(),
@@ -70,56 +71,47 @@ pub fn analyze_one_file_new(
 
 /// Lê o arquivo e converte em estrutura SpedFile usando Rayon.
 fn read_and_parse_file(
-    arquivo: &Path,
+    path: &Path,
     multiprogressbar: &MultiProgress,
     index: usize,
     _total: usize,
 ) -> EFDResult<SpedFile> {
-    let file = open_file(arquivo)?;
-    let progressbar = initialize_progressbar(multiprogressbar, index, arquivo)?;
+    let file = open_file(path).map_err(|e| EFDError::InOut {
+        source: e,
+        path: path.to_path_buf(),
+    })?;
+    let progressbar = initialize_progressbar(multiprogressbar, index, path)?;
 
     // Estrutura segura para escrita paralela
     let sped_file_data = Arc::new(Mutex::new(SpedFile::new()));
 
-    // Leitura com decoding WINDOWS-1252 (Padrão SPED)
-    let reader = BufReader::new(
-        DecodeReaderBytesBuilder::new()
-            .encoding(Some(WINDOWS_1252))
-            .build(file),
-    );
-
-    // Processamento paralelo das linhas
-    reader
+    // Processamento paralelo das linhas.
+    BufReader::new(file)
         .split(NEWLINE_BYTE)
         .enumerate()
-        .par_bridge()
+        .par_bridge() // Rayon parallel iterator
         .try_for_each(|(idx, line_result)| -> EFDResult<()> {
             let line_number = idx + 1;
-            let line_bytes = line_result.map_err(EFDError::Io)?;
-
-            // Trim básico de bytes antes de string
-            if line_bytes.trim_ascii().is_empty() {
-                return Ok(());
-            }
-
-            // Conversão para String (já decodificado pelo DecodeReader, mas garantindo UTF8 final)
-            let line = String::from_utf8(line_bytes).map_err(|e| {
-                EFDError::Utf8DecodeError(
-                    arquivo.to_path_buf(),
-                    line_number,
-                    e.utf8_error(),
-                    std::io::Error::new(std::io::ErrorKind::InvalidData, "UTF8 Error"),
-                )
+            let line_bytes: Vec<u8> = line_result.map_err(|e| EFDError::InOut {
+                source: e,
+                path: path.to_path_buf(),
             })?;
 
-            if line.trim().is_empty() {
+            // Trim ASCII whitespace from both ends of the byte slice.
+            let trimmed_bytes = line_bytes.trim_ascii();
+
+            // Trim básico de bytes antes de string
+            if trimmed_bytes.is_empty() {
+                // If line is empty, skip this line
                 return Ok(());
             }
 
+            // Decode bytes to string, handling potential encoding issues.
+            let line = get_string_utf8(trimmed_bytes, line_number, path)?;
+
             // Parse da linha usando a lógica do parser.rs
-            if let Some(record) = parse_sped_fields(arquivo, line_number, &line)? {
-                let mut guard = sped_file_data.lock().unwrap();
-                guard.add_record(record);
+            if let Some(sped_record) = parse_sped_fields(path, line_number, &line)? {
+                sped_file_data.lock().unwrap().add_record(sped_record);
             }
 
             // Atualiza PB a cada X linhas para não travar mutex demais?
@@ -131,7 +123,7 @@ fn read_and_parse_file(
             Ok(())
         })?;
 
-    progressbar.finish_with_message("Leitura concluída");
+    progressbar.finish(); // Finalize the progress bar.
 
     // Retorna o SpedFile "desembrulhado"
     let final_sped_file = Arc::try_unwrap(sped_file_data)
