@@ -263,7 +263,7 @@ impl_filho!(RegistroC485, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: al
 impl_dopai!(RegistroC490, { data: dt_doc_ini });
 impl_filho!(RegistroC491, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroC495, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cfop: cfop });
-impl_dopai!(RegistroC500, { data: dt_doc, chave: chv_doce, part: cod_part, modelo: cod_mod });
+impl_dopai!(RegistroC500, { data: dt_doc, chave: chv_doce, num: num_doc, part: cod_part, modelo: cod_mod });
 impl_filho!(RegistroC501, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroC505, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
 impl_dopai!(RegistroC600, { data: dt_doc, part: cod_mun, modelo: cod_mod });
