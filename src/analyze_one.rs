@@ -445,7 +445,7 @@ pub fn parse_file_info(info: &mut Info) -> EFDResult<Vec<DocsFiscais>> {
             // Data da Entrada / Aquisição / Execução ou da Saída / Prestação / Conclusão
             // dt_lan: Esta coluna não necessariamente possui informação de data
             let dt_lan: &str = hashmap.get("dt_lan").map_or("", |data| data);
-            let data_lancamento: Option<NaiveDate> = get_naive_date(dt_lan);
+            let data_entrada: Option<NaiveDate> = get_naive_date(dt_lan);
 
             let cod_part = hashmap.get("COD_PART").map_or("", |v| v);
             let mut part_cnpj = info
@@ -592,7 +592,7 @@ pub fn parse_file_info(info: &mut Info) -> EFDResult<Vec<DocsFiscais>> {
                 complementar: info_complementar,
                 nome_da_conta: nome_da_conta.to_string(),
                 data_emissao,
-                data_lancamento,
+                data_entrada,
                 valor_item,
                 valor_bc,
                 aliq_pis,

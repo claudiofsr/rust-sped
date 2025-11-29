@@ -51,10 +51,16 @@ where
 /// Representa registros autônomos que contêm informações fiscais diretas.
 /// Mapeia campos variados (VL_OPER, VL_REC, etc.) para getters padronizados.
 pub trait RegistroGeral: SpedRecordTrait {
-    fn get_cnpj(&self) -> Option<String> {
+    /// Data da emissão do documento fiscal
+    fn get_data_emissao(&self) -> Option<NaiveDate> {
         None
     }
-    fn get_data_geral(&self) -> Option<NaiveDate> {
+    /// Data de Execução / Conclusão do Serviço
+    /// Data da Entrada / Aquisição / Execução ou da Saída / Prestação / Conclusão
+    fn get_data_entrada(&self) -> Option<NaiveDate> {
+        None
+    }
+    fn get_cnpj(&self) -> Option<String> {
         None
     }
     fn get_valor_geral(&self) -> Option<Decimal> {
@@ -78,7 +84,13 @@ pub trait RegistroGeral: SpedRecordTrait {
 ///
 /// Ex: C100, D100. Fornece dados contextuais para os filhos.
 pub trait RegistroPai {
+    /// Data da emissão do documento fiscal
     fn get_data_emissao(&self) -> Option<NaiveDate> {
+        None
+    }
+    /// Data de Execução / Conclusão do Serviço
+    /// Data da Entrada / Aquisição / Execução ou da Saída / Prestação / Conclusão
+    fn get_data_entrada(&self) -> Option<NaiveDate> {
         None
     }
     fn get_chave(&self) -> Option<String> {
@@ -179,7 +191,8 @@ macro_rules! impl_geral {
         }
     };
     (@method cnpj, $v:ident) => { fn get_cnpj(&self) -> Option<String> { self.$v.clone() } };
-    (@method data, $v:ident) => { fn get_data_geral(&self) -> Option<NaiveDate> { self.$v } };
+    (@method dt_emissao, $v:ident) => { fn get_data_emissao(&self) -> Option<NaiveDate> { self.$v } };
+    (@method dt_entrada, $v:ident) => { fn get_data_entrada(&self) -> Option<NaiveDate> { self.$v } };
     (@method valor, $v:ident) => { fn get_valor_geral(&self) -> Option<Decimal> { self.$v } };
     (@method descr, $v:ident) => { fn get_descr_geral(&self) -> Option<String> { self.$v.clone() } };
     (@method part, $v:ident) => { fn get_part_geral(&self) -> Option<String> { self.$v.clone() } };
@@ -194,7 +207,8 @@ macro_rules! impl_dopai {
             $( impl_dopai!(@method $key, $value); )*
         }
     };
-    (@method data, $v:ident) => { fn get_data_emissao(&self) -> Option<NaiveDate> { self.$v } };
+    (@method dt_emissao, $v:ident) => { fn get_data_emissao(&self) -> Option<NaiveDate> { self.$v } };
+    (@method dt_entrada, $v:ident) => { fn get_data_entrada(&self) -> Option<NaiveDate> { self.$v } };
     (@method chave, $v:ident) => { fn get_chave(&self) -> Option<String> { self.$v.clone() } };
     (@method part, $v:ident) => { fn get_participante_cod(&self) -> Option<String> { self.$v.clone() } };
     (@method modelo, $v:ident) => { fn get_modelo_doc_fiscal(&self) -> Option<String> { self.$v.clone() } };
@@ -236,64 +250,64 @@ macro_rules! impl_filho {
 // ============================================================================
 
 // Bloco A
-impl_geral!(RegistroA010, { cnpj: cnpj });
-impl_dopai!(RegistroA100, { data: dt_doc, chave: chv_nfse, part: cod_part });
+// impl_geral!(RegistroA010, { cnpj: cnpj });
+impl_dopai!(RegistroA100, { dt_emissao: dt_doc, dt_entrada: dt_exe_serv, chave: chv_nfse, part: cod_part });
 impl_filho!(RegistroA170, { val_item: vl_item, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, descr: descr_compl });
 
 // Bloco C
 impl_geral!(RegistroC010, { cnpj: cnpj });
-impl_dopai!(RegistroC100, { data: dt_doc, chave: chv_nfe, part: cod_part, modelo: cod_mod, num: num_doc });
+impl_dopai!(RegistroC100, { dt_emissao: dt_doc, chave: chv_nfe, part: cod_part, modelo: cod_mod, num: num_doc });
 impl_filho!(RegistroC170, { val_item: vl_item, cst_pis: cst_pis, cst_cof: cst_cofins, cfop: cfop, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cod_item: cod_item, cod_nat: cod_nat, cod_cta: cod_cta, bc_icms: vl_bc_icms, aliq_icms: aliq_icms, val_icms: vl_icms });
 impl_filho!(RegistroC175, { val_item: vl_opr, cst_pis: cst_pis, cst_cof: cst_cofins, cfop: cfop, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroC180, { data: dt_doc_ini, modelo: cod_mod });
+impl_dopai!(RegistroC180, { dt_emissao: dt_doc_ini, modelo: cod_mod });
 impl_filho!(RegistroC181, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis, cfop: cfop, cod_item: cod_cta });
 impl_filho!(RegistroC185, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cfop: cfop, cod_item: cod_cta });
-impl_dopai!(RegistroC190, { data: dt_ref_ini });
+impl_dopai!(RegistroC190, { dt_emissao: dt_ref_ini });
 impl_filho!(RegistroC191, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis, cfop: cfop, part_over: cnpj_cpf_part });
 impl_filho!(RegistroC195, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cfop: cfop, part_over: cnpj_cpf_part });
-impl_dopai!(RegistroC380, { data: dt_doc_ini });
+impl_dopai!(RegistroC380, { dt_emissao: dt_doc_ini });
 impl_filho!(RegistroC381, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroC385, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroC395, { data: dt_doc, part: cod_part });
+impl_dopai!(RegistroC395, { dt_emissao: dt_doc, part: cod_part });
 impl_filho!(RegistroC396, { val_item: vl_item, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
 impl_dopai!(RegistroC400, {});
-impl_dopai!(RegistroC405, { data: dt_doc });
+impl_dopai!(RegistroC405, { dt_emissao: dt_doc });
 impl_filho!(RegistroC481, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroC485, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroC490, { data: dt_doc_ini });
+impl_dopai!(RegistroC490, { dt_emissao: dt_doc_ini });
 impl_filho!(RegistroC491, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroC495, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cfop: cfop });
-impl_dopai!(RegistroC500, { data: dt_doc, chave: chv_doce, num: num_doc, part: cod_part, modelo: cod_mod });
+impl_dopai!(RegistroC500, { dt_emissao: dt_doc, chave: chv_doce, num: num_doc, part: cod_part, modelo: cod_mod });
 impl_filho!(RegistroC501, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroC505, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroC600, { data: dt_doc, part: cod_mun, modelo: cod_mod });
+impl_dopai!(RegistroC600, { dt_emissao: dt_doc, part: cod_mun, modelo: cod_mod });
 impl_filho!(RegistroC601, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroC605, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroC860, { data: dt_doc });
+impl_dopai!(RegistroC860, { dt_emissao: dt_doc });
 impl_filho!(RegistroC870, { val_item: vl_item, cst_pis: cst_pis, cst_cof: cst_cofins, cfop: cfop, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cod_item: cod_item });
 impl_filho!(RegistroC880, { val_item: vl_item, cst_pis: cst_pis, cst_cof: cst_cofins, cfop: cfop, val_pis: vl_pis, val_cof: vl_cofins });
 
 // Bloco D
 impl_geral!(RegistroD010, { cnpj: cnpj });
-impl_dopai!(RegistroD100, { data: dt_a_p, chave: chv_cte, part: cod_part, modelo: cod_mod });
+impl_dopai!(RegistroD100, { dt_emissao: dt_a_p, chave: chv_cte, part: cod_part, modelo: cod_mod });
 impl_filho!(RegistroD101, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroD105, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroD200, { data: dt_ref, modelo: cod_mod });
+impl_dopai!(RegistroD200, { dt_emissao: dt_ref, modelo: cod_mod });
 impl_filho!(RegistroD201, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroD205, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
 impl_filho!(RegistroD300, { val_item: vl_doc, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
 impl_filho!(RegistroD350, { val_item: vl_brt, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroD500, { data: dt_a_p, part: cod_part, modelo: cod_mod });
+impl_dopai!(RegistroD500, { dt_emissao: dt_a_p, part: cod_part, modelo: cod_mod });
 impl_filho!(RegistroD501, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroD505, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
-impl_dopai!(RegistroD600, { data: dt_doc_ini, modelo: cod_mod });
+impl_dopai!(RegistroD600, { dt_emissao: dt_doc_ini, modelo: cod_mod });
 impl_filho!(RegistroD601, { val_item: vl_item, cst_pis: cst_pis, aliq_pis: aliq_pis, val_pis: vl_pis });
 impl_filho!(RegistroD605, { val_item: vl_item, cst_cof: cst_cofins, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
 
 // Bloco F (Registros Autônomos e Híbridos)
 impl_geral!(RegistroF010, { cnpj: cnpj });
 // F100: DT_OPER->data, VL_OPER->valor, DESC_DOC_OPER->descr
-impl_geral!(RegistroF100, { data: dt_oper, valor: vl_oper, descr: desc_doc_oper, part: cod_part });
+impl_geral!(RegistroF100, { dt_emissao: dt_oper, valor: vl_oper, descr: desc_doc_oper, part: cod_part });
 impl_filho!(RegistroF100, { val_item: vl_oper, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cod_item: cod_item, cod_nat: nat_bc_cred, descr: desc_doc_oper, part_over: cod_part });
 // F120: VL_OPER_DEP->valor, DESC_BEM_IMOB->descr
 impl_geral!(RegistroF120, { valor: vl_oper_dep, descr: desc_bem_imob });
@@ -305,7 +319,7 @@ impl_filho!(RegistroF130, { val_item: vl_bc_cofins, cst_pis: cst_pis, cst_cof: c
 impl_geral!(RegistroF150, { valor: vl_tot_est, descr: desc_est });
 impl_filho!(RegistroF150, { val_item: vl_tot_est, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_cred_pis, aliq_cof: aliq_cofins, val_cof: vl_cred_cofins, bc_cof: vl_bc_est, descr: desc_est });
 // F200: VL_TOT_REC->valor, INF_COMP->descr, CPF_CNPJ_ADQU->part
-impl_geral!(RegistroF200, { data: dt_oper, valor: vl_tot_rec, descr: inf_comp, part: cpf_cnpj_adqu });
+impl_geral!(RegistroF200, { dt_emissao: dt_oper, valor: vl_tot_rec, descr: inf_comp, part: cpf_cnpj_adqu });
 impl_filho!(RegistroF200, { val_item: vl_tot_rec, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
 // F205/F210/F500/F510/F550/F560
 impl_geral!(RegistroF205, { valor: vl_cus_inc_per_esc });
@@ -443,7 +457,7 @@ impl<'a> DocsBuilder<'a> {
             // Usa o CNPJ do contexto local (Blc C010/D010) ou o global do arquivo
             estabelecimento_cnpj: current_cnpj
                 .cloned()
-                .unwrap_or_else(|| ctx.estabelecimento_cnpj.clone()),
+                .unwrap_or(ctx.estabelecimento_cnpj.clone()),
             estabelecimento_nome: ctx.estabelecimento_nome.clone(),
             periodo_de_apuracao: ctx.periodo_de_apuracao,
             registro: registro.to_string(),
@@ -471,7 +485,8 @@ impl<'a> DocsBuilder<'a> {
         let mut builder = Self::new(ctx, reg.registro_name(), reg.line_number(), effective_cnpj);
 
         // Mapeamento usando os Getters da Trait RegistroGeral
-        builder.doc.data_emissao = reg.get_data_geral().or(ctx.periodo_de_apuracao);
+        builder.doc.data_emissao = reg.get_data_emissao();
+        builder.doc.data_entrada = reg.get_data_entrada();
         builder.doc.valor_item = reg.get_valor_geral().to_f64_opt();
         builder.doc.descr_item = reg.get_descr_geral().unwrap_or_default();
         builder = builder.with_participant(&reg.get_part_geral());
@@ -504,6 +519,7 @@ impl<'a> DocsBuilder<'a> {
         // 1. Processar dados do Pai (Informacoes comuns a todos os filhos)
         if let Some(p) = pai {
             builder.doc.data_emissao = p.get_data_emissao();
+            builder.doc.data_entrada = p.get_data_entrada();
             if let Some(k) = p.get_chave() {
                 builder.doc.chave_doc = k;
             }
@@ -631,6 +647,7 @@ impl<'a> DocsBuilder<'a> {
         self
     }
 
+    /// Build DocsFiscais
     fn build(mut self) -> DocsFiscais {
         // --- Regras de Negócio Finais (Derived Fields) ---
 
@@ -804,14 +821,15 @@ impl<'a> BlockAProcessor<'a> {
                 }
                 "A100" => self.a100 = record.downcast_ref().ok(),
                 "A170" => {
-                    if let (Ok(r), Some(p)) = (record.downcast_ref::<RegistroA170>(), self.a100) {
-                        let mut b = DocsBuilder::from_child_and_parent(
+                    if let (Ok(filho), Some(pai)) =
+                        (record.downcast_ref::<RegistroA170>(), self.a100)
+                    {
+                        let b = DocsBuilder::from_child_and_parent(
                             ctx,
-                            r,
-                            Some(p),
+                            filho,
+                            Some(pai),
                             self.current_cnpj.as_ref(),
                         );
-                        b.doc.data_lancamento = p.dt_exe_serv;
                         docs.push(b.build());
                     }
                 }
@@ -871,7 +889,7 @@ impl<'a> BlockCProcessor<'a> {
                             Some(p),
                             self.current_cnpj.as_ref(),
                         );
-                        b.doc.data_lancamento = p.dt_e_s;
+                        b.doc.data_entrada = p.dt_e_s;
                         b.doc.num_item = r.num_item.parse_opt();
                         docs.push(b.build());
                     }
@@ -1107,7 +1125,7 @@ impl<'a> BlockCProcessor<'a> {
                             r,
                             Some(p),
                         );
-                        b.doc.data_lancamento = p.dt_ent;
+                        b.doc.data_entrada = p.dt_ent;
                         docs.push(b.build());
                     }
                 }

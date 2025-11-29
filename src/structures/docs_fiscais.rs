@@ -150,7 +150,7 @@ pub struct DocsFiscais {
         //deserialize_with = "csv::invalid_option",
         serialize_with = "serialize_option_datetime_to_excel",
     )]
-    pub data_lancamento: Option<NaiveDate>,
+    pub data_entrada: Option<NaiveDate>,
 
     #[serde(
         rename = "Valor Total do Item",
@@ -264,7 +264,7 @@ impl DocsFiscais {
             self.complementar.clone(),
             self.nome_da_conta.clone(),
             self.data_emissao.to_string(),
-            self.data_lancamento.to_string(),
+            self.data_entrada.to_string(),
             self.valor_item.to_string(),
             self.valor_bc.to_string(),
             self.aliq_pis.to_string(),
