@@ -4,8 +4,9 @@ use rust_decimal::prelude::ToPrimitive;
 use std::collections::HashMap;
 
 use crate::{
-    DocsFiscais, IndicadorOrigem, MesesDoAno, SpedContext, SpedFile, SpedRecord, SpedRecordTrait,
-    TipoDeCredito, TipoDeRateio, TipoOperacao, blocos::*, obter_cod_da_natureza_da_bc,
+    ALIQ_BASICA_COF, ALIQ_BASICA_PIS, DocsFiscais, FloatExt, IndicadorOrigem, MesesDoAno,
+    SpedContext, SpedFile, SpedRecord, SpedRecordTrait, TipoDeCredito, TipoDeRateio, TipoOperacao,
+    blocos::*, cred_presumido, obter_cod_da_natureza_da_bc,
 };
 
 // ============================================================================
@@ -658,39 +659,80 @@ impl<'a> DocsBuilder<'a> {
             });
         }
 
-        // 4. Tipo de Crédito (Extração do código ou Heurística)
+        // 4. Tipo de Crédito
         if self.doc.tipo_de_credito.is_none() {
-            // Pipeline: Valida Rateio (parte inteira) -> Extrai Crédito (resto)
-            let credito_validado = self
-                .doc
-                .cod_credito
-                .filter(|&cod| TipoDeRateio::from_u16(cod / 100).is_some())
-                .and_then(|cod| TipoDeCredito::from_u16(cod % 100));
+            self.doc.tipo_de_credito = determinar_tipo_de_credito(
+                self.doc.cst,
+                self.doc.aliq_pis,
+                self.doc.aliq_cofins,
+                self.doc.cod_credito,
+                self.doc.cfop,
+            );
 
-            if let Some(credito) = credito_validado {
-                // Caso 1: Código Válido (Blocos M e 1)
-                self.doc.tipo_de_credito = Some(credito);
-
-                // Regra de Negócio: Código de Importação define explicitamente a Origem
-                if credito == TipoDeCredito::Importacao {
-                    self.doc.indicador_de_origem = Some(IndicadorOrigem::Importacao);
-                }
-            } else {
-                // Caso 2: Fallback Heurístico (Blocos A, C, D, F)
-                // Verifica presença de valores e CST de crédito (50..56)
-                let tem_aliquota = self.doc.aliq_pis.unwrap_or_default() > 0.0
-                    || self.doc.aliq_cofins.unwrap_or_default() > 0.0;
-
-                let cst_basico = self.doc.cst.is_some_and(|c| (50..=56).contains(&c));
-
-                if tem_aliquota && cst_basico {
-                    self.doc.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
-                }
+            // Sincronização de Contexto:
+            // Se o Tipo de Crédito for Importação (ex: via código 108), forçamos a origem.
+            if self.doc.tipo_de_credito == Some(TipoDeCredito::Importacao) {
+                self.doc.indicador_de_origem = Some(IndicadorOrigem::Importacao);
             }
         }
 
         self.doc.format();
         self.doc
+    }
+}
+
+/// Determina o `TipoDeCredito` com base nas regras do Guia Prático da EFD Contribuições.
+fn determinar_tipo_de_credito(
+    cst_cofins: Option<u16>,
+    aliq_pis: Option<f64>,
+    aliq_cofins: Option<f64>,
+    cod_credito: Option<u16>,
+    cfop: Option<u16>, // Alterado: Recebe o dado bruto (CFOP) ao invés do derivado
+) -> Option<TipoDeCredito> {
+    // 1. Prioridade Absoluta: Código do Crédito Informado (Blocos M e 1)
+    if let Some(credito) = cod_credito
+        .filter(|&cod| TipoDeRateio::from_u16(cod / 100).is_some())
+        .and_then(|c| TipoDeCredito::from_u16(c % 100))
+    {
+        return Some(credito);
+    }
+
+    // 2. Heurística (Fallback): Baseada em Alíquotas, CFOP e CST
+    let pis = aliq_pis.unwrap_or_default();
+    let cof = aliq_cofins.unwrap_or_default();
+
+    if !pis.eh_maior_que_zero() && !cof.eh_maior_que_zero() {
+        return None;
+    }
+
+    // Define origem baseada no CFOP (Faixa 3000-3999 é Importação)
+    let is_importacao = cfop.is_some_and(|c| (3000..=3999).contains(&c));
+
+    match (is_importacao, cst_cofins) {
+        // Regra A: Importação
+        (true, _) => Some(TipoDeCredito::Importacao),
+
+        // Regra B: Mercado Interno + CST Básico (50-56)
+        (false, Some(50..=56)) => {
+            let is_basica = pis.eh_igual(ALIQ_BASICA_PIS) && cof.eh_igual(ALIQ_BASICA_COF);
+            Some(if is_basica {
+                TipoDeCredito::AliquotaBasica
+            } else {
+                TipoDeCredito::AliquotasDiferenciadas
+            })
+        }
+
+        // Regra C: Mercado Interno + Crédito Presumido (CST 60-66)
+        (false, Some(60..=66)) => {
+            // A função `cred_presumido` deve conter a lógica específica da agroindústria/transportes
+            if cred_presumido(pis, cof) {
+                Some(TipoDeCredito::PresumidoAgroindustria)
+            } else {
+                Some(TipoDeCredito::OutrosCreditosPresumidos)
+            }
+        }
+
+        _ => None,
     }
 }
 
