@@ -443,9 +443,10 @@ pub fn parse_file_info(info: &mut Info) -> EFDResult<Vec<DocsFiscais>> {
             let data_emissao: Option<NaiveDate> = get_naive_date(data_doc);
 
             // Data da Entrada / Aquisição / Execução ou da Saída / Prestação / Conclusão
-            // dt_lan: Esta coluna não necessariamente possui informação de data
-            let dt_lan: &str = hashmap.get("dt_lan").map_or("", |data| data);
-            let data_entrada: Option<NaiveDate> = get_naive_date(dt_lan);
+            // dt_entrada: Esta coluna não necessariamente possui informação de data
+            let data_entrada = hashmap.get("dt_entrada")
+                .map(String::as_str)       // Converte Option<&String> para Option<&str>
+                .and_then(get_naive_date); // Só executa se o anterior for Some
 
             let cod_part = hashmap.get("COD_PART").map_or("", |v| v);
             let mut part_cnpj = info

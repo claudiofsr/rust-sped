@@ -255,8 +255,8 @@ impl_dopai!(RegistroA100, { dt_emissao: dt_doc, dt_entrada: dt_exe_serv, chave: 
 impl_filho!(RegistroA170, { val_item: vl_item, cst_pis: cst_pis, cst_cof: cst_cofins, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, descr: descr_compl });
 
 // Bloco C
-impl_geral!(RegistroC010, { cnpj: cnpj });
-impl_dopai!(RegistroC100, { dt_emissao: dt_doc, chave: chv_nfe, part: cod_part, modelo: cod_mod, num: num_doc });
+// impl_geral!(RegistroC010, { cnpj: cnpj });
+impl_dopai!(RegistroC100, { dt_entrada: dt_e_s, dt_emissao: dt_doc, chave: chv_nfe, part: cod_part, modelo: cod_mod, num: num_doc });
 impl_filho!(RegistroC170, { val_item: vl_item, cst_pis: cst_pis, cst_cof: cst_cofins, cfop: cfop, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins, cod_item: cod_item, cod_nat: cod_nat, cod_cta: cod_cta, bc_icms: vl_bc_icms, aliq_icms: aliq_icms, val_icms: vl_icms });
 impl_filho!(RegistroC175, { val_item: vl_opr, cst_pis: cst_pis, cst_cof: cst_cofins, cfop: cfop, aliq_pis: aliq_pis, val_pis: vl_pis, aliq_cof: aliq_cofins, val_cof: vl_cofins, bc_cof: vl_bc_cofins });
 impl_dopai!(RegistroC180, { dt_emissao: dt_doc_ini, modelo: cod_mod });
@@ -882,15 +882,15 @@ impl<'a> BlockCProcessor<'a> {
                     self.correlation.clear();
                 }
                 "C170" => {
-                    if let (Ok(r), Some(p)) = (record.downcast_ref::<RegistroC170>(), self.c100) {
+                    if let (Ok(filho), Some(pai)) = (record.downcast_ref::<RegistroC170>(), self.c100) {
                         let mut b = DocsBuilder::from_child_and_parent(
                             ctx,
-                            r,
-                            Some(p),
+                            filho,
+                            Some(pai),
                             self.current_cnpj.as_ref(),
                         );
-                        b.doc.data_entrada = p.dt_e_s;
-                        b.doc.num_item = r.num_item.parse_opt();
+                        b.doc.data_entrada = pai.dt_e_s;
+                        b.doc.num_item = filho.num_item.parse_opt();
                         docs.push(b.build());
                     }
                 }
