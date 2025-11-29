@@ -576,7 +576,7 @@ fn add_row_efd(
     )?;
 
     add_naidate_column(row, 30, colunas.data_emissao, sheet, width_map, fmt_date)?;
-    add_naidate_column(row, 31, colunas.data_lancamento, sheet, width_map, fmt_date)?;
+    add_naidate_column(row, 31, colunas.data_entrada, sheet, width_map, fmt_date)?;
     add_float64_column(row, 32, colunas.valor_item, sheet, width_map, fmt_number)?;
     add_float64_column(row, 33, colunas.valor_bc, sheet, width_map, fmt_number)?;
     add_float64_column(row, 34, colunas.aliq_pis, sheet, width_map, fmt_aliquota)?;
