@@ -689,18 +689,30 @@ fn determinar_tipo_de_credito(
     cod_credito: Option<u16>,
     cfop: Option<u16>, // Alterado: Recebe o dado bruto (CFOP) ao invés do derivado
 ) -> Option<TipoDeCredito> {
+    // ------------------------------------------------------------------------
     // 1. Prioridade Absoluta: Código do Crédito Informado (Blocos M e 1)
+    // ------------------------------------------------------------------------
+    // O código SPED é composto por 3 dígitos: XYY.
+    // X (centena) = Tipo de Rateio (1 a 4).
+    // YY (resto)  = Tipo de Crédito (1 a 99).
     if let Some(credito) = cod_credito
-        .filter(|&cod| TipoDeRateio::from_u16(cod / 100).is_some())
-        .and_then(|c| TipoDeCredito::from_u16(c % 100))
+        .filter(|&cod| TipoDeRateio::from_u16(cod / 100).is_some()) // Valida o digito 'X'
+        .and_then(|cod| TipoDeCredito::from_u16(cod % 100))
+    // Extrai e converte 'YY'
     {
         return Some(credito);
     }
 
-    // 2. Heurística (Fallback): Baseada em Alíquotas, CFOP e CST
+    // ------------------------------------------------------------------------
+    // 2. Heurística (Fallback): Baseada em Alíquotas, Origem e CST
+    // ------------------------------------------------------------------------
+
+    // Normaliza valores para f64 (None vira 0.0) para simplificar comparações
     let pis = aliq_pis.unwrap_or_default();
     let cof = aliq_cofins.unwrap_or_default();
 
+    // Pré-condição: Para haver crédito, deve haver alíquota positiva em pelo menos um tributo.
+    // Utiliza o trait FloatExt para evitar falsos positivos com ruído numérico.
     if !pis.eh_maior_que_zero() && !cof.eh_maior_que_zero() {
         return None;
     }
@@ -714,12 +726,14 @@ fn determinar_tipo_de_credito(
 
         // Regra B: Mercado Interno + CST Básico (50-56)
         (false, Some(50..=56)) => {
-            let is_basica = pis.eh_igual(ALIQ_BASICA_PIS) && cof.eh_igual(ALIQ_BASICA_COF);
-            Some(if is_basica {
-                TipoDeCredito::AliquotaBasica
+            // Verifica se as alíquotas correspondem exatamente ao básico (1.65% e 7.6%)
+            let aliquotas_basicas = pis.eh_igual(ALIQ_BASICA_PIS) && cof.eh_igual(ALIQ_BASICA_COF);
+
+            if aliquotas_basicas {
+                Some(TipoDeCredito::AliquotaBasica)
             } else {
-                TipoDeCredito::AliquotasDiferenciadas
-            })
+                Some(TipoDeCredito::AliquotasDiferenciadas)
+            }
         }
 
         // Regra C: Mercado Interno + Crédito Presumido (CST 60-66)
