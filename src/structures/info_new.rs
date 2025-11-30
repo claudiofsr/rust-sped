@@ -11,8 +11,13 @@ use crate::{
 
 // ============================================================================
 // SEÇÃO 1: EXTENSIONS E TRAITS
-// Abstrações para normalizar o acesso aos dados dos registros de forma polimórfica
+// Abstrações para normalizar o acesso aos dados dos registros de forma polimórfica.
+// Isso permite que o `DocsBuilder` não precise saber o tipo exato da struct.
 // ============================================================================
+
+// ----------------------------------------------------------------------------
+// TRAITS
+// ----------------------------------------------------------------------------
 
 /// Extension para facilitar a conversão de `Option<Decimal>` para `f64`.
 trait DecimalExt {
@@ -45,7 +50,7 @@ where
 }
 
 // ----------------------------------------------------------------------------
-// TRAITS DE CATEGORIZAÇÃO DE REGISTROS
+// CATEGORIZAÇÃO DE REGISTROS
 // ----------------------------------------------------------------------------
 
 /// Representa registros autônomos que contêm informações fiscais diretas.
@@ -177,7 +182,7 @@ pub trait RegistroFilho: SpedRecordTrait {
 
 // ============================================================================
 // SEÇÃO 2: MACROS (BOILERPLATE REDUCTION)
-// Implementam as Traits automaticamente mapeando os campos das structs
+// Redução de boilerplate para mapear campos das structs para as Traits.
 // ============================================================================
 
 // A macro impl_dopai! é uma "máquina de escrever código". O objetivo dela é automatizar a implementação da
@@ -390,10 +395,10 @@ impl CorrelationManager {
                 v.to_f64().unwrap_or_default(),
             );
 
-            // 2. Armazena Cache Fraco (Sempre)
+            // 2. Armazena Cache Fraco (CST + Valor)
             self.weak_cache.insert((c.clone(), v_item), data);
 
-            // 3. Armazena Cache Forte (Se houver contexto extra)
+            // 3. Armazena Cache Forte (Se houver contexto de CFOP ou Participante)
             let cf = cfop.filter(|s| !s.is_empty()).map(ToString::to_string);
             let pt = part.filter(|s| !s.is_empty()).map(ToString::to_string);
 
@@ -434,7 +439,8 @@ impl CorrelationManager {
 
 // ============================================================================
 // SEÇÃO 5: BUILDER
-// Padrão Fluent Builder para construção de DocsFiscais
+// Padrão Builder para construção de DocsFiscais, aplicando regras de negócio
+// e recuperando dados do Contexto Global.
 // ============================================================================
 
 struct DocsBuilder<'a> {
@@ -452,7 +458,7 @@ impl<'a> DocsBuilder<'a> {
     ) -> Self {
         let mut doc = DocsFiscais {
             linhas: 1,
-            arquivo_efd: ctx.path.to_string_lossy().to_string(),
+            arquivo_efd: ctx.path.display().to_string(),
             num_linha_efd: Some(line_num),
             // Usa o CNPJ do contexto local (Blc C010/D010) ou o global do arquivo
             estabelecimento_cnpj: current_cnpj
@@ -472,7 +478,9 @@ impl<'a> DocsBuilder<'a> {
         Self { doc, ctx }
     }
 
-    /// Cria doc a partir de um registro geral (sem pai), extraindo dados comuns.
+    /// Constrói a partir de RegistroGeral (Registros autônomos ou sem pai explícito),
+    /// extraindo dados comuns.
+    ///
     /// Usa ?Sized para permitir Trait Objects (dyn RegistroGeral).
     fn from_geral<G>(ctx: &'a SpedContext, reg: &G, current_cnpj: Option<&String>) -> Self
     where
@@ -625,6 +633,13 @@ impl<'a> DocsBuilder<'a> {
         F: RegistroFilho + ?Sized,
         P: RegistroPai + ?Sized,
     {
+        // Se já tem PIS, não precisa correlacionar
+        let valor_pis_eh_positivo = self.doc.valor_pis.is_some_and(|p| p.eh_maior_que_zero());
+        let aliq_pis_eh_positivo = self.doc.aliq_pis.is_some_and(|p| p.eh_maior_que_zero());
+        if valor_pis_eh_positivo && aliq_pis_eh_positivo {
+            return self;
+        }
+
         let part = filho
             .get_participante_override()
             .or_else(|| pai.and_then(|p| p.get_participante_cod()));
@@ -637,10 +652,11 @@ impl<'a> DocsBuilder<'a> {
         ) {
             self.doc.aliq_pis = Some(aliq);
             self.doc.valor_pis = Some(val);
-        } else if let Some(ac) = self.doc.aliq_cofins {
-            if (ac - 7.6).abs() < 0.001 {
+        } else if let Some(aliq_cofins) = self.doc.aliq_cofins {
+            // Fallback heurístico simples se não achar no cache
+            if aliq_cofins.eh_igual(ALIQ_BASICA_COF) {
                 self.doc.aliq_pis = Some(1.65);
-            } else if (ac - 3.0).abs() < 0.001 {
+            } else if aliq_cofins.eh_igual(3.0) {
                 self.doc.aliq_pis = Some(0.65);
             }
         }
@@ -882,7 +898,9 @@ impl<'a> BlockCProcessor<'a> {
                     self.correlation.clear();
                 }
                 "C170" => {
-                    if let (Ok(filho), Some(pai)) = (record.downcast_ref::<RegistroC170>(), self.c100) {
+                    if let (Ok(filho), Some(pai)) =
+                        (record.downcast_ref::<RegistroC170>(), self.c100)
+                    {
                         let mut b = DocsBuilder::from_child_and_parent(
                             ctx,
                             filho,

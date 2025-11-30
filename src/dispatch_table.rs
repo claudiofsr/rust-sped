@@ -401,7 +401,10 @@ fn ler_registro_c170(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
             "Descr_Complementar".to_string(),
             valores["DESCR_COMPL"].to_string(),
         ),
-        ("dt_entrada".to_string(), info.reg_c100["DT_E_S"].to_string()),
+        (
+            "dt_entrada".to_string(),
+            info.reg_c100["DT_E_S"].to_string(),
+        ),
     ]);
 
     // adicionar info do reg C100 em hmap
@@ -842,7 +845,10 @@ fn ler_registro_c505(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     let chv_doc = info.reg_c500.get("CHV_DOCe").map_or("", |v| v);
     hmap.insert("CHV_NFE".to_string(), chv_doc.to_string());
-    hmap.insert("dt_entrada".to_string(), info.reg_c500["DT_ENT"].to_string());
+    hmap.insert(
+        "dt_entrada".to_string(),
+        info.reg_c500["DT_ENT"].to_string(),
+    );
 
     hmap.extend(info.reg_c500.clone());
     hmap.extend(valores);
@@ -948,7 +954,10 @@ fn ler_registro_d105(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
 
     // inicialmente, padronizar nomes de alguns campos e adicionar em hmap
     hmap.insert("CHV_NFE".to_string(), info.reg_d100["CHV_CTE"].to_string());
-    hmap.insert("dt_entrada".to_string(), info.reg_d100["DT_A_P"].to_string());
+    hmap.insert(
+        "dt_entrada".to_string(),
+        info.reg_d100["DT_A_P"].to_string(),
+    );
 
     hmap.extend(info.reg_d100.clone());
     hmap.extend(valores);
@@ -1062,7 +1071,10 @@ fn ler_registro_d505(info: &mut Info, valores: HashMap<String, String>) -> EFDRe
     let linha_da_efd = get_and_parse_usize(&valores, "linha_da_efd")?;
 
     // adicionar informações de alguns campos do reg D500 em hmap
-    hmap.insert("dt_entrada".to_string(), info.reg_d500["DT_A_P"].to_string());
+    hmap.insert(
+        "dt_entrada".to_string(),
+        info.reg_d500["DT_A_P"].to_string(),
+    );
 
     hmap.extend(info.reg_d500.clone());
     hmap.extend(valores);
