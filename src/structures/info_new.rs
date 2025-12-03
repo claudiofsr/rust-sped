@@ -477,22 +477,28 @@ impl_filho!(RegistroF500, {
 impl_filho!(RegistroF510, {
     get_valor_item: vl_rec_caixa, get_info_compl: info_compl,
     get_cst_pis: cst_pis, get_cst_cofins: cst_cofins,
-    //get_aliq_pis: aliq_pis, get_aliq_cofins: aliq_cofins,
     get_valor_pis: vl_pis, get_valor_cofins: vl_cofins,
-    //get_valor_bc_pis: vl_bc_pis, get_valor_bc_cofins: vl_bc_cofins,
     get_cod_mod: cod_mod, get_cfop: cfop, get_cod_cta: cod_cta,
 });
 impl_filho!(RegistroF525, {
     get_valor_item: vl_rec, get_info_compl: info_compl,
     get_cst_pis: cst_pis, get_cst_cofins: cst_cofins,
-    //get_aliq_pis: aliq_pis, get_aliq_cofins: aliq_cofins,
-    //get_valor_pis: vl_pis, get_valor_cofins: vl_cofins,
-    //get_valor_bc_pis: vl_bc_pis, get_valor_bc_cofins: vl_bc_cofins,
-    //get_cod_mod: cod_mod, get_cfop: cfop,
     get_cod_cta: cod_cta,
 });
-impl_filho!(RegistroF550, { get_valor_item: vl_rec_comp, get_info_compl: info_compl });
-impl_filho!(RegistroF560, { get_valor_item: vl_rec_comp, get_info_compl: info_compl });
+impl_filho!(RegistroF550, {
+    get_valor_item: vl_rec_comp, get_info_compl: info_compl,
+    get_cst_pis: cst_pis, get_cst_cofins: cst_cofins,
+    get_aliq_pis: aliq_pis, get_aliq_cofins: aliq_cofins,
+    get_valor_pis: vl_pis, get_valor_cofins: vl_cofins,
+    get_valor_bc_pis: vl_bc_pis, get_valor_bc_cofins: vl_bc_cofins,
+    get_cod_mod: cod_mod, get_cfop: cfop, get_cod_cta: cod_cta,
+});
+impl_filho!(RegistroF560, {
+    get_valor_item: vl_rec_comp, get_info_compl: info_compl,
+    get_cst_pis: cst_pis, get_cst_cofins: cst_cofins,
+    get_valor_pis: vl_pis, get_valor_cofins: vl_cofins,
+    get_cod_mod: cod_mod, get_cfop: cfop, get_cod_cta: cod_cta,
+});
 
 // Bloco I
 impl_filho!(RegistroI100, {
@@ -504,8 +510,14 @@ impl_filho!(RegistroI100, {
 // Bloco M (Campos Específicos em M505)
 
 //impl_filho!(RegistroM500, { get_cod_cred: cod_cred, get_aliq_cofins: aliq_cofins, get_valor_bc_cofins: vl_bc_cofins });
-impl_filho!(RegistroM105, { get_cst_pis: cst_pis, get_valor_bc_pis: vl_bc_pis });
-impl_filho!(RegistroM505, { get_cst_cofins: cst_cofins, get_valor_bc_cofins: vl_bc_cofins });
+impl_filho!(RegistroM105, {
+    get_cst_pis: cst_pis, get_valor_bc_pis: vl_bc_pis,
+    get_nat_bc_cred: nat_bc_cred, get_info_compl: desc_cred,
+});
+impl_filho!(RegistroM505, {
+    get_cst_cofins: cst_cofins, get_valor_bc_cofins: vl_bc_cofins,
+    get_nat_bc_cred: nat_bc_cred, get_info_compl: desc_cred,
+});
 
 // Bloco 1
 impl_filho!(Registro1100, { get_cod_cred: cod_cred });
