@@ -554,19 +554,15 @@ impl CorrelationManager {
         self.strong_cache.clear();
     }
 
-    /// Helper privado para gerar a chave fraca de forma consistente
-    #[inline]
-    fn make_weak_key(cst: &str, val: Decimal) -> WeakKey {
-        (Arc::from(cst), val)
-    }
-
-    /// Helper privado para gerar a chave forte, lidando com os Options e Arcs
+    /// Helper privado.
+    /// Retorna Option<StrongKey> apenas se houver contexto adicional (CFOP ou Part).
     fn make_strong_key(
-        cst: Arc<str>, // Reaproveita o Arc da chave fraca se possível, ou cria novo
+        cst: Arc<str>,
         val: Decimal,
         cfop: Option<&str>,
         part: Option<&str>,
     ) -> Option<StrongKey> {
+        // filter + map é a forma perfeita de transformar Option<&str> vazio em None
         let cf = cfop.filter(|s| !s.is_empty()).map(Arc::from);
         let pt = part.filter(|s| !s.is_empty()).map(Arc::from);
 
@@ -589,22 +585,23 @@ impl CorrelationManager {
         cfop: Option<&str>,
         part: Option<&str>,
     ) {
+        // Pattern matching em tupla para garantir que todos os dados obrigatórios existem
         if let (Some(c), Some(v_item), Some(a), Some(v)) = (cst, val_item, aliq, val) {
             let data = (
                 a.to_f64().unwrap_or_default(),
                 v.to_f64().unwrap_or_default(),
             );
 
-            // 1. Gera chave fraca
-            let weak_key = Self::make_weak_key(c, v_item);
+            // Aloca o Arc apenas uma vez aqui
+            let cst_arc: Arc<str> = Arc::from(c.as_str());
 
-            // Clone do Arc<str> (barato) para usar na chave forte
-            let cst_clone = weak_key.0.clone();
+            // 1. Armazena na Cache Fraca
+            // Clone do Arc é barato (apenas incrementa contador)
+            self.weak_cache.insert((cst_arc.clone(), v_item), data);
 
-            self.weak_cache.insert(weak_key, data);
-
-            // 2. Gera chave forte (se houver contexto)
-            if let Some(strong_key) = Self::make_strong_key(cst_clone, v_item, cfop, part) {
+            // 2. Armazena na Cache Forte (se houver contexto)
+            // Move cst_arc (sem clone extra) se possível, ou usa o clone anterior
+            if let Some(strong_key) = Self::make_strong_key(cst_arc, v_item, cfop, part) {
                 self.strong_cache.insert(strong_key, data);
             }
         }
@@ -621,18 +618,20 @@ impl CorrelationManager {
     ) -> Option<PisData> {
         let (c, val) = cst.zip(val_item)?;
 
-        let cst: Arc<str> = Arc::from(c);
+        // Nota: Alocação temporária necessária para lookup em HashMap de Arc.
+        // Em Rust Stable, não há como buscar HashMap<(Arc<str>,..)> usando &str sem alocar.
+        let cst_arc: Arc<str> = Arc::from(c);
 
-        // 1. Tenta Chave Forte (Se houver contexto de busca)
-        if let Some(strong_key) = Self::make_strong_key(cst.clone(), val, cfop, part)
-            && let Some(res) = self.strong_cache.get(&strong_key)
+        // 1. Tenta Chave Forte
+        // Refatorado para não usar "let chains" (&& let) que é instável
+        if let Some(pis_data) = Self::make_strong_key(cst_arc.clone(), val, cfop, part)
+            .and_then(|key| self.strong_cache.get(&key))
         {
-            return Some(*res);
+            Some(*pis_data)
+        } else {
+            // 2. Fallback: Chave Fraca
+            self.weak_cache.get(&(cst_arc, val)).copied()
         }
-
-        // 2. Fallback: Chave Fraca
-        // Aqui criamos um Arc temporário apenas para o lookup se a chave forte falhar
-        self.weak_cache.get(&(cst, val)).copied()
     }
 }
 
