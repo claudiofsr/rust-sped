@@ -648,6 +648,31 @@ struct ParentHeader<'a> {
     vl_icms: Option<Decimal>,
 }
 
+impl<'a> ParentHeader<'a> {
+    /// Extrair dados de RegistroPai
+    fn from_record<P>(pai: Option<&'a P>) -> Self
+    where
+        P: RegistroPai + ?Sized,
+    {
+        // Se pai for None, retorna Default (Zero Cost)
+        // Se pai existir, mapeia os campos
+        pai.map(|p| Self {
+            dt_emissao: p.get_dt_emissao(),
+            dt_entrada: p.get_dt_entrada(),
+            chave: p.get_chave(),
+            cod_cta: p.get_cod_cta(),
+            cod_item: p.get_cod_item(),
+            cod_mod: p.get_cod_mod(),
+            cod_ncm: p.get_cod_ncm(),
+            cod_part: p.get_cod_part(),
+            num_doc: p.get_num_doc(),
+            vl_bc_icms: p.get_valor_bc_icms(),
+            vl_icms: p.get_valor_icms(),
+        })
+        .unwrap_or_default()
+    }
+}
+
 #[derive(Clone)]
 struct DocsBuilder<'a> {
     header: ParentHeader<'a>, // [STACK] ~100 bytes (apenas ponteiros e números)
@@ -699,28 +724,6 @@ impl<'a> DocsBuilder<'a> {
         }
     }
 
-    /// Método auxiliar para extrair dados do Pai.
-    /// Retorna struct Copy/Clone barata.
-    fn extract_parent_data<P>(pai: Option<&'_ P>) -> ParentHeader<'_>
-    where
-        P: RegistroPai + ?Sized,
-    {
-        pai.map(|p| ParentHeader {
-            dt_emissao: p.get_dt_emissao(),
-            dt_entrada: p.get_dt_entrada(),
-            chave: p.get_chave(),
-            cod_cta: p.get_cod_cta(),
-            cod_item: p.get_cod_item(),
-            cod_mod: p.get_cod_mod(),
-            cod_ncm: p.get_cod_ncm(),
-            cod_part: p.get_cod_part(),
-            num_doc: p.get_num_doc(),
-            vl_bc_icms: p.get_valor_bc_icms(),
-            vl_icms: p.get_valor_icms(),
-        })
-        .unwrap_or_default()
-    }
-
     /// Constrói o documento de forma fluente.
     /// Extrai os dados do Pai uma única vez e os propaga.
     /// O Header é calculado aqui e movido para dentro do Builder.
@@ -745,13 +748,13 @@ impl<'a> DocsBuilder<'a> {
 
         // 2. Contexto: Extrai dados do Pai e move para dentro do Builder (Zero-Copy)
         // Isso centraliza as referências do pai em um único struct otimizado (Stack).
-        builder.header = Self::extract_parent_data(pai);
+        builder.header = ParentHeader::from_record(pai);
 
         // 3. Preenchimento: Pipeline funcional (Fluent API)
         // Cada etapa consome o builder, aplica regras de negócio e o retorna modificado.
         builder
             .with_header(filho) // Mescla dados de cabeçalho (Datas, Chaves)
-            .with_item_and_part(filho) // Resolve Participante e Produto
+            .with_itens_and_participant(filho) // Resolve Itens e Participante
             .with_values_and_classification(filho) // Aplica valores e CSTs
     }
 
@@ -790,53 +793,71 @@ impl<'a> DocsBuilder<'a> {
         self
     }
 
-    fn with_item_and_part<F>(mut self, filho: &F) -> Self
+    fn with_itens_and_participant<F>(mut self, filho: &F) -> Self
     where
         F: RegistroFilho + ?Sized,
     {
-        // 1. Resolver Item (Pai -> Filho)
+        // 1. Resolve Itens e Produto
         let cod_item = self.header.cod_item.or_else(|| filho.get_cod_item());
+        self.apply_itens_info(cod_item);
 
+        // 2. Resolve Participante (Lógica de precedência clara)
+        let cod_part = filho
+            .get_part_override() // 1. Override do Filho
+            .or_else(|| filho.get_cod_part()) // 2. Normal do Filho
+            .or(self.header.cod_part); // 3. Herança do Pai
+
+        self.apply_participant_info(cod_part);
+
+        self
+    }
+
+    /// Aplica dados do produto se o código for válido
+    fn apply_itens_info(&mut self, cod_item: Option<&str>) {
+        // Encadeamento funcional com if-let-chain (Rust moderno)
         if let Some(info) = cod_item.and_then(|c| self.ctx.produtos.get(c)) {
+            // Só aplica NCM se estiver vazio (regra de negócio preservada)
             if self.doc.cod_ncm.is_empty() {
                 self.doc.cod_ncm = info.get("COD_NCM").cloned().unwrap_or_default();
             }
+
+            // map() é ótimo para transformações opcionais
             if let Some(tipo) = info.get("TIPO_ITEM") {
                 self.doc.tipo_item = obter_tipo_do_item(tipo).into();
             }
+
             if let Some(desc) = info.get("DESCR_ITEM") {
                 self.doc.descr_item = Self::to_upper_arc(desc);
             }
         }
+    }
 
-        // 2. Resolver Participante (Override -> Filho -> Pai)
-        let cod_participante = filho
-            .get_part_override()
-            .or_else(|| filho.get_cod_part())
-            .or(self.header.cod_part);
+    /// Aplica dados do participante
+    fn apply_participant_info(&mut self, cod_part: Option<&str>) {
+        // filter: Ignora strings vazias
+        let Some(cod) = cod_part.filter(|s| !s.is_empty()) else {
+            return;
+        };
 
-        if let Some(cod) = cod_participante.filter(|s| !s.is_empty()) {
-            if let Some(hash) = self.ctx.participantes.get(cod) {
-                self.doc.participante_cnpj = hash.get("CNPJ").cloned().unwrap_or_default();
-                self.doc.participante_cpf = hash.get("CPF").cloned().unwrap_or_default();
-                self.doc.participante_nome = hash.get("NOME").cloned().unwrap_or_default();
-            } else {
-                match cod.len() {
-                    14 => {
-                        self.doc.participante_cnpj = cod.into();
-                        self.doc.participante_nome =
-                            self.ctx.obter_nome_participante(Some(cod), None);
-                    }
-                    11 => {
-                        self.doc.participante_cpf = cod.into();
-                        self.doc.participante_nome =
-                            self.ctx.obter_nome_participante(None, Some(cod));
-                    }
-                    _ => {}
+        if let Some(hash) = self.ctx.participantes.get(cod) {
+            // Zero-copy clones
+            self.doc.participante_cnpj = hash.get("CNPJ").cloned().unwrap_or_default();
+            self.doc.participante_cpf = hash.get("CPF").cloned().unwrap_or_default();
+            self.doc.participante_nome = hash.get("NOME").cloned().unwrap_or_default();
+        } else {
+            // Fallback (CPF/CNPJ direto no código)
+            match cod.len() {
+                14 => {
+                    self.doc.participante_cnpj = cod.into();
+                    self.doc.participante_nome = self.ctx.obter_nome_participante(Some(cod), None);
                 }
+                11 => {
+                    self.doc.participante_cpf = cod.into();
+                    self.doc.participante_nome = self.ctx.obter_nome_participante(None, Some(cod));
+                }
+                _ => {}
             }
         }
-        self
     }
 
     fn with_values_and_classification<F>(mut self, filho: &F) -> Self
@@ -846,8 +867,8 @@ impl<'a> DocsBuilder<'a> {
         self.doc.num_item = filho.get_num_item().parse_opt();
 
         // Se houver descrição complementar, ela tem precedência e deve ser uppercase
-        if let Some(compl) = filho.get_descr_compl() {
-            self.doc.descr_item = Self::to_upper_arc(compl);
+        if let Some(compl) = filho.get_descr_compl().map(Self::to_upper_arc) {
+            self.doc.descr_item = compl;
         }
 
         // Mapeamento direto de valores
@@ -866,26 +887,30 @@ impl<'a> DocsBuilder<'a> {
         self.doc.valor_iss = filho.get_valor_iss().to_f64_opt();
         self.doc.aliq_icms = filho.get_aliq_icms().to_f64_opt();
 
-        // Lookups
-        if let Some(cod) = filho.get_cod_nat()
-            && let Some(desc) = self.ctx.nat_operacao.get(cod)
+        // Lookup de Natureza
+        if let Some(desc) = filho
+            .get_cod_nat()
+            .and_then(|c| self.ctx.nat_operacao.get(c))
         {
             self.doc.nat_operacao = desc.clone();
         }
 
+        // Lookup Contábil
         // Prioridade das informações: Filho -> Pai
         let codigo_da_conta = filho.get_cod_cta().or(self.header.cod_cta);
-        if let Some(cod) = codigo_da_conta {
-            self.doc.nome_da_conta = self
-                .ctx
-                .contabil
-                .get(cod)
-                .and_then(|h| h.get("NOME_CTA"))
-                .cloned()
-                .unwrap_or_default();
-        }
+        self.apply_account_name(codigo_da_conta);
 
         self
+    }
+
+    /// Helper para buscar e aplicar nome da conta
+    fn apply_account_name(&mut self, cod_cta: Option<&str>) {
+        if let Some(nome) = cod_cta
+            .and_then(|c| self.ctx.contabil.get(c))
+            .and_then(|h| h.get("NOME_CTA"))
+        {
+            self.doc.nome_da_conta = nome.clone();
+        }
     }
 
     // Helper para converter string para Arc<str> uppercase de forma eficiente
@@ -894,9 +919,12 @@ impl<'a> DocsBuilder<'a> {
     // "Nota 123" -> Retorna Arc("NOTA 123") (Alocação necessária)
     fn to_upper_arc(s: &str) -> Arc<str> {
         if s.chars().any(|c| c.is_lowercase()) {
-            return Arc::from(s.to_uppercase().as_str());
+            // Aloca nova string apenas se necessário
+            Arc::from(s.to_uppercase().as_str())
+        } else {
+            // Zero-allocation (apenas envolve o ponteiro)
+            Arc::from(s)
         }
-        Arc::from(s)
     }
 
     fn resolve_pis_correlation<F>(mut self, manager: &CorrelationManager, filho: &F) -> Self
