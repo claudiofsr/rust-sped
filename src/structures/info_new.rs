@@ -7,7 +7,7 @@ use crate::{
     MesesDoAno, SpedContext, SpedFile, SpedRecord, SpedRecordTrait, StringParser, TipoDeCredito,
     TipoDeRateio, TipoOperacao, blocos::*, capture_cnpj, cred_presumido, impl_dopai, impl_filho,
     obter_cod_da_natureza_da_bc, obter_modelo_do_documento_fiscal, obter_tipo_do_item,
-    process_child_and_parent, process_corr, process_only_child, store_pis,
+    process_child_and_parent, process_correlations, process_only_child, store_pis,
 };
 
 /*
@@ -1120,7 +1120,7 @@ impl<'a> BlocoC<'a> {
                     self.correlacao.clear();
                 }
                 "C181" => store_pis!(self.correlacao, record, RegistroC181),
-                "C185" => process_corr!(
+                "C185" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1169,7 +1169,7 @@ impl<'a> BlocoC<'a> {
                     self.correlacao.clear();
                 }
                 "C381" => store_pis!(self.correlacao, record, RegistroC381),
-                "C385" => process_corr!(
+                "C385" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1193,7 +1193,7 @@ impl<'a> BlocoC<'a> {
                 }
                 "C405" => self.c405 = record.downcast_ref().ok(),
                 "C481" => store_pis!(self.correlacao, record, RegistroC481),
-                "C485" => process_corr!(
+                "C485" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1207,7 +1207,7 @@ impl<'a> BlocoC<'a> {
                     self.correlacao.clear();
                 }
                 "C491" => store_pis!(self.correlacao, record, RegistroC491),
-                "C495" => process_corr!(
+                "C495" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1221,7 +1221,7 @@ impl<'a> BlocoC<'a> {
                     self.correlacao.clear();
                 }
                 "C501" => store_pis!(self.correlacao, record, RegistroC501),
-                "C505" => process_corr!(
+                "C505" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1235,7 +1235,7 @@ impl<'a> BlocoC<'a> {
                     self.correlacao.clear();
                 }
                 "C601" => store_pis!(self.correlacao, record, RegistroC601),
-                "C605" => process_corr!(
+                "C605" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1290,7 +1290,7 @@ impl<'a> BlocoD<'a> {
                     self.correlacao.clear();
                 }
                 "D101" => store_pis!(self.correlacao, record, RegistroD101),
-                "D105" => process_corr!(
+                "D105" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1305,7 +1305,7 @@ impl<'a> BlocoD<'a> {
                     self.correlacao.clear();
                 }
                 "D201" => store_pis!(self.correlacao, record, RegistroD201),
-                "D205" => process_corr!(
+                "D205" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1323,7 +1323,7 @@ impl<'a> BlocoD<'a> {
                     self.correlacao.clear();
                 }
                 "D501" => store_pis!(self.correlacao, record, RegistroD501),
-                "D505" => process_corr!(
+                "D505" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,
@@ -1337,7 +1337,7 @@ impl<'a> BlocoD<'a> {
                     self.correlacao.clear();
                 }
                 "D601" => store_pis!(self.correlacao, record, RegistroD601),
-                "D605" => process_corr!(
+                "D605" => process_correlations!(
                     docs,
                     ctx,
                     self.current_cnpj,

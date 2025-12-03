@@ -286,7 +286,7 @@ macro_rules! process_child_and_parent {
 
 /// Processa registros Filhos com resolução de correlação PIS/COFINS. Ex: C185, D105.
 #[macro_export]
-macro_rules! process_corr {
+macro_rules! process_correlations {
     ($docs:expr, $ctx:expr, $cnpj:expr, $mgr:expr, $rec:expr, $ty:ty, $pai:expr) => {
         if let (Ok(filho), Some(p)) = ($rec.downcast_ref::<$ty>(), $pai) {
             $docs.push(
