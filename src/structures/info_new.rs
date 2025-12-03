@@ -574,11 +574,9 @@ impl CorrelationManager {
     }
 
     /// Armazena dados de PIS.
-    /// Usa `match` para extração segura e limpa dos 4 campos obrigatórios.
-    // Agora o método store fica muito mais limpo:
     fn store(
         &mut self,
-        cst: Option<&String>,
+        cst: Option<&str>,
         val_item: Option<Decimal>,
         aliq: Option<Decimal>,
         val: Option<Decimal>,
@@ -593,7 +591,7 @@ impl CorrelationManager {
             );
 
             // Aloca o Arc apenas uma vez aqui
-            let cst_arc: Arc<str> = Arc::from(c.as_str());
+            let cst_arc: Arc<str> = Arc::from(c);
 
             // 1. Armazena na Cache Fraca
             // Clone do Arc é barato (apenas incrementa contador)
@@ -618,12 +616,11 @@ impl CorrelationManager {
     ) -> Option<PisData> {
         let (c, val) = cst.zip(val_item)?;
 
-        // Nota: Alocação temporária necessária para lookup em HashMap de Arc.
+        // Nota: Alocação temporária necessária para lookup em HashMap.
         // Em Rust Stable, não há como buscar HashMap<(Arc<str>,..)> usando &str sem alocar.
         let cst_arc: Arc<str> = Arc::from(c);
 
         // 1. Tenta Chave Forte
-        // Refatorado para não usar "let chains" (&& let) que é instável
         if let Some(pis_data) = Self::make_strong_key(cst_arc.clone(), val, cfop, part)
             .and_then(|key| self.strong_cache.get(&key))
         {

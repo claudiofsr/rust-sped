@@ -305,7 +305,7 @@ macro_rules! store_pis {
     ($mgr:expr, $rec:expr, $ty:ty) => {
         if let Ok(reg) = $rec.downcast_ref::<$ty>() {
             $mgr.store(
-                reg.cst_pis.as_ref(),
+                reg.cst_pis.as_deref(),
                 reg.vl_item,
                 reg.aliq_pis,
                 reg.vl_pis,

@@ -137,7 +137,7 @@ fn test_correlation_manager_storage_and_retrieval() {
     let part = Some("PART_01");
 
     // 1. Armazenar
-    mgr.store(cst.as_ref(), val_item, aliq, val_pis, cfop, part);
+    mgr.store(cst.as_deref(), val_item, aliq, val_pis, cfop, part);
 
     // 2. Recuperação Forte (Com Contexto)
     let res_strong = mgr.resolve(Some("50"), val_item, Some("1102"), Some("PART_01"));
@@ -162,7 +162,7 @@ fn test_correlation_manager_partial_strong_key() {
 
     // Armazena apenas com CFOP, sem Participante
     mgr.store(
-        Some(&"01".to_string()),
+        Some("01"),
         Some(dec!(100.0)),
         Some(dec!(1.0)),
         Some(dec!(1.0)),
