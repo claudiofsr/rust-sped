@@ -554,8 +554,32 @@ impl CorrelationManager {
         self.strong_cache.clear();
     }
 
+    /// Helper privado para gerar a chave fraca de forma consistente
+    #[inline]
+    fn make_weak_key(cst: &str, val: Decimal) -> WeakKey {
+        (Arc::from(cst), val)
+    }
+
+    /// Helper privado para gerar a chave forte, lidando com os Options e Arcs
+    fn make_strong_key(
+        cst: Arc<str>, // Reaproveita o Arc da chave fraca se possível, ou cria novo
+        val: Decimal,
+        cfop: Option<&str>,
+        part: Option<&str>,
+    ) -> Option<StrongKey> {
+        let cf = cfop.filter(|s| !s.is_empty()).map(Arc::from);
+        let pt = part.filter(|s| !s.is_empty()).map(Arc::from);
+
+        if cf.is_some() || pt.is_some() {
+            Some((cst, val, cf, pt))
+        } else {
+            None
+        }
+    }
+
     /// Armazena dados de PIS.
     /// Usa `match` para extração segura e limpa dos 4 campos obrigatórios.
+    // Agora o método store fica muito mais limpo:
     fn store(
         &mut self,
         cst: Option<&String>,
@@ -565,24 +589,23 @@ impl CorrelationManager {
         cfop: Option<&str>,
         part: Option<&str>,
     ) {
-        // 1. Verifica se os dados mandatórios existem
-        // Nada a fazer se faltar dados básicos
         if let (Some(c), Some(v_item), Some(a), Some(v)) = (cst, val_item, aliq, val) {
-            let data: PisData = (
+            let data = (
                 a.to_f64().unwrap_or_default(),
                 v.to_f64().unwrap_or_default(),
             );
 
-            // Converte para Arc para armazenamento eficiente
-            let cst_arc: Arc<str> = Arc::from(c.as_str());
+            // 1. Gera chave fraca
+            let weak_key = Self::make_weak_key(c, v_item);
 
-            self.weak_cache.insert((cst_arc.clone(), v_item), data);
+            // Clone do Arc<str> (barato) para usar na chave forte
+            let cst_clone = weak_key.0.clone();
 
-            let cf = cfop.filter(|s| !s.is_empty()).map(Arc::from);
-            let pt = part.filter(|s| !s.is_empty()).map(Arc::from);
+            self.weak_cache.insert(weak_key, data);
 
-            if cf.is_some() || pt.is_some() {
-                self.strong_cache.insert((cst_arc, v_item, cf, pt), data);
+            // 2. Gera chave forte (se houver contexto)
+            if let Some(strong_key) = Self::make_strong_key(cst_clone, v_item, cfop, part) {
+                self.strong_cache.insert(strong_key, data);
             }
         }
     }
@@ -596,27 +619,20 @@ impl CorrelationManager {
         cfop: Option<&str>,
         part: Option<&str>,
     ) -> Option<PisData> {
-        let (c, v) = cst.zip(val_item)?;
+        let (c, val) = cst.zip(val_item)?;
 
-        // Tentativa de Chave Forte (Contextual)
-        // Nota: Precisamos criar Arcs temporários para a busca.
-        // Em um sistema de altíssima performance, poderíamos usar a crate `hashbrown` com `Equivalent` trait
-        // para buscar com &str sem alocar Arc, mas para std::HashMap isso é aceitável.
-        let cf = cfop.filter(|s| !s.is_empty()).map(Arc::from);
-        let pt = part.filter(|s| !s.is_empty()).map(Arc::from);
+        let cst: Arc<str> = Arc::from(c);
 
         // 1. Tenta Chave Forte (Se houver contexto de busca)
-        if cf.is_some() || pt.is_some() {
-            let cst_arc = Arc::from(c);
-            let strong_key = (cst_arc, v, cf, pt);
-            if let Some(res) = self.strong_cache.get(&strong_key) {
-                return Some(*res);
-            }
+        if let Some(strong_key) = Self::make_strong_key(cst.clone(), val, cfop, part)
+            && let Some(res) = self.strong_cache.get(&strong_key)
+        {
+            return Some(*res);
         }
 
         // 2. Fallback: Chave Fraca
         // Aqui criamos um Arc temporário apenas para o lookup se a chave forte falhar
-        self.weak_cache.get(&(Arc::from(c), v)).copied()
+        self.weak_cache.get(&(cst, val)).copied()
     }
 }
 
@@ -864,24 +880,25 @@ impl<'a> DocsBuilder<'a> {
     where
         F: RegistroFilho + ?Sized,
     {
-        self.doc.num_item = filho.get_num_item().parse_opt();
-
         // Se houver descrição complementar, ela tem precedência e deve ser uppercase
         if let Some(compl) = filho.get_descr_compl().map(Self::to_upper_arc) {
             self.doc.descr_item = compl;
         }
 
-        // Mapeamento direto de valores
-        self.doc.valor_item = filho.get_valor_item().to_f64_opt();
+        // 1. Identificadores e Classificação
+        self.doc.num_item = filho.get_num_item().parse_opt();
         self.doc.cst = filho.get_cst_cofins().parse_opt();
         self.doc.cfop = filho.get_cfop().parse_opt();
         self.doc.natureza_bc = filho.get_nat_bc_cred().parse_opt();
         self.doc.indicador_de_origem = filho.get_ind_orig_cred().parse_opt();
 
-        // Tributos
+        // 2. Valores Base
+        self.doc.valor_item = filho.get_valor_item().to_f64_opt();
+        self.doc.valor_bc = filho.get_valor_bc_cofins().to_f64_opt();
+
+        // 3. Tributos
         self.doc.aliq_pis = filho.get_aliq_pis().to_f64_opt();
         self.doc.valor_pis = filho.get_valor_pis().to_f64_opt();
-        self.doc.valor_bc = filho.get_valor_bc_cofins().to_f64_opt();
         self.doc.aliq_cofins = filho.get_aliq_cofins().to_f64_opt();
         self.doc.valor_cofins = filho.get_valor_cofins().to_f64_opt();
         self.doc.valor_iss = filho.get_valor_iss().to_f64_opt();
@@ -958,29 +975,33 @@ impl<'a> DocsBuilder<'a> {
         self
     }
 
-    fn build(mut self) -> DocsFiscaisNew {
-        // Lógica de Negócio Derivada
+    fn resolve_tipo_de_operacao(mut self) -> Self {
         if self.doc.tipo_de_operacao.is_none() {
-            self.doc.tipo_de_operacao = match self.doc.cst {
-                Some(1..=49) => Some(TipoOperacao::Saida),
-                Some(50..=99) => Some(TipoOperacao::Entrada),
-                _ => None,
-            };
+            self.doc.tipo_de_operacao = obter_tipo_operacao(self.doc.cst);
         }
+        self
+    }
 
+    fn resolve_natureza_bc(mut self) -> Self {
         if self.doc.natureza_bc.is_none() {
             self.doc.natureza_bc = obter_cod_da_natureza_da_bc(&self.doc.cfop, self.doc.cst);
         }
+        self
+    }
 
+    fn resolve_indicador_de_origem(mut self) -> Self {
+        // Uso do helper criado na Proposta 1
         self.doc.indicador_de_origem = self.doc.indicador_de_origem.or_else(|| {
-            let eh_importacao = self.doc.cfop.is_some_and(|c| (3000..=3999).contains(&c));
-            if eh_importacao {
+            if is_importacao(self.doc.cfop) {
                 Some(IndicadorOrigem::Importacao)
             } else {
                 Some(IndicadorOrigem::MercadoInterno)
             }
         });
+        self
+    }
 
+    fn resolve_tipo_de_credito(mut self) -> Self {
         if self.doc.tipo_de_credito.is_none() {
             let credito = determinar_tipo_de_credito(
                 self.doc.cst,
@@ -996,19 +1017,45 @@ impl<'a> DocsBuilder<'a> {
                 self.doc.indicador_de_origem = Some(IndicadorOrigem::Importacao);
             }
         }
+        self
+    }
+
+    fn build(self) -> DocsFiscaisNew {
+        let mut builder = self
+            .resolve_tipo_de_operacao()
+            .resolve_natureza_bc()
+            .resolve_indicador_de_origem()
+            .resolve_tipo_de_credito();
 
         // Atenção: O método format() em DocsFiscais deve estar preparado para lidar
         // com campos Arc<str>. Se o método original tentava mutar (push_str/insert)
         // nestes campos, ele precisará ser ajustado em docs_fiscais.rs.
-        self.doc.format();
+        builder.doc.format();
 
-        self.doc
+        builder.doc
     }
 }
 
 // ============================================================================
 // SEÇÃO 7: LÓGICA DE NEGÓCIO AUXILIAR
 // ============================================================================
+
+/// Verifica se um CFOP corresponde a uma operação de Importação.
+/// Centraliza a regra "3000..=3999".
+#[inline]
+fn is_importacao(cfop: Option<u16>) -> bool {
+    cfop.is_some_and(|c| (3000..=3999).contains(&c))
+}
+
+/// Deduz o Tipo de Operação baseado no CST.
+/// Remove os "Magic Numbers" do método build.
+fn obter_tipo_operacao(cst: Option<u16>) -> Option<TipoOperacao> {
+    match cst {
+        Some(1..=49) => Some(TipoOperacao::Saida),
+        Some(50..=99) => Some(TipoOperacao::Entrada),
+        _ => None,
+    }
+}
 
 /// Determina o `TipoDeCredito` com base nas regras do Guia Prático da EFD Contribuições.
 fn determinar_tipo_de_credito(
@@ -1044,10 +1091,7 @@ fn determinar_tipo_de_credito(
         return None;
     }
 
-    // Define origem baseada no CFOP (Faixa 3000-3999 é Importação)
-    let is_importacao = cfop.is_some_and(|c| (3000..=3999).contains(&c));
-
-    match (is_importacao, cst_cofins) {
+    match (is_importacao(cfop), cst_cofins) {
         // Regra A: Importação
         (true, _) => Some(TipoDeCredito::Importacao),
 
