@@ -71,7 +71,7 @@ fn test_analyze_one_file_new() -> EFDResult<()> {
         .iter()
         .enumerate() // 1. Anexa o índice original a cada item: (index, doc)
         //.filter(|(_, doc)| doc.registro.starts_with('M'))
-        .filter(|(_, doc)| doc.registro.eq_ignore_ascii_case("F100"))
+        .filter(|(_, doc)| doc.registro.eq_ignore_ascii_case("F130"))
         //.filter(|(_, doc)| doc.aliq_cofins.is_some_and(|v| v > 0.0)) // 2. Filtra apenas os que atendem a condição
         .take(20) // 3. Pega apenas os primeiros 10 resultados que passaram no filtro
         .for_each(|(index, doc)| {
