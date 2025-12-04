@@ -30,7 +30,7 @@ pub struct RegistroC170 {
     pub unid: Option<String>,               // 6
     pub vl_item: Option<Decimal>,           // 7
     pub vl_desc: Option<Decimal>,           // 8
-    pub ind_mov: Option<String>,            // 9
+    pub ind_mov: Option<char>,              // 9
     pub cst_icms: Option<u16>,              // 10
     pub cfop: Option<u16>,                  // 11
     pub cod_nat: Option<String>,            // 12
@@ -96,7 +96,7 @@ impl SpedParser for RegistroC170 {
         let unid = fields.get(6).to_optional_string();
         let vl_item = get_decimal_field(7, "VL_ITEM")?;
         let vl_desc = get_decimal_field(8, "VL_DESC")?;
-        let ind_mov = fields.get(9).to_optional_string();
+        let ind_mov = fields.get(9).parse_opt();
         let cst_icms = fields.get(10).parse_opt();
         let cfop = fields.get(11).parse_opt();
         let cod_nat = fields.get(12).to_optional_string();
