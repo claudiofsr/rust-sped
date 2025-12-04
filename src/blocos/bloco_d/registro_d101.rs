@@ -1,4 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
+    impl_sped_record_trait,
+};
 use rust_decimal::Decimal;
 use std::path::Path;
 
@@ -20,7 +23,7 @@ pub struct RegistroD101 {
 
     pub ind_nat_frt: Option<String>, // 2
     pub vl_item: Option<Decimal>,    // 3
-    pub cst_pis: Option<String>,     // 4
+    pub cst_pis: Option<u16>,        // 4
     pub nat_bc_cred: Option<String>, // 5
     pub vl_bc_pis: Option<Decimal>,  // 6
     pub aliq_pis: Option<Decimal>,   // 7
@@ -56,7 +59,7 @@ impl SpedParser for RegistroD101 {
 
         let ind_nat_frt = fields.get(2).to_optional_string();
         let vl_item = get_decimal_field(3, "VL_ITEM")?;
-        let cst_pis = fields.get(4).to_optional_string();
+        let cst_pis = fields.get(4).parse_opt();
         let nat_bc_cred = fields.get(5).to_optional_string();
         let vl_bc_pis = get_decimal_field(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(7, "ALIQ_PIS")?;

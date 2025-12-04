@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
@@ -31,13 +31,13 @@ pub struct RegistroD350 {
     pub num_coo_fin: Option<String>,        // 8
     pub gt_fin: Option<String>,             // 9
     pub vl_brt: Option<Decimal>,            // 10
-    pub cst_pis: Option<String>,            // 11
+    pub cst_pis: Option<u16>,               // 11
     pub vl_bc_pis: Option<Decimal>,         // 12
     pub aliq_pis: Option<Decimal>,          // 13
     pub quant_bc_pis: Option<String>,       // 14
     pub aliq_pis_quant: Option<Decimal>,    // 15
     pub vl_pis: Option<Decimal>,            // 16
-    pub cst_cofins: Option<String>,         // 17
+    pub cst_cofins: Option<u16>,            // 17
     pub vl_bc_cofins: Option<Decimal>,      // 18
     pub aliq_cofins: Option<Decimal>,       // 19
     pub quant_bc_cofins: Option<String>,    // 20
@@ -88,13 +88,13 @@ impl SpedParser for RegistroD350 {
         let num_coo_fin = fields.get(8).to_optional_string();
         let gt_fin = fields.get(9).to_optional_string();
         let vl_brt = get_decimal_field(10, "VL_BRT")?;
-        let cst_pis = fields.get(11).to_optional_string();
+        let cst_pis = fields.get(11).parse_opt();
         let vl_bc_pis = get_decimal_field(12, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(13, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(14).to_optional_string();
         let aliq_pis_quant = get_decimal_field(15, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal_field(16, "VL_PIS")?;
-        let cst_cofins = fields.get(17).to_optional_string();
+        let cst_cofins = fields.get(17).parse_opt();
         let vl_bc_cofins = get_decimal_field(18, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(19, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(20).to_optional_string();

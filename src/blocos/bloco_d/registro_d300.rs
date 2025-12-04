@@ -31,11 +31,11 @@ pub struct RegistroD300 {
     pub dt_ref: Option<NaiveDate>,     // 8
     pub vl_doc: Option<Decimal>,       // 9
     pub vl_desc: Option<Decimal>,      // 10
-    pub cst_pis: Option<String>,       // 11
+    pub cst_pis: Option<u16>,          // 11
     pub vl_bc_pis: Option<Decimal>,    // 12
     pub aliq_pis: Option<Decimal>,     // 13
     pub vl_pis: Option<Decimal>,       // 14
-    pub cst_cofins: Option<String>,    // 15
+    pub cst_cofins: Option<u16>,       // 15
     pub vl_bc_cofins: Option<Decimal>, // 16
     pub aliq_cofins: Option<Decimal>,  // 17
     pub vl_cofins: Option<Decimal>,    // 18
@@ -84,11 +84,11 @@ impl SpedParser for RegistroD300 {
         let dt_ref = get_date_field(8, "DT_REF")?;
         let vl_doc = get_decimal_field(9, "VL_DOC")?;
         let vl_desc = get_decimal_field(10, "VL_DESC")?;
-        let cst_pis = fields.get(11).to_optional_string();
+        let cst_pis = fields.get(11).parse_opt();
         let vl_bc_pis = get_decimal_field(12, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(13, "ALIQ_PIS")?;
         let vl_pis = get_decimal_field(14, "VL_PIS")?;
-        let cst_cofins = fields.get(15).to_optional_string();
+        let cst_cofins = fields.get(15).parse_opt();
         let vl_bc_cofins = get_decimal_field(16, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(17, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(18, "VL_COFINS")?;

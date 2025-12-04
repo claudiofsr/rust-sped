@@ -1,4 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
+    impl_sped_record_trait,
+};
 use rust_decimal::Decimal;
 use std::path::Path;
 
@@ -23,10 +26,10 @@ pub struct RegistroF150 {
     pub est_imp: Option<String>,         // 4
     pub vl_bc_est: Option<Decimal>,      // 5
     pub vl_bc_men_est: Option<Decimal>,  // 6
-    pub cst_pis: Option<String>,         // 7
+    pub cst_pis: Option<u16>,            // 7
     pub aliq_pis: Option<Decimal>,       // 8
     pub vl_cred_pis: Option<Decimal>,    // 9
-    pub cst_cofins: Option<String>,      // 10
+    pub cst_cofins: Option<u16>,         // 10
     pub aliq_cofins: Option<Decimal>,    // 11
     pub vl_cred_cofins: Option<Decimal>, // 12
     pub desc_est: Option<String>,        // 13
@@ -63,10 +66,10 @@ impl SpedParser for RegistroF150 {
         let est_imp = fields.get(4).to_optional_string();
         let vl_bc_est = get_decimal_field(5, "VL_BC_EST")?;
         let vl_bc_men_est = get_decimal_field(6, "VL_BC_MEN_EST")?;
-        let cst_pis = fields.get(7).to_optional_string();
+        let cst_pis = fields.get(7).parse_opt();
         let aliq_pis = get_decimal_field(8, "ALIQ_PIS")?;
         let vl_cred_pis = get_decimal_field(9, "VL_CRED_PIS")?;
-        let cst_cofins = fields.get(10).to_optional_string();
+        let cst_cofins = fields.get(10).parse_opt();
         let aliq_cofins = get_decimal_field(11, "ALIQ_COFINS")?;
         let vl_cred_cofins = get_decimal_field(12, "VL_CRED_COFINS")?;
         let desc_est = fields.get(13).to_optional_string();

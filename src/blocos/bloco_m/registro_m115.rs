@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, ToOptionalString,
+    impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use std::path::Path;
@@ -21,7 +22,7 @@ pub struct RegistroM115 {
     pub line_number: usize,
 
     pub det_valor_aj: Option<String>,  // 2
-    pub cst_pis: Option<String>,       // 3
+    pub cst_pis: Option<u16>,          // 3
     pub det_bc_cred: Option<String>,   // 4
     pub det_aliq: Option<String>,      // 5 (Pode ser String ou Decimal)
     pub dt_oper_aj: Option<NaiveDate>, // 6
@@ -57,7 +58,7 @@ impl SpedParser for RegistroM115 {
         };
 
         let det_valor_aj = fields.get(2).to_optional_string();
-        let cst_pis = fields.get(3).to_optional_string();
+        let cst_pis = fields.get(3).parse_opt();
         let det_bc_cred = fields.get(4).to_optional_string();
         let det_aliq = fields.get(5).to_optional_string();
         let dt_oper_aj = get_date_field(6, "DT_OPER_AJ")?;

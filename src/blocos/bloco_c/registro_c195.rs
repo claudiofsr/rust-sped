@@ -22,7 +22,7 @@ pub struct RegistroC195 {
     pub line_number: usize,
 
     pub cnpj_cpf_part: Option<String>,      // 2
-    pub cst_cofins: Option<String>,         // 3
+    pub cst_cofins: Option<u16>,            // 3
     pub cfop: Option<u16>,                  // 4
     pub vl_item: Option<Decimal>,           // 5
     pub vl_desc: Option<Decimal>,           // 6
@@ -60,7 +60,7 @@ impl SpedParser for RegistroC195 {
         };
 
         let cnpj_cpf_part = fields.get(2).to_optional_string();
-        let cst_cofins = fields.get(3).to_optional_string();
+        let cst_cofins = fields.get(3).parse_opt();
         let cfop = fields.get(4).parse_opt();
         let vl_item = get_decimal_field(5, "VL_ITEM")?;
         let vl_desc = get_decimal_field(6, "VL_DESC")?;

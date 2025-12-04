@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
@@ -28,19 +28,19 @@ pub struct Registro1011 {
     pub cod_item: Option<String>,           // 5
     pub dt_oper: Option<NaiveDate>,         // 6
     pub vl_oper: Option<Decimal>,           // 7
-    pub cst_pis: Option<String>,            // 8
+    pub cst_pis: Option<u16>,               // 8
     pub vl_bc_pis: Option<Decimal>,         // 9
     pub aliq_pis: Option<Decimal>,          // 10
     pub vl_pis: Option<Decimal>,            // 11
-    pub cst_cofins: Option<String>,         // 12
+    pub cst_cofins: Option<u16>,            // 12
     pub vl_bc_cofins: Option<Decimal>,      // 13
     pub aliq_cofins: Option<Decimal>,       // 14
     pub vl_cofins: Option<Decimal>,         // 15
-    pub cst_pis_susp: Option<String>,       // 16
+    pub cst_pis_susp: Option<u16>,          // 16
     pub vl_bc_pis_susp: Option<Decimal>,    // 17
     pub aliq_pis_susp: Option<Decimal>,     // 18
     pub vl_pis_susp: Option<Decimal>,       // 19
-    pub cst_cofins_susp: Option<String>,    // 20
+    pub cst_cofins_susp: Option<u16>,       // 20
     pub vl_bc_cofins_susp: Option<Decimal>, // 21
     pub aliq_cofins_susp: Option<Decimal>,  // 22
     pub vl_cofins_susp: Option<Decimal>,    // 23
@@ -87,19 +87,19 @@ impl SpedParser for Registro1011 {
         let cod_item = fields.get(5).to_optional_string();
         let dt_oper = get_date_field(6, "DT_OPER")?;
         let vl_oper = get_decimal_field(7, "VL_OPER")?;
-        let cst_pis = fields.get(8).to_optional_string();
+        let cst_pis = fields.get(8).parse_opt();
         let vl_bc_pis = get_decimal_field(9, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(10, "ALIQ_PIS")?;
         let vl_pis = get_decimal_field(11, "VL_PIS")?;
-        let cst_cofins = fields.get(12).to_optional_string();
+        let cst_cofins = fields.get(12).parse_opt();
         let vl_bc_cofins = get_decimal_field(13, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(14, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(15, "VL_COFINS")?;
-        let cst_pis_susp = fields.get(16).to_optional_string();
+        let cst_pis_susp = fields.get(16).parse_opt();
         let vl_bc_pis_susp = get_decimal_field(17, "VL_BC_PIS_SUSP")?;
         let aliq_pis_susp = get_decimal_field(18, "ALIQ_PIS_SUSP")?;
         let vl_pis_susp = get_decimal_field(19, "VL_PIS_SUSP")?;
-        let cst_cofins_susp = fields.get(20).to_optional_string();
+        let cst_cofins_susp = fields.get(20).parse_opt();
         let vl_bc_cofins_susp = get_decimal_field(21, "VL_BC_COFINS_SUSP")?;
         let aliq_cofins_susp = get_decimal_field(22, "ALIQ_COFINS_SUSP")?;
         let vl_cofins_susp = get_decimal_field(23, "VL_COFINS_SUSP")?;

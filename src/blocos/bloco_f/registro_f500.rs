@@ -22,12 +22,12 @@ pub struct RegistroF500 {
     pub line_number: usize,
 
     pub vl_rec_caixa: Option<Decimal>,   // 2
-    pub cst_pis: Option<String>,         // 3
+    pub cst_pis: Option<u16>,            // 3
     pub vl_desc_pis: Option<Decimal>,    // 4
     pub vl_bc_pis: Option<Decimal>,      // 5
     pub aliq_pis: Option<Decimal>,       // 6
     pub vl_pis: Option<Decimal>,         // 7
-    pub cst_cofins: Option<String>,      // 8
+    pub cst_cofins: Option<u16>,         // 8
     pub vl_desc_cofins: Option<Decimal>, // 9
     pub vl_bc_cofins: Option<Decimal>,   // 10
     pub aliq_cofins: Option<Decimal>,    // 11
@@ -64,12 +64,12 @@ impl SpedParser for RegistroF500 {
         };
 
         let vl_rec_caixa = get_decimal_field(2, "VL_REC_CAIXA")?;
-        let cst_pis = fields.get(3).to_optional_string();
+        let cst_pis = fields.get(3).parse_opt();
         let vl_desc_pis = get_decimal_field(4, "VL_DESC_PIS")?;
         let vl_bc_pis = get_decimal_field(5, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(6, "ALIQ_PIS")?;
         let vl_pis = get_decimal_field(7, "VL_PIS")?;
-        let cst_cofins = fields.get(8).to_optional_string();
+        let cst_cofins = fields.get(8).parse_opt();
         let vl_desc_cofins = get_decimal_field(9, "VL_DESC_COFINS")?;
         let vl_bc_cofins = get_decimal_field(10, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(11, "ALIQ_COFINS")?;

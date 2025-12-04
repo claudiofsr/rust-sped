@@ -84,7 +84,7 @@ struct RegMockFilho {
 
     num_item: Option<String>,
     vl_item: Option<Decimal>,
-    cst_pis: Option<String>,
+    cst_pis: Option<u16>,
     aliq_pis: Option<Decimal>,
     vl_pis: Option<Decimal>,
     // Campos para override (sobrescrever dados do pai)
@@ -102,8 +102,8 @@ impl RegistroFilho for RegMockFilho {
     fn get_valor_item(&self) -> Option<Decimal> {
         self.vl_item
     }
-    fn get_cst_pis(&self) -> Option<&str> {
-        self.cst_pis.as_deref()
+    fn get_cst_pis(&self) -> Option<u16> {
+        self.cst_pis
     }
     fn get_aliq_pis(&self) -> Option<Decimal> {
         self.aliq_pis
@@ -129,7 +129,7 @@ impl RegistroFilho for RegMockFilho {
 fn test_correlation_manager_storage_and_retrieval() {
     let mut mgr = CorrelationManager::default();
 
-    let cst = Some(String::from("50"));
+    let cst = Some(50);
     let val_item = Some(dec!(1000.00));
     let aliq = Some(dec!(1.65));
     let val_pis = Some(dec!(16.50));
@@ -137,10 +137,10 @@ fn test_correlation_manager_storage_and_retrieval() {
     let part = Some("PART_01");
 
     // 1. Armazenar
-    mgr.store(cst.as_deref(), val_item, aliq, val_pis, cfop, part);
+    mgr.store(cst, val_item, aliq, val_pis, cfop, part);
 
     // 2. Recuperação Forte (Com Contexto)
-    let res_strong = mgr.resolve(Some("50"), val_item, Some(1102), Some("PART_01"));
+    let res_strong = mgr.resolve(Some(50), val_item, Some(1102), Some("PART_01"));
     assert_eq!(
         res_strong,
         Some((1.65, 16.50)),
@@ -148,7 +148,7 @@ fn test_correlation_manager_storage_and_retrieval() {
     );
 
     // 3. Recuperação Fraca (Fallback sem contexto)
-    let res_weak = mgr.resolve(Some("50"), val_item, None, None);
+    let res_weak = mgr.resolve(Some(50), val_item, None, None);
     assert_eq!(
         res_weak,
         Some((1.65, 16.50)),
@@ -162,7 +162,7 @@ fn test_correlation_manager_partial_strong_key() {
 
     // Armazena apenas com CFOP, sem Participante
     mgr.store(
-        Some("01"),
+        Some(1),
         Some(dec!(100.0)),
         Some(dec!(1.0)),
         Some(dec!(1.0)),
@@ -174,7 +174,7 @@ fn test_correlation_manager_partial_strong_key() {
     // A chave forte (StrongKey) exige igualdade exata nos Options.
     // Como (Some(CFOP), Some(Part)) != (Some(CFOP), None), a busca forte falha.
     // O sistema deve cair no Weak Cache (CST + Valor).
-    let result = mgr.resolve(Some("01"), Some(dec!(100.0)), Some(5405), Some("PART_X"));
+    let result = mgr.resolve(Some(1), Some(dec!(100.0)), Some(5405), Some("PART_X"));
 
     assert!(result.is_some(), "Deve achar via fallback weak cache");
 }
@@ -208,7 +208,7 @@ fn test_builder_inheritance_logic() {
 
         num_item: Some("001".to_string()),
         vl_item: Some(dec!(1000.00)),
-        cst_pis: Some("50".to_string()),
+        cst_pis: Some(50),
         aliq_pis: Some(dec!(1.65)),
         vl_pis: Some(dec!(16.50)),
         dt_emissao_override: None, // Deve herdar

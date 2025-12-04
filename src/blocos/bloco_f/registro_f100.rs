@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
@@ -27,11 +27,11 @@ pub struct RegistroF100 {
     pub cod_item: Option<String>,      // 4
     pub dt_oper: Option<NaiveDate>,    // 5
     pub vl_oper: Option<Decimal>,      // 6
-    pub cst_pis: Option<String>,       // 7
+    pub cst_pis: Option<u16>,          // 7
     pub vl_bc_pis: Option<Decimal>,    // 8
     pub aliq_pis: Option<Decimal>,     // 9
     pub vl_pis: Option<Decimal>,       // 10
-    pub cst_cofins: Option<String>,    // 11
+    pub cst_cofins: Option<u16>,       // 11
     pub vl_bc_cofins: Option<Decimal>, // 12
     pub aliq_cofins: Option<Decimal>,  // 13
     pub vl_cofins: Option<Decimal>,    // 14
@@ -78,11 +78,11 @@ impl SpedParser for RegistroF100 {
         let cod_item = fields.get(4).to_optional_string();
         let dt_oper = get_date_field(5, "DT_OPER")?;
         let vl_oper = get_decimal_field(6, "VL_OPER")?;
-        let cst_pis = fields.get(7).to_optional_string();
+        let cst_pis = fields.get(7).parse_opt();
         let vl_bc_pis = get_decimal_field(8, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(9, "ALIQ_PIS")?;
         let vl_pis = get_decimal_field(10, "VL_PIS")?;
-        let cst_cofins = fields.get(11).to_optional_string();
+        let cst_cofins = fields.get(11).parse_opt();
         let vl_bc_cofins = get_decimal_field(12, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(13, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(14, "VL_COFINS")?;

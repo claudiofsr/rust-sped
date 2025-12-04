@@ -25,11 +25,11 @@ pub struct RegistroC870 {
     pub cfop: Option<u16>,             // 3
     pub vl_item: Option<Decimal>,      // 4
     pub vl_desc: Option<Decimal>,      // 5
-    pub cst_pis: Option<String>,       // 6
+    pub cst_pis: Option<u16>,          // 6
     pub vl_bc_pis: Option<Decimal>,    // 7
     pub aliq_pis: Option<Decimal>,     // 8
     pub vl_pis: Option<Decimal>,       // 9
-    pub cst_cofins: Option<String>,    // 10
+    pub cst_cofins: Option<u16>,       // 10
     pub vl_bc_cofins: Option<Decimal>, // 11
     pub aliq_cofins: Option<Decimal>,  // 12
     pub vl_cofins: Option<Decimal>,    // 13
@@ -65,11 +65,11 @@ impl SpedParser for RegistroC870 {
         let cfop = fields.get(3).parse_opt();
         let vl_item = get_decimal_field(4, "VL_ITEM")?;
         let vl_desc = get_decimal_field(5, "VL_DESC")?;
-        let cst_pis = fields.get(6).to_optional_string();
+        let cst_pis = fields.get(6).parse_opt();
         let vl_bc_pis = get_decimal_field(7, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(8, "ALIQ_PIS")?;
         let vl_pis = get_decimal_field(9, "VL_PIS")?;
-        let cst_cofins = fields.get(10).to_optional_string();
+        let cst_cofins = fields.get(10).parse_opt();
         let vl_bc_cofins = get_decimal_field(11, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(12, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(13, "VL_COFINS")?;

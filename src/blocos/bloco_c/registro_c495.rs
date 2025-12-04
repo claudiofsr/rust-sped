@@ -14,7 +14,7 @@ pub struct RegistroC495 {
     pub registro: String,
     pub line_number: usize,
     pub cod_item: Option<String>,           // 2
-    pub cst_cofins: Option<String>,         // 3
+    pub cst_cofins: Option<u16>,            // 3
     pub cfop: Option<u16>,                  // 4
     pub vl_item: Option<Decimal>,           // 5
     pub vl_bc_cofins: Option<Decimal>,      // 6
@@ -50,7 +50,7 @@ impl SpedParser for RegistroC495 {
         };
 
         let cod_item = fields.get(2).to_optional_string();
-        let cst_cofins = fields.get(3).to_optional_string();
+        let cst_cofins = fields.get(3).parse_opt();
         let cfop = fields.get(4).parse_opt();
         let vl_item = get_decimal_field(5, "VL_ITEM")?;
         let vl_bc_cofins = get_decimal_field(6, "VL_BC_COFINS")?;

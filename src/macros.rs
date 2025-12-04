@@ -215,8 +215,8 @@ macro_rules! impl_filho {
     (@map get_part_override, $v:ident) => { fn get_part_override(&self) -> Option<&str> { self.$v.as_deref() } };
 
     // Classificação Fiscal
-    (@map get_cst_pis, $v:ident) => { fn get_cst_pis(&self) -> Option<&str> { self.$v.as_deref() } };
-    (@map get_cst_cofins, $v:ident) => { fn get_cst_cofins(&self) -> Option<&str> { self.$v.as_deref() } };
+    (@map get_cst_pis, $v:ident) => { fn get_cst_pis(&self) -> Option<u16> { self.$v } };
+    (@map get_cst_cofins, $v:ident) => { fn get_cst_cofins(&self) -> Option<u16> { self.$v } };
     (@map get_cfop, $v:ident) => { fn get_cfop(&self) -> Option<u16> { self.$v } };
     (@map get_nat_bc_cred, $v:ident) => { fn get_nat_bc_cred(&self) -> Option<&str> { self.$v.as_deref() } };
     (@map get_ind_orig_cred, $v:ident) => { fn get_ind_orig_cred(&self) -> Option<&str> { self.$v.as_deref() } };
@@ -305,7 +305,7 @@ macro_rules! store_pis {
     ($mgr:expr, $rec:expr, $ty:ty) => {
         if let Ok(reg) = $rec.downcast_ref::<$ty>() {
             $mgr.store(
-                reg.cst_pis.as_deref(),
+                reg.cst_pis,
                 reg.vl_item,
                 reg.aliq_pis,
                 reg.vl_pis,

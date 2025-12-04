@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
@@ -23,7 +23,7 @@ pub struct RegistroM625 {
     pub line_number: usize,
 
     pub det_valor_aj: Option<String>,  // 2
-    pub cst_cofins: Option<String>,    // 3
+    pub cst_cofins: Option<u16>,       // 3
     pub det_bc_cred: Option<Decimal>,  // 4 (Assumindo que DET_BC_CRED é um valor)
     pub det_aliq: Option<Decimal>,     // 5 (Assumindo que DET_ALIQ é uma alíquota)
     pub dt_oper_aj: Option<NaiveDate>, // 6
@@ -68,7 +68,7 @@ impl SpedParser for RegistroM625 {
         };
 
         let det_valor_aj = fields.get(2).to_optional_string();
-        let cst_cofins = fields.get(3).to_optional_string();
+        let cst_cofins = fields.get(3).parse_opt();
         let det_bc_cred = get_decimal_field(4, "DET_BC_CRED")?;
         let det_aliq = get_decimal_field(5, "DET_ALIQ")?;
         let dt_oper_aj = get_date_field(6, "DT_OPER_AJ")?;

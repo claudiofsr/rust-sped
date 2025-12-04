@@ -1,4 +1,4 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
 use std::path::Path;
 
@@ -23,13 +23,13 @@ pub struct RegistroF205 {
     pub vl_cus_inc_acum: Option<Decimal>,         // 4
     pub vl_exc_bc_cus_inc_acum: Option<Decimal>,  // 5
     pub vl_bc_cus_inc: Option<Decimal>,           // 6
-    pub cst_pis: Option<String>,                  // 7
+    pub cst_pis: Option<u16>,                     // 7
     pub aliq_pis: Option<Decimal>,                // 8
     pub vl_cred_pis_acum: Option<Decimal>,        // 9
     pub vl_cred_pis_desc_ant: Option<Decimal>,    // 10
     pub vl_cred_pis_desc: Option<Decimal>,        // 11
     pub vl_cred_pis_desc_fut: Option<Decimal>,    // 12
-    pub cst_cofins: Option<String>,               // 13
+    pub cst_cofins: Option<u16>,                  // 13
     pub aliq_cofins: Option<Decimal>,             // 14
     pub vl_cred_cofins_acum: Option<Decimal>,     // 15
     pub vl_cred_cofins_desc_ant: Option<Decimal>, // 16
@@ -67,13 +67,13 @@ impl SpedParser for RegistroF205 {
         let vl_cus_inc_acum = get_decimal_field(4, "VL_CUS_INC_ACUM")?;
         let vl_exc_bc_cus_inc_acum = get_decimal_field(5, "VL_EXC_BC_CUS_INC_ACUM")?;
         let vl_bc_cus_inc = get_decimal_field(6, "VL_BC_CUS_INC")?;
-        let cst_pis = fields.get(7).to_optional_string();
+        let cst_pis = fields.get(7).parse_opt();
         let aliq_pis = get_decimal_field(8, "ALIQ_PIS")?;
         let vl_cred_pis_acum = get_decimal_field(9, "VL_CRED_PIS_ACUM")?;
         let vl_cred_pis_desc_ant = get_decimal_field(10, "VL_CRED_PIS_DESC_ANT")?;
         let vl_cred_pis_desc = get_decimal_field(11, "VL_CRED_PIS_DESC")?;
         let vl_cred_pis_desc_fut = get_decimal_field(12, "VL_CRED_PIS_DESC_FUT")?;
-        let cst_cofins = fields.get(13).to_optional_string();
+        let cst_cofins = fields.get(13).parse_opt();
         let aliq_cofins = get_decimal_field(14, "ALIQ_COFINS")?;
         let vl_cred_cofins_acum = get_decimal_field(15, "VL_CRED_COFINS_ACUM")?;
         let vl_cred_cofins_desc_ant = get_decimal_field(16, "VL_CRED_COFINS_DESC_ANT")?;

@@ -24,13 +24,13 @@ pub struct RegistroC175 {
     pub cfop: Option<u16>,                  // 2
     pub vl_opr: Option<Decimal>,            // 3
     pub vl_desc: Option<Decimal>,           // 4
-    pub cst_pis: Option<String>,            // 5
+    pub cst_pis: Option<u16>,               // 5
     pub vl_bc_pis: Option<Decimal>,         // 6
     pub aliq_pis: Option<Decimal>,          // 7
     pub quant_bc_pis: Option<String>,       // 8
     pub aliq_pis_quant: Option<Decimal>,    // 9
     pub vl_pis: Option<Decimal>,            // 10
-    pub cst_cofins: Option<String>,         // 11
+    pub cst_cofins: Option<u16>,            // 11
     pub vl_bc_cofins: Option<Decimal>,      // 12
     pub aliq_cofins: Option<Decimal>,       // 13
     pub quant_bc_cofins: Option<String>,    // 14
@@ -68,13 +68,13 @@ impl SpedParser for RegistroC175 {
         let cfop = fields.get(2).parse_opt();
         let vl_opr = get_decimal_field(3, "VL_OPR")?;
         let vl_desc = get_decimal_field(4, "VL_DESC")?;
-        let cst_pis = fields.get(5).to_optional_string();
+        let cst_pis = fields.get(5).parse_opt();
         let vl_bc_pis = get_decimal_field(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(7, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(8).to_optional_string();
         let aliq_pis_quant = get_decimal_field(9, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal_field(10, "VL_PIS")?;
-        let cst_cofins = fields.get(11).to_optional_string();
+        let cst_cofins = fields.get(11).parse_opt();
         let vl_bc_cofins = get_decimal_field(12, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(13, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(14).to_optional_string();

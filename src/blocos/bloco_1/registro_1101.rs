@@ -34,7 +34,7 @@ pub struct Registro1101 {
     pub cfop: Option<u16>,             // 11
     pub nat_bc_cred: Option<String>,   // 12
     pub ind_orig_cred: Option<String>, // 13
-    pub cst_pis: Option<String>,       // 14
+    pub cst_pis: Option<u16>,          // 14
     pub vl_bc_pis: Option<Decimal>,    // 15
     pub aliq_pis: Option<Decimal>,     // 16
     pub vl_pis: Option<Decimal>,       // 17
@@ -89,7 +89,7 @@ impl SpedParser for Registro1101 {
         let cfop = fields.get(11).parse_opt();
         let nat_bc_cred = fields.get(12).to_optional_string();
         let ind_orig_cred = fields.get(13).to_optional_string();
-        let cst_pis = fields.get(14).to_optional_string();
+        let cst_pis = fields.get(14).parse_opt();
         let vl_bc_pis = get_decimal_field(15, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(16, "ALIQ_PIS")?;
         let vl_pis = get_decimal_field(17, "VL_PIS")?;

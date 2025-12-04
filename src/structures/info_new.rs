@@ -131,10 +131,10 @@ pub trait RegistroFilho: SpedRecordTrait {
     }
 
     // Classificação Fiscal
-    fn get_cst_pis(&self) -> Option<&str> {
+    fn get_cst_pis(&self) -> Option<u16> {
         None
     }
-    fn get_cst_cofins(&self) -> Option<&str> {
+    fn get_cst_cofins(&self) -> Option<u16> {
         None
     }
     fn get_cfop(&self) -> Option<u16> {
@@ -531,8 +531,8 @@ impl_filho!(Registro1500, { get_cod_cred: cod_cred });
 
 // MEMORY OPTIMIZATION: Usar Arc<str> nas chaves reduz drasticamente a alocação
 // pois CSTs, CFOPs e Participantes são altamente repetitivos.
-type WeakKey = (Arc<str>, Decimal);
-type StrongKey = (Arc<str>, Decimal, Option<u16>, Option<Arc<str>>);
+type WeakKey = (u16, Decimal);
+type StrongKey = (u16, Decimal, Option<u16>, Option<Arc<str>>);
 type PisData = (f64, f64);
 
 #[derive(Default)]
@@ -557,7 +557,7 @@ impl CorrelationManager {
     /// Helper privado.
     /// Retorna Option<StrongKey> apenas se houver contexto adicional (CFOP ou Part).
     fn make_strong_key(
-        cst: Arc<str>,
+        cst: u16,
         val: Decimal,
         cfop: Option<u16>,
         part: Option<&str>,
@@ -575,7 +575,7 @@ impl CorrelationManager {
     /// Armazena dados de PIS.
     fn store(
         &mut self,
-        cst: Option<&str>,
+        cst: Option<u16>,
         val_item: Option<Decimal>,
         aliq: Option<Decimal>,
         val: Option<Decimal>,
@@ -589,16 +589,13 @@ impl CorrelationManager {
                 v.to_f64().unwrap_or_default(),
             );
 
-            // Aloca o Arc apenas uma vez aqui
-            let cst_arc: Arc<str> = Arc::from(c);
-
             // 1. Armazena na Cache Fraca
             // Clone do Arc é barato (apenas incrementa contador)
-            self.weak_cache.insert((cst_arc.clone(), v_item), data);
+            self.weak_cache.insert((c, v_item), data);
 
             // 2. Armazena na Cache Forte (se houver contexto)
             // Move cst_arc (sem clone extra) se possível, ou usa o clone anterior
-            if let Some(strong_key) = Self::make_strong_key(cst_arc, v_item, cfop, part) {
+            if let Some(strong_key) = Self::make_strong_key(c, v_item, cfop, part) {
                 self.strong_cache.insert(strong_key, data);
             }
         }
@@ -608,25 +605,21 @@ impl CorrelationManager {
     /// Prioridade: Forte (com contexto) -> Fraca (apenas valores).
     fn resolve(
         &self,
-        cst: Option<&str>,
+        cst: Option<u16>,
         val_item: Option<Decimal>,
         cfop: Option<u16>,
         part: Option<&str>,
     ) -> Option<PisData> {
         let (c, val) = cst.zip(val_item)?;
 
-        // Nota: Alocação temporária necessária para lookup em HashMap.
-        // Em Rust Stable, não há como buscar HashMap<(Arc<str>,..)> usando &str sem alocar.
-        let cst_arc: Arc<str> = Arc::from(c);
-
         // 1. Tenta Chave Forte
-        if let Some(pis_data) = Self::make_strong_key(cst_arc.clone(), val, cfop, part)
-            .and_then(|key| self.strong_cache.get(&key))
+        if let Some(pis_data) =
+            Self::make_strong_key(c, val, cfop, part).and_then(|key| self.strong_cache.get(&key))
         {
             Some(*pis_data)
         } else {
             // 2. Fallback: Chave Fraca
-            self.weak_cache.get(&(cst_arc, val)).copied()
+            self.weak_cache.get(&(c, val)).copied()
         }
     }
 }
@@ -882,7 +875,7 @@ impl<'a> DocsBuilder<'a> {
 
         // 1. Identificadores e Classificação
         self.doc.num_item = filho.get_num_item().parse_opt();
-        self.doc.cst = filho.get_cst_cofins().parse_opt();
+        self.doc.cst = filho.get_cst_cofins();
         self.doc.cfop = filho.get_cfop();
         self.doc.natureza_bc = filho.get_nat_bc_cred().parse_opt();
         self.doc.indicador_de_origem = filho.get_ind_orig_cred().parse_opt();
@@ -1532,7 +1525,7 @@ impl<'a> BlocoI<'a> {
     }
 }
 
-type KeyM = (Option<u8>, Option<u8>, Option<u8>, Option<Decimal>);
+type KeyM = (Option<u8>, Option<u16>, Option<u8>, Option<Decimal>);
 
 // --- Bloco M (Apuração e Ajustes) ---
 #[derive(Default)]
@@ -1564,7 +1557,7 @@ impl<'a> BlocoM<'a> {
                 "M105" => {
                     if let (Ok(r), Some(pai)) = (record.downcast_ref::<RegistroM105>(), self.m100) {
                         let cod_cred: Option<u8> = pai.cod_cred.parse_opt();
-                        let cst_pis: Option<u8> = r.cst_pis.parse_opt();
+                        let cst_pis: Option<u16> = r.cst_pis;
                         let nat_bc_cred: Option<u8> = r.nat_bc_cred.parse_opt();
                         let key = (cod_cred, cst_pis, nat_bc_cred, r.vl_bc_pis);
 
@@ -1580,7 +1573,7 @@ impl<'a> BlocoM<'a> {
                 "M505" => {
                     if let (Ok(r), Some(p)) = (record.downcast_ref::<RegistroM505>(), self.m500) {
                         let cod_cred: Option<u8> = p.cod_cred.parse_opt();
-                        let cst_cofins: Option<u8> = r.cst_cofins.parse_opt();
+                        let cst_cofins: Option<u16> = r.cst_cofins;
                         let nat_bc_cred: Option<u8> = r.nat_bc_cred.parse_opt();
                         let key = (cod_cred, cst_cofins, nat_bc_cred, r.vl_bc_cofins);
 

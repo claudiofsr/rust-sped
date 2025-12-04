@@ -21,7 +21,7 @@ pub struct RegistroC181 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cst_pis: Option<String>,         // 2
+    pub cst_pis: Option<u16>,            // 2
     pub cfop: Option<u16>,               // 3
     pub vl_item: Option<Decimal>,        // 4
     pub vl_desc: Option<Decimal>,        // 5
@@ -58,7 +58,7 @@ impl SpedParser for RegistroC181 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cst_pis = fields.get(2).to_optional_string();
+        let cst_pis = fields.get(2).parse_opt();
         let cfop = fields.get(3).parse_opt();
         let vl_item = get_decimal_field(4, "VL_ITEM")?;
         let vl_desc = get_decimal_field(5, "VL_DESC")?;

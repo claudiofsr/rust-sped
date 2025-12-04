@@ -31,7 +31,7 @@ pub struct RegistroC170 {
     pub vl_item: Option<Decimal>,           // 7
     pub vl_desc: Option<Decimal>,           // 8
     pub ind_mov: Option<String>,            // 9
-    pub cst_icms: Option<String>,           // 10
+    pub cst_icms: Option<u16>,              // 10
     pub cfop: Option<u16>,                  // 11
     pub cod_nat: Option<String>,            // 12
     pub vl_bc_icms: Option<Decimal>,        // 13
@@ -41,18 +41,18 @@ pub struct RegistroC170 {
     pub aliq_st: Option<Decimal>,           // 17
     pub vl_icms_st: Option<Decimal>,        // 18
     pub ind_apur: Option<String>,           // 19
-    pub cst_ipi: Option<String>,            // 20
+    pub cst_ipi: Option<u16>,               // 20
     pub cod_enq: Option<String>,            // 21
     pub vl_bc_ipi: Option<Decimal>,         // 22
     pub aliq_ipi: Option<Decimal>,          // 23
     pub vl_ipi: Option<Decimal>,            // 24
-    pub cst_pis: Option<String>,            // 25
+    pub cst_pis: Option<u16>,               // 25
     pub vl_bc_pis: Option<Decimal>,         // 26
     pub aliq_pis: Option<Decimal>,          // 27
     pub quant_bc_pis: Option<String>,       // 28
     pub aliq_pis_quant: Option<Decimal>,    // 29
     pub vl_pis: Option<Decimal>,            // 30
-    pub cst_cofins: Option<String>,         // 31
+    pub cst_cofins: Option<u16>,            // 31
     pub vl_bc_cofins: Option<Decimal>,      // 32
     pub aliq_cofins: Option<Decimal>,       // 33
     pub quant_bc_cofins: Option<String>,    // 34
@@ -97,7 +97,7 @@ impl SpedParser for RegistroC170 {
         let vl_item = get_decimal_field(7, "VL_ITEM")?;
         let vl_desc = get_decimal_field(8, "VL_DESC")?;
         let ind_mov = fields.get(9).to_optional_string();
-        let cst_icms = fields.get(10).to_optional_string();
+        let cst_icms = fields.get(10).parse_opt();
         let cfop = fields.get(11).parse_opt();
         let cod_nat = fields.get(12).to_optional_string();
         let vl_bc_icms = get_decimal_field(13, "VL_BC_ICMS")?;
@@ -107,18 +107,18 @@ impl SpedParser for RegistroC170 {
         let aliq_st = get_decimal_field(17, "ALIQ_ST")?;
         let vl_icms_st = get_decimal_field(18, "VL_ICMS_ST")?;
         let ind_apur = fields.get(19).to_optional_string();
-        let cst_ipi = fields.get(20).to_optional_string();
+        let cst_ipi = fields.get(20).parse_opt();
         let cod_enq = fields.get(21).to_optional_string();
         let vl_bc_ipi = get_decimal_field(22, "VL_BC_IPI")?;
         let aliq_ipi = get_decimal_field(23, "ALIQ_IPI")?;
         let vl_ipi = get_decimal_field(24, "VL_IPI")?;
-        let cst_pis = fields.get(25).to_optional_string();
+        let cst_pis = fields.get(25).parse_opt();
         let vl_bc_pis = get_decimal_field(26, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(27, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(28).to_optional_string(); // Pode ser String ou Decimal
         let aliq_pis_quant = get_decimal_field(29, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal_field(30, "VL_PIS")?;
-        let cst_cofins = fields.get(31).to_optional_string();
+        let cst_cofins = fields.get(31).parse_opt();
         let vl_bc_cofins = get_decimal_field(32, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(33, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(34).to_optional_string(); // Pode ser String ou Decimal

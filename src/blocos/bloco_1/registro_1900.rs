@@ -28,8 +28,8 @@ pub struct Registro1900 {
     pub cod_sit: Option<String>,     // 6
     pub vl_tot_rec: Option<Decimal>, // 7
     pub quant_doc: Option<String>,   // 8 (Assumindo que pode ser string para quantidade ou Decimal)
-    pub cst_pis: Option<String>,     // 9
-    pub cst_cofins: Option<String>,  // 10
+    pub cst_pis: Option<u16>,        // 9
+    pub cst_cofins: Option<u16>,     // 10
     pub cfop: Option<u16>,           // 11
     pub inf_compl: Option<String>,   // 12
     pub cod_cta: Option<String>,     // 13
@@ -67,8 +67,8 @@ impl SpedParser for Registro1900 {
         let cod_sit = fields.get(6).to_optional_string();
         let vl_tot_rec = get_decimal_field(7, "VL_TOT_REC")?;
         let quant_doc = fields.get(8).to_optional_string(); // Pode ser String se a quantidade for tratada como tal, ou Decimal
-        let cst_pis = fields.get(9).to_optional_string();
-        let cst_cofins = fields.get(10).to_optional_string();
+        let cst_pis = fields.get(9).parse_opt();
+        let cst_cofins = fields.get(10).parse_opt();
         let cfop = fields.get(11).parse_opt();
         let inf_compl = fields.get(12).to_optional_string();
         let cod_cta = fields.get(13).to_optional_string();

@@ -1,4 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
+    impl_sped_record_trait,
+};
 use rust_decimal::Decimal;
 use std::path::Path;
 
@@ -10,7 +13,7 @@ pub struct RegistroC485 {
     pub bloco: char,
     pub registro: String,
     pub line_number: usize,
-    pub cst_cofins: Option<String>,         // 2
+    pub cst_cofins: Option<u16>,            // 2
     pub vl_item: Option<Decimal>,           // 3
     pub vl_bc_cofins: Option<Decimal>,      // 4
     pub aliq_cofins: Option<Decimal>,       // 5
@@ -45,7 +48,7 @@ impl SpedParser for RegistroC485 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cst_cofins = fields.get(2).to_optional_string();
+        let cst_cofins = fields.get(2).parse_opt();
         let vl_item = get_decimal_field(3, "VL_ITEM")?;
         let vl_bc_cofins = get_decimal_field(4, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(5, "ALIQ_COFINS")?;
