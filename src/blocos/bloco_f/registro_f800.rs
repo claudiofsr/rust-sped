@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
@@ -26,7 +26,7 @@ pub struct RegistroF800 {
     pub dt_even: Option<NaiveDate>,      // 3
     pub cnpj_suced: Option<String>,      // 4
     pub pa_cont_cred: Option<String>,    // 5
-    pub cod_cred: Option<String>,        // 6
+    pub cod_cred: Option<u16>,           // 6
     pub vl_cred_pis: Option<Decimal>,    // 7
     pub vl_cred_cofins: Option<Decimal>, // 8
     pub per_cred_cis: Option<String>,    // 9
@@ -67,7 +67,7 @@ impl SpedParser for RegistroF800 {
         let dt_even = get_date_field(3, "DT_EVEN")?;
         let cnpj_suced = fields.get(4).to_optional_string();
         let pa_cont_cred = fields.get(5).to_optional_string();
-        let cod_cred = fields.get(6).to_optional_string();
+        let cod_cred = fields.get(6).parse_opt();
         let vl_cred_pis = get_decimal_field(7, "VL_CRED_PIS")?;
         let vl_cred_cofins = get_decimal_field(8, "VL_CRED_COFINS")?;
         let per_cred_cis = fields.get(9).to_optional_string();

@@ -201,7 +201,7 @@ macro_rules! impl_filho {
 
     // Identificação por Código
     (@map get_cod_cta, $v:ident) => { fn get_cod_cta(&self) -> Option<&str> { self.$v.as_deref() } };
-    (@map get_cod_cred, $v:ident) => { fn get_cod_cred(&self) -> Option<&str> { self.$v.as_deref() } };
+    (@map get_cod_cred, $v:ident) => { fn get_cod_cred(&self) -> Option<u16> { self.$v } };
     (@map get_cod_item, $v:ident) => { fn get_cod_item(&self) -> Option<&str> { self.$v.as_deref() } };
     (@map get_cod_mod, $v:ident) => { fn get_cod_mod(&self) -> Option<&str> { self.$v.as_deref() } };
     (@map get_cod_nat, $v:ident) => { fn get_cod_nat(&self) -> Option<&str> { self.$v.as_deref() } };

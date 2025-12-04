@@ -312,7 +312,7 @@ impl DecimalExt for Option<Decimal> {
 ///
 /// U pode ser String ou &str.
 pub trait StringParser {
-    /// Parse `Option<&str>` para `Option<T>`
+    /// Parse `Option<U>` para `Option<T>`
     fn parse_opt<T: FromStr>(&self) -> Option<T>;
 }
 

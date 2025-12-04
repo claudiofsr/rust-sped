@@ -1,4 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
+    impl_sped_record_trait,
+};
 use rust_decimal::Decimal;
 use std::path::Path;
 
@@ -23,7 +26,7 @@ pub struct RegistroM230 {
     pub vl_nao_receb: Option<Decimal>, // 4
     pub vl_cont_dif: Option<Decimal>,  // 5
     pub vl_cred_dif: Option<Decimal>,  // 6
-    pub cod_cred: Option<String>,      // 7
+    pub cod_cred: Option<u16>,         // 7
 }
 
 impl_sped_record_trait!(RegistroM230);
@@ -57,7 +60,7 @@ impl SpedParser for RegistroM230 {
         let vl_nao_receb = get_decimal_field(4, "VL_NAO_RECEB")?;
         let vl_cont_dif = get_decimal_field(5, "VL_CONT_DIF")?;
         let vl_cred_dif = get_decimal_field(6, "VL_CRED_DIF")?;
-        let cod_cred = fields.get(7).to_optional_string();
+        let cod_cred = fields.get(7).parse_opt();
 
         let reg = RegistroM230 {
             nivel: 4,

@@ -96,7 +96,7 @@ pub trait RegistroFilho: SpedRecordTrait {
     fn get_cod_cta(&self) -> Option<&str> {
         None
     }
-    fn get_cod_cred(&self) -> Option<&str> {
+    fn get_cod_cred(&self) -> Option<u16> {
         None
     }
     fn get_cod_item(&self) -> Option<&str> {
@@ -1526,7 +1526,7 @@ impl<'a> BlocoI<'a> {
     }
 }
 
-type KeyM = (Option<u8>, Option<u16>, Option<u8>, Option<Decimal>);
+type KeyM = (Option<u16>, Option<u16>, Option<u8>, Option<Decimal>);
 
 // --- Bloco M (Apuração e Ajustes) ---
 #[derive(Default)]
@@ -1557,7 +1557,7 @@ impl<'a> BlocoM<'a> {
                 }
                 "M105" => {
                     if let (Ok(r), Some(pai)) = (record.downcast_ref::<RegistroM105>(), self.m100) {
-                        let cod_cred: Option<u8> = pai.cod_cred.parse_opt();
+                        let cod_cred: Option<u16> = pai.cod_cred;
                         let cst_pis: Option<u16> = r.cst_pis;
                         let nat_bc_cred: Option<u8> = r.nat_bc_cred.parse_opt();
                         let key = (cod_cred, cst_pis, nat_bc_cred, r.vl_bc_pis);
@@ -1573,7 +1573,7 @@ impl<'a> BlocoM<'a> {
                 }
                 "M505" => {
                     if let (Ok(r), Some(p)) = (record.downcast_ref::<RegistroM505>(), self.m500) {
-                        let cod_cred: Option<u8> = p.cod_cred.parse_opt();
+                        let cod_cred: Option<u16> = p.cod_cred;
                         let cst_cofins: Option<u16> = r.cst_cofins;
                         let nat_bc_cred: Option<u8> = r.nat_bc_cred.parse_opt();
                         let key = (cod_cred, cst_cofins, nat_bc_cred, r.vl_bc_cofins);
@@ -1590,7 +1590,7 @@ impl<'a> BlocoM<'a> {
 
                         let mut b = DocsBuilder::from_child(ctx, r, None);
                         b.doc.data_emissao = ctx.periodo_de_apuracao;
-                        b.doc.cod_credito = p.cod_cred.parse_opt();
+                        b.doc.cod_credito = p.cod_cred;
                         b.doc.aliq_cofins = p.aliq_cofins.to_f64_opt();
                         b.doc.natureza_bc = r.nat_bc_cred.parse_opt();
                         b.doc.tipo_de_operacao = Some(TipoOperacao::Detalhamento);
@@ -1678,7 +1678,7 @@ mod mappers {
             doc.doc.data_emissao = ctx.periodo_de_apuracao;
             doc.doc.aliq_pis = reg.aliq_pis.to_f64_opt();
             doc.doc.valor_bc = reg.vl_bc_pis.to_f64_opt();
-            doc.doc.cod_credito = reg.cod_cred.parse_opt();
+            doc.doc.cod_credito = reg.cod_cred;
             doc
         };
 
@@ -1699,7 +1699,7 @@ mod mappers {
             doc.doc.data_emissao = ctx.periodo_de_apuracao;
             doc.doc.aliq_cofins = reg.aliq_cofins.to_f64_opt();
             doc.doc.valor_bc = reg.vl_bc_cofins.to_f64_opt();
-            doc.doc.cod_credito = reg.cod_cred.parse_opt();
+            doc.doc.cod_credito = reg.cod_cred;
             doc
         };
 
@@ -1743,7 +1743,7 @@ mod mappers {
         line: usize,
         reg_name: &str,
         vl_desc: Option<Decimal>,
-        cod_cred: Option<&str>,
+        cod_cred: Option<u16>,
         per_apu: Option<&str>,
         ctx: &SpedContext,
     ) -> Option<DocsFiscaisNew> {
@@ -1755,7 +1755,7 @@ mod mappers {
         let mut b = DocsBuilder::new(ctx, reg_name, line, None);
         b.doc.valor_item = Some(-val);
         b.doc.tipo_de_operacao = Some(TipoOperacao::DescontoPosterior);
-        b.doc.cod_credito = cod_cred.parse_opt();
+        b.doc.cod_credito = cod_cred;
 
         if let (Some(orig_str), Some(curr)) = (per_apu, ctx.periodo_de_apuracao)
             && orig_str.len() == 6
