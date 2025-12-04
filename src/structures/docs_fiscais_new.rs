@@ -119,7 +119,7 @@ pub struct DocsFiscaisNew {
         rename = "Nº do Item do Documento Fiscal",
         deserialize_with = "csv::invalid_option"
     )]
-    pub num_item: Option<u32>,
+    pub num_item: Option<u16>,
 
     #[serde(rename = "Tipo do Item")]
     pub tipo_item: Arc<str>,

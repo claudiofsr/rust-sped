@@ -23,7 +23,7 @@ pub struct RegistroC170 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_item: Option<String>,           // 2
+    pub num_item: Option<u16>,              // 2
     pub cod_item: Option<String>,           // 3
     pub descr_compl: Option<String>,        // 4
     pub qtd: Option<Decimal>,               // 5
@@ -89,7 +89,7 @@ impl SpedParser for RegistroC170 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let num_item = fields.get(2).to_optional_string();
+        let num_item = fields.get(2).parse_opt();
         let cod_item = fields.get(3).to_optional_string();
         let descr_compl = fields.get(4).to_optional_string();
         let qtd = get_decimal_field(5, "QTD")?; // Assumindo QTD como Decimal

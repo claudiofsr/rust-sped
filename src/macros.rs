@@ -208,7 +208,7 @@ macro_rules! impl_filho {
     (@map get_cod_part, $v:ident) => { fn get_cod_part(&self) -> Option<&str> { self.$v.as_deref() } };
 
     // Identificação do Item
-    (@map get_num_item, $v:ident) => { fn get_num_item(&self) -> Option<&str> { self.$v.as_deref() } };
+    (@map get_num_item, $v:ident) => { fn get_num_item(&self) -> Option<u16> { self.$v } };
     (@map get_descr_item, $v:ident) => { fn get_descr_item(&self) -> Option<&str> { self.$v.as_deref() } };
     (@map get_descr_compl, $v:ident) => { fn get_descr_compl(&self) -> Option<&str> { self.$v.as_deref() } };
     (@map get_info_compl, $v:ident) => { fn get_info_compl(&self) -> Option<&str> { self.$v.as_deref() } };

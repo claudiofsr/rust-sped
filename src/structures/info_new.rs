@@ -113,7 +113,7 @@ pub trait RegistroFilho: SpedRecordTrait {
     }
 
     // Identificação do Item
-    fn get_num_item(&self) -> Option<&str> {
+    fn get_num_item(&self) -> Option<u16> {
         None
     }
     fn get_descr_item(&self) -> Option<&str> {
@@ -875,7 +875,7 @@ impl<'a> DocsBuilder<'a> {
         }
 
         // 1. Identificadores e Classificação
-        self.doc.num_item = filho.get_num_item().parse_opt();
+        self.doc.num_item = filho.get_num_item();
         self.doc.cst = filho.get_cst_cofins();
         self.doc.cfop = filho.get_cfop();
         self.doc.natureza_bc = filho.get_nat_bc_cred().parse_opt();

@@ -82,7 +82,7 @@ struct RegMockFilho {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    num_item: Option<String>,
+    num_item: Option<u16>,
     vl_item: Option<Decimal>,
     cst_pis: Option<u16>,
     aliq_pis: Option<Decimal>,
@@ -96,8 +96,8 @@ impl_sped_record_trait!(RegMockFilho);
 
 // Implementa a interface de Filho usada pelo DocsBuilder
 impl RegistroFilho for RegMockFilho {
-    fn get_num_item(&self) -> Option<&str> {
-        self.num_item.as_deref()
+    fn get_num_item(&self) -> Option<u16> {
+        self.num_item
     }
     fn get_valor_item(&self) -> Option<Decimal> {
         self.vl_item
@@ -206,7 +206,7 @@ fn test_builder_inheritance_logic() {
         registro: "MOCK_FILHO".to_string(),
         line_number: 28,
 
-        num_item: Some("001".to_string()),
+        num_item: Some(1),
         vl_item: Some(dec!(1000.00)),
         cst_pis: Some(50),
         aliq_pis: Some(dec!(1.65)),
@@ -257,7 +257,7 @@ fn test_builder_child_override() {
         registro: "MOCK_FILHO".to_string(),
         line_number: 30,
 
-        num_item: Some("001".to_string()),
+        num_item: Some(1),
         vl_item: Some(dec!(500.00)),
         cst_pis: None,
         aliq_pis: None,
