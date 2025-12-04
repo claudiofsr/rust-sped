@@ -217,7 +217,7 @@ macro_rules! impl_filho {
     // Classificação Fiscal
     (@map get_cst_pis, $v:ident) => { fn get_cst_pis(&self) -> Option<&str> { self.$v.as_deref() } };
     (@map get_cst_cofins, $v:ident) => { fn get_cst_cofins(&self) -> Option<&str> { self.$v.as_deref() } };
-    (@map get_cfop, $v:ident) => { fn get_cfop(&self) -> Option<&str> { self.$v.as_deref() } };
+    (@map get_cfop, $v:ident) => { fn get_cfop(&self) -> Option<u16> { self.$v } };
     (@map get_nat_bc_cred, $v:ident) => { fn get_nat_bc_cred(&self) -> Option<&str> { self.$v.as_deref() } };
     (@map get_ind_orig_cred, $v:ident) => { fn get_ind_orig_cred(&self) -> Option<&str> { self.$v.as_deref() } };
 

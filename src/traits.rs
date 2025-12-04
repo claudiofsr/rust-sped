@@ -308,16 +308,18 @@ impl DecimalExt for Option<Decimal> {
 // Conversões seguras e funcionais para tipos primitivos e Options
 // ============================================================================
 
-/// Extension para facilitar o parsing de `Option<String>`.
+/// Extension para facilitar o parsing de `Option<U>` para `Option<T>`.
+///
+/// U pode ser String ou &str.
 pub trait StringParser {
-    fn parse_opt<T: std::str::FromStr>(&self) -> Option<T>;
+    fn parse_opt<T: FromStr>(&self) -> Option<T>;
 }
 
 impl<U> StringParser for Option<U>
 where
     U: AsRef<str>,
 {
-    fn parse_opt<T: std::str::FromStr>(&self) -> Option<T> {
+    fn parse_opt<T: FromStr>(&self) -> Option<T> {
         self.as_ref().and_then(|u| u.as_ref().parse().ok())
     }
 }

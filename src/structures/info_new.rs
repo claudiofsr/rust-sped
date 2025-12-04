@@ -137,7 +137,7 @@ pub trait RegistroFilho: SpedRecordTrait {
     fn get_cst_cofins(&self) -> Option<&str> {
         None
     }
-    fn get_cfop(&self) -> Option<&str> {
+    fn get_cfop(&self) -> Option<u16> {
         None
     }
     fn get_nat_bc_cred(&self) -> Option<&str> {
@@ -532,7 +532,7 @@ impl_filho!(Registro1500, { get_cod_cred: cod_cred });
 // MEMORY OPTIMIZATION: Usar Arc<str> nas chaves reduz drasticamente a alocação
 // pois CSTs, CFOPs e Participantes são altamente repetitivos.
 type WeakKey = (Arc<str>, Decimal);
-type StrongKey = (Arc<str>, Decimal, Option<Arc<str>>, Option<Arc<str>>);
+type StrongKey = (Arc<str>, Decimal, Option<u16>, Option<Arc<str>>);
 type PisData = (f64, f64);
 
 #[derive(Default)]
@@ -559,15 +559,14 @@ impl CorrelationManager {
     fn make_strong_key(
         cst: Arc<str>,
         val: Decimal,
-        cfop: Option<&str>,
+        cfop: Option<u16>,
         part: Option<&str>,
     ) -> Option<StrongKey> {
         // filter + map é a forma perfeita de transformar Option<&str> vazio em None
-        let cf = cfop.filter(|s| !s.is_empty()).map(Arc::from);
         let pt = part.filter(|s| !s.is_empty()).map(Arc::from);
 
-        if cf.is_some() || pt.is_some() {
-            Some((cst, val, cf, pt))
+        if cfop.is_some() || pt.is_some() {
+            Some((cst, val, cfop, pt))
         } else {
             None
         }
@@ -580,7 +579,7 @@ impl CorrelationManager {
         val_item: Option<Decimal>,
         aliq: Option<Decimal>,
         val: Option<Decimal>,
-        cfop: Option<&str>,
+        cfop: Option<u16>,
         part: Option<&str>,
     ) {
         // Pattern matching em tupla para garantir que todos os dados obrigatórios existem
@@ -611,7 +610,7 @@ impl CorrelationManager {
         &self,
         cst: Option<&str>,
         val_item: Option<Decimal>,
-        cfop: Option<&str>,
+        cfop: Option<u16>,
         part: Option<&str>,
     ) -> Option<PisData> {
         let (c, val) = cst.zip(val_item)?;
@@ -884,7 +883,7 @@ impl<'a> DocsBuilder<'a> {
         // 1. Identificadores e Classificação
         self.doc.num_item = filho.get_num_item().parse_opt();
         self.doc.cst = filho.get_cst_cofins().parse_opt();
-        self.doc.cfop = filho.get_cfop().parse_opt();
+        self.doc.cfop = filho.get_cfop();
         self.doc.natureza_bc = filho.get_nat_bc_cred().parse_opt();
         self.doc.indicador_de_origem = filho.get_ind_orig_cred().parse_opt();
 

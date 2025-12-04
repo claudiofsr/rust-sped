@@ -1,4 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
+    impl_sped_record_trait,
+};
 use rust_decimal::Decimal;
 use std::path::Path;
 
@@ -18,7 +21,7 @@ pub struct RegistroC820 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cfop: Option<String>,               // 2
+    pub cfop: Option<u16>,                  // 2
     pub vl_item: Option<Decimal>,           // 3
     pub cod_item: Option<String>,           // 4
     pub cst_pis: Option<String>,            // 5
@@ -57,7 +60,7 @@ impl SpedParser for RegistroC820 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cfop = fields.get(2).to_optional_string();
+        let cfop = fields.get(2).parse_opt();
         let vl_item = get_decimal_field(3, "VL_ITEM")?;
         let cod_item = fields.get(4).to_optional_string();
         let cst_pis = fields.get(5).to_optional_string();

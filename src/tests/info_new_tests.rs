@@ -133,14 +133,14 @@ fn test_correlation_manager_storage_and_retrieval() {
     let val_item = Some(dec!(1000.00));
     let aliq = Some(dec!(1.65));
     let val_pis = Some(dec!(16.50));
-    let cfop = Some("1102");
+    let cfop = Some(1102);
     let part = Some("PART_01");
 
     // 1. Armazenar
     mgr.store(cst.as_deref(), val_item, aliq, val_pis, cfop, part);
 
     // 2. Recuperação Forte (Com Contexto)
-    let res_strong = mgr.resolve(Some("50"), val_item, Some("1102"), Some("PART_01"));
+    let res_strong = mgr.resolve(Some("50"), val_item, Some(1102), Some("PART_01"));
     assert_eq!(
         res_strong,
         Some((1.65, 16.50)),
@@ -166,7 +166,7 @@ fn test_correlation_manager_partial_strong_key() {
         Some(dec!(100.0)),
         Some(dec!(1.0)),
         Some(dec!(1.0)),
-        Some("5405"),
+        Some(5405),
         None,
     );
 
@@ -174,7 +174,7 @@ fn test_correlation_manager_partial_strong_key() {
     // A chave forte (StrongKey) exige igualdade exata nos Options.
     // Como (Some(CFOP), Some(Part)) != (Some(CFOP), None), a busca forte falha.
     // O sistema deve cair no Weak Cache (CST + Valor).
-    let result = mgr.resolve(Some("01"), Some(dec!(100.0)), Some("5405"), Some("PART_X"));
+    let result = mgr.resolve(Some("01"), Some(dec!(100.0)), Some(5405), Some("PART_X"));
 
     assert!(result.is_some(), "Deve achar via fallback weak cache");
 }

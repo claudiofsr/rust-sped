@@ -1,4 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
+    impl_sped_record_trait,
+};
 use rust_decimal::Decimal;
 use std::path::Path;
 
@@ -27,7 +30,7 @@ pub struct Registro1900 {
     pub quant_doc: Option<String>,   // 8 (Assumindo que pode ser string para quantidade ou Decimal)
     pub cst_pis: Option<String>,     // 9
     pub cst_cofins: Option<String>,  // 10
-    pub cfop: Option<String>,        // 11
+    pub cfop: Option<u16>,           // 11
     pub inf_compl: Option<String>,   // 12
     pub cod_cta: Option<String>,     // 13
 }
@@ -66,7 +69,7 @@ impl SpedParser for Registro1900 {
         let quant_doc = fields.get(8).to_optional_string(); // Pode ser String se a quantidade for tratada como tal, ou Decimal
         let cst_pis = fields.get(9).to_optional_string();
         let cst_cofins = fields.get(10).to_optional_string();
-        let cfop = fields.get(11).to_optional_string();
+        let cfop = fields.get(11).parse_opt();
         let inf_compl = fields.get(12).to_optional_string();
         let cod_cta = fields.get(13).to_optional_string();
 
