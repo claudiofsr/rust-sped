@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "P200";
 
@@ -18,12 +18,12 @@ pub struct RegistroP200 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_ref: Option<String>,          // 2
+    pub per_ref: Option<Arc<str>>,        // 2
     pub vl_tot_cont_apu: Option<Decimal>, // 3
     pub vl_tot_aj_reduc: Option<Decimal>, // 4
     pub vl_tot_aj_acres: Option<Decimal>, // 5
     pub vl_tot_cont_dev: Option<Decimal>, // 6
-    pub cod_rec: Option<String>,          // 7
+    pub cod_rec: Option<Arc<str>>,        // 7
 }
 
 impl_sped_record_trait!(RegistroP200);
@@ -52,12 +52,12 @@ impl SpedParser for RegistroP200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_ref = fields.get(2).to_optional_string();
+        let per_ref = fields.get(2).to_arc();
         let vl_tot_cont_apu = get_decimal_field(3, "VL_TOT_CONT_APU")?;
         let vl_tot_aj_reduc = get_decimal_field(4, "VL_TOT_AJ_REDUC")?;
         let vl_tot_aj_acres = get_decimal_field(5, "VL_TOT_AJ_ACRES")?;
         let vl_tot_cont_dev = get_decimal_field(6, "VL_TOT_CONT_DEV")?;
-        let cod_rec = fields.get(7).to_optional_string();
+        let cod_rec = fields.get(7).to_arc();
 
         let reg = RegistroP200 {
             nivel: 2,

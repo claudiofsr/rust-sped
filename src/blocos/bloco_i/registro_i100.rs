@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "I100";
 
@@ -31,7 +28,7 @@ pub struct RegistroI100 {
     pub vl_bc_cofins: Option<Decimal>,   // 9
     pub aliq_cofins: Option<Decimal>,    // 10
     pub vl_cofins: Option<Decimal>,      // 11
-    pub info_compl: Option<String>,      // 12
+    pub info_compl: Option<Arc<str>>,    // 12
 }
 
 impl_sped_record_trait!(RegistroI100);
@@ -70,7 +67,7 @@ impl SpedParser for RegistroI100 {
         let vl_bc_cofins = get_decimal_field(9, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(10, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(11, "VL_COFINS")?;
-        let info_compl = fields.get(12).to_optional_string();
+        let info_compl = fields.get(12).to_arc();
 
         let reg = RegistroI100 {
             nivel: 3,

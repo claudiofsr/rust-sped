@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C500";
 
@@ -14,20 +13,20 @@ pub struct RegistroC500 {
     pub bloco: char,
     pub registro: String,
     pub line_number: usize,
-    pub cod_part: Option<String>,   // 2
-    pub cod_mod: Option<String>,    // 3
-    pub cod_sit: Option<String>,    // 4
-    pub ser: Option<String>,        // 5
-    pub sub: Option<String>,        // 6
-    pub num_doc: Option<String>,    // 7
+    pub cod_part: Option<Arc<str>>, // 2
+    pub cod_mod: Option<Arc<str>>,  // 3
+    pub cod_sit: Option<Arc<str>>,  // 4
+    pub ser: Option<Arc<str>>,      // 5
+    pub sub: Option<Arc<str>>,      // 6
+    pub num_doc: Option<Arc<str>>,  // 7
     pub dt_doc: Option<NaiveDate>,  // 8
     pub dt_ent: Option<NaiveDate>,  // 9
     pub vl_doc: Option<Decimal>,    // 10
     pub vl_icms: Option<Decimal>,   // 11
-    pub cod_inf: Option<String>,    // 12
+    pub cod_inf: Option<Arc<str>>,  // 12
     pub vl_pis: Option<Decimal>,    // 13
     pub vl_cofins: Option<Decimal>, // 14
-    pub chv_doce: Option<String>,   // 15
+    pub chv_doce: Option<Arc<str>>, // 15
 }
 
 // O campo 15 pode não existir.
@@ -64,20 +63,20 @@ impl SpedParser for RegistroC500 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_part = fields.get(2).to_optional_string();
-        let cod_mod = fields.get(3).to_optional_string();
-        let cod_sit = fields.get(4).to_optional_string();
-        let ser = fields.get(5).to_optional_string();
-        let sub = fields.get(6).to_optional_string();
-        let num_doc = fields.get(7).to_optional_string();
+        let cod_part = fields.get(2).to_arc();
+        let cod_mod = fields.get(3).to_arc();
+        let cod_sit = fields.get(4).to_arc();
+        let ser = fields.get(5).to_arc();
+        let sub = fields.get(6).to_arc();
+        let num_doc = fields.get(7).to_arc();
         let dt_doc = get_date_field(8, "DT_DOC")?;
         let dt_ent = get_date_field(9, "DT_ENT")?;
         let vl_doc = get_decimal_field(10, "VL_DOC")?;
         let vl_icms = get_decimal_field(11, "VL_ICMS")?;
-        let cod_inf = fields.get(12).to_optional_string();
+        let cod_inf = fields.get(12).to_arc();
         let vl_pis = get_decimal_field(13, "VL_PIS")?;
         let vl_cofins = get_decimal_field(14, "VL_COFINS")?;
-        let chv_doce = fields.get(15).to_optional_string();
+        let chv_doce = fields.get(15).to_arc();
 
         let reg = RegistroC500 {
             nivel: 3,

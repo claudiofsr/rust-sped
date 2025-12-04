@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C199";
 
@@ -18,11 +18,11 @@ pub struct RegistroC199 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_doc_imp: Option<String>,    // 2
-    pub num_doc_imp: Option<String>,    // 3
+    pub cod_doc_imp: Option<Arc<str>>,  // 2
+    pub num_doc_imp: Option<Arc<str>>,  // 3
     pub vl_pis_imp: Option<Decimal>,    // 4
     pub vl_cofins_imp: Option<Decimal>, // 5
-    pub num_acdraw: Option<String>,     // 6
+    pub num_acdraw: Option<Arc<str>>,   // 6
 }
 
 impl_sped_record_trait!(RegistroC199);
@@ -50,11 +50,11 @@ impl SpedParser for RegistroC199 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_doc_imp = fields.get(2).to_optional_string();
-        let num_doc_imp = fields.get(3).to_optional_string();
+        let cod_doc_imp = fields.get(2).to_arc();
+        let num_doc_imp = fields.get(3).to_arc();
         let vl_pis_imp = get_decimal_field(4, "VL_PIS_IMP")?;
         let vl_cofins_imp = get_decimal_field(5, "VL_COFINS_IMP")?;
-        let num_acdraw = fields.get(6).to_optional_string();
+        let num_acdraw = fields.get(6).to_arc();
 
         let reg = RegistroC199 {
             nivel: 4,

@@ -1,5 +1,5 @@
-use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
-use std::path::Path;
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_sped_record_trait};
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0208";
 
@@ -17,9 +17,9 @@ pub struct Registro0208 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_tab: Option<String>,   // 2
-    pub cod_gru: Option<String>,   // 3 (corrigido do HashMap que tinha 2x o índice 2)
-    pub marca_com: Option<String>, // 4 (corrigido do HashMap que tinha 2x o índice 2)
+    pub cod_tab: Option<Arc<str>>,   // 2
+    pub cod_gru: Option<Arc<str>>,   // 3 (corrigido do HashMap que tinha 2x o índice 2)
+    pub marca_com: Option<Arc<str>>, // 4 (corrigido do HashMap que tinha 2x o índice 2)
 }
 
 impl_sped_record_trait!(Registro0208);
@@ -41,9 +41,9 @@ impl SpedParser for Registro0208 {
             });
         }
 
-        let cod_tab = fields.get(2).to_optional_string();
-        let cod_gru = fields.get(3).to_optional_string();
-        let marca_com = fields.get(4).to_optional_string();
+        let cod_tab = fields.get(2).to_arc();
+        let cod_gru = fields.get(3).to_arc();
+        let marca_com = fields.get(4).to_arc();
 
         let reg = Registro0208 {
             nivel: 4,

@@ -1,5 +1,5 @@
-use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
-use std::path::Path;
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_sped_record_trait};
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0400";
 
@@ -17,8 +17,8 @@ pub struct Registro0400 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_nat: Option<String>,   // 2
-    pub descr_nat: Option<String>, // 3
+    pub cod_nat: Option<Arc<str>>,   // 2
+    pub descr_nat: Option<Arc<str>>, // 3
 }
 
 impl_sped_record_trait!(Registro0400);
@@ -39,8 +39,8 @@ impl SpedParser for Registro0400 {
             });
         }
 
-        let cod_nat = fields.get(2).to_optional_string();
-        let descr_nat = fields.get(3).to_optional_string();
+        let cod_nat = fields.get(2).to_arc();
+        let descr_nat = fields.get(3).to_arc();
 
         let reg = Registro0400 {
             nivel: 3,

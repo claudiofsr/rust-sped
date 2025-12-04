@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "F700";
 
@@ -18,13 +18,13 @@ pub struct RegistroF700 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_ori_ded: Option<String>,    // 2
-    pub ind_nat_ded: Option<String>,    // 3
+    pub ind_ori_ded: Option<Arc<str>>,  // 2
+    pub ind_nat_ded: Option<Arc<str>>,  // 3
     pub vl_ded_pis: Option<Decimal>,    // 4
     pub vl_ded_cofins: Option<Decimal>, // 5
     pub vl_bc_oper: Option<Decimal>,    // 6
-    pub cnpj: Option<String>,           // 7
-    pub inf_comp: Option<String>,       // 8
+    pub cnpj: Option<Arc<str>>,         // 7
+    pub inf_comp: Option<Arc<str>>,     // 8
 }
 
 impl_sped_record_trait!(RegistroF700);
@@ -52,13 +52,13 @@ impl SpedParser for RegistroF700 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_ori_ded = fields.get(2).to_optional_string();
-        let ind_nat_ded = fields.get(3).to_optional_string();
+        let ind_ori_ded = fields.get(2).to_arc();
+        let ind_nat_ded = fields.get(3).to_arc();
         let vl_ded_pis = get_decimal_field(4, "VL_DED_PIS")?;
         let vl_ded_cofins = get_decimal_field(5, "VL_DED_COFINS")?;
         let vl_bc_oper = get_decimal_field(6, "VL_BC_OPER")?;
-        let cnpj = fields.get(7).to_optional_string();
-        let inf_comp = fields.get(8).to_optional_string();
+        let cnpj = fields.get(7).to_arc();
+        let inf_comp = fields.get(8).to_arc();
 
         let reg = RegistroF700 {
             nivel: 3,

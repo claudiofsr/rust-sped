@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "P100";
 
@@ -25,14 +24,14 @@ pub struct RegistroP100 {
     pub dt_ini: Option<NaiveDate>,          // 2
     pub dt_fin: Option<NaiveDate>,          // 3
     pub vl_rec_tot_est: Option<Decimal>,    // 4
-    pub cod_ativ_econ: Option<String>,      // 5
+    pub cod_ativ_econ: Option<Arc<str>>,    // 5
     pub vl_rec_ativ_estab: Option<Decimal>, // 6
     pub vl_exc: Option<Decimal>,            // 7
     pub vl_bc_cont: Option<Decimal>,        // 8
     pub aliq_cont: Option<Decimal>,         // 9
     pub vl_cont_apu: Option<Decimal>,       // 10
-    pub cod_cta: Option<String>,            // 11
-    pub info_compl: Option<String>,         // 12
+    pub cod_cta: Option<Arc<str>>,          // 11
+    pub info_compl: Option<Arc<str>>,       // 12
 }
 
 impl_sped_record_trait!(RegistroP100);
@@ -73,14 +72,14 @@ impl SpedParser for RegistroP100 {
         let dt_ini = get_date_field(2, "DT_INI")?;
         let dt_fin = get_date_field(3, "DT_FIN")?;
         let vl_rec_tot_est = get_decimal_field(4, "VL_REC_TOT_EST")?;
-        let cod_ativ_econ = fields.get(5).to_optional_string();
+        let cod_ativ_econ = fields.get(5).to_arc();
         let vl_rec_ativ_estab = get_decimal_field(6, "VL_REC_ATIV_ESTAB")?;
         let vl_exc = get_decimal_field(7, "VL_EXC")?;
         let vl_bc_cont = get_decimal_field(8, "VL_BC_CONT")?;
         let aliq_cont = get_decimal_field(9, "ALIQ_CONT")?;
         let vl_cont_apu = get_decimal_field(10, "VL_CONT_APU")?;
-        let cod_cta = fields.get(11).to_optional_string();
-        let info_compl = fields.get(12).to_optional_string();
+        let cod_cta = fields.get(11).to_arc();
+        let info_compl = fields.get(12).to_arc();
 
         let reg = RegistroP100 {
             nivel: 3,

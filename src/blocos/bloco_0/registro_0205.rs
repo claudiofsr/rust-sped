@@ -1,8 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_sped_record_trait};
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0205";
 
@@ -20,10 +18,10 @@ pub struct Registro0205 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub descr_ant_item: Option<String>, // 2
-    pub dt_ini: Option<NaiveDate>,      // 3
-    pub dt_fim: Option<NaiveDate>,      // 4
-    pub cod_ant_item: Option<String>,   // 5
+    pub descr_ant_item: Option<Arc<str>>, // 2
+    pub dt_ini: Option<NaiveDate>,        // 3
+    pub dt_fim: Option<NaiveDate>,        // 4
+    pub cod_ant_item: Option<Arc<str>>,   // 5
 }
 
 impl_sped_record_trait!(Registro0205);
@@ -50,10 +48,10 @@ impl SpedParser for Registro0205 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let descr_ant_item = fields.get(2).to_optional_string();
+        let descr_ant_item = fields.get(2).to_arc();
         let dt_ini = get_date_field(3, "DT_INI")?;
         let dt_fim = get_date_field(4, "DT_FIM")?;
-        let cod_ant_item = fields.get(5).to_optional_string();
+        let cod_ant_item = fields.get(5).to_arc();
 
         let reg = Registro0205 {
             nivel: 4,

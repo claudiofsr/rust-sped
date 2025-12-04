@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "F500";
 
@@ -32,10 +29,10 @@ pub struct RegistroF500 {
     pub vl_bc_cofins: Option<Decimal>,   // 10
     pub aliq_cofins: Option<Decimal>,    // 11
     pub vl_cofins: Option<Decimal>,      // 12
-    pub cod_mod: Option<String>,         // 13
+    pub cod_mod: Option<Arc<str>>,       // 13
     pub cfop: Option<u16>,               // 14
-    pub cod_cta: Option<String>,         // 15
-    pub info_compl: Option<String>,      // 16
+    pub cod_cta: Option<Arc<str>>,       // 15
+    pub info_compl: Option<Arc<str>>,    // 16
 }
 
 impl_sped_record_trait!(RegistroF500);
@@ -74,10 +71,10 @@ impl SpedParser for RegistroF500 {
         let vl_bc_cofins = get_decimal_field(10, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(11, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(12, "VL_COFINS")?;
-        let cod_mod = fields.get(13).to_optional_string();
+        let cod_mod = fields.get(13).to_arc();
         let cfop = fields.get(14).parse_opt();
-        let cod_cta = fields.get(15).to_optional_string();
-        let info_compl = fields.get(16).to_optional_string();
+        let cod_cta = fields.get(15).to_arc();
+        let info_compl = fields.get(16).to_arc();
 
         let reg = RegistroF500 {
             nivel: 3,

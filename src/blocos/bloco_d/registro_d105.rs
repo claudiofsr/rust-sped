@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "D105";
 
@@ -21,14 +18,14 @@ pub struct RegistroD105 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_nat_frt: Option<String>,   // 2
+    pub ind_nat_frt: Option<Arc<str>>, // 2
     pub vl_item: Option<Decimal>,      // 3
     pub cst_cofins: Option<u16>,       // 4
-    pub nat_bc_cred: Option<String>,   // 5
+    pub nat_bc_cred: Option<Arc<str>>, // 5
     pub vl_bc_cofins: Option<Decimal>, // 6
     pub aliq_cofins: Option<Decimal>,  // 7
     pub vl_cofins: Option<Decimal>,    // 8
-    pub cod_cta: Option<String>,       // 9
+    pub cod_cta: Option<Arc<str>>,     // 9
 }
 
 impl_sped_record_trait!(RegistroD105);
@@ -57,14 +54,14 @@ impl SpedParser for RegistroD105 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_nat_frt = fields.get(2).to_optional_string();
+        let ind_nat_frt = fields.get(2).to_arc();
         let vl_item = get_decimal_field(3, "VL_ITEM")?;
         let cst_cofins = fields.get(4).parse_opt();
-        let nat_bc_cred = fields.get(5).to_optional_string();
+        let nat_bc_cred = fields.get(5).to_arc();
         let vl_bc_cofins = get_decimal_field(6, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(7, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(8, "VL_COFINS")?;
-        let cod_cta = fields.get(9).to_optional_string();
+        let cod_cta = fields.get(9).to_arc();
 
         let reg = RegistroD105 {
             nivel: 4,

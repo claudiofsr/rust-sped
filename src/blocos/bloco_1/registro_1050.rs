@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1050";
 
@@ -23,8 +22,8 @@ pub struct Registro1050 {
     pub line_number: usize,
 
     pub dt_ref: Option<NaiveDate>,    // 2
-    pub ind_aj_bc: Option<String>,    // 3
-    pub cnpj: Option<String>,         // 4
+    pub ind_aj_bc: Option<Arc<str>>,  // 3
+    pub cnpj: Option<Arc<str>>,       // 4
     pub vl_aj_tot: Option<Decimal>,   // 5
     pub vl_aj_cst01: Option<Decimal>, // 6
     pub vl_aj_cst02: Option<Decimal>, // 7
@@ -37,9 +36,9 @@ pub struct Registro1050 {
     pub vl_aj_cst09: Option<Decimal>, // 14
     pub vl_aj_cst49: Option<Decimal>, // 15
     pub vl_aj_cst99: Option<Decimal>, // 16
-    pub ind_aprop: Option<String>,    // 17
-    pub num_rec: Option<String>,      // 18
-    pub info_compl: Option<String>,   // 19
+    pub ind_aprop: Option<Arc<str>>,  // 17
+    pub num_rec: Option<Arc<str>>,    // 18
+    pub info_compl: Option<Arc<str>>, // 19
 }
 
 impl_sped_record_trait!(Registro1050);
@@ -75,8 +74,8 @@ impl SpedParser for Registro1050 {
         };
 
         let dt_ref = get_date_field(2, "DT_REF")?;
-        let ind_aj_bc = fields.get(3).to_optional_string();
-        let cnpj = fields.get(4).to_optional_string();
+        let ind_aj_bc = fields.get(3).to_arc();
+        let cnpj = fields.get(4).to_arc();
         let vl_aj_tot = get_decimal_field(5, "VL_AJ_TOT")?;
         let vl_aj_cst01 = get_decimal_field(6, "VL_AJ_CST01")?;
         let vl_aj_cst02 = get_decimal_field(7, "VL_AJ_CST02")?;
@@ -89,9 +88,9 @@ impl SpedParser for Registro1050 {
         let vl_aj_cst09 = get_decimal_field(14, "VL_AJ_CST09")?;
         let vl_aj_cst49 = get_decimal_field(15, "VL_AJ_CST49")?;
         let vl_aj_cst99 = get_decimal_field(16, "VL_AJ_CST99")?;
-        let ind_aprop = fields.get(17).to_optional_string();
-        let num_rec = fields.get(18).to_optional_string();
-        let info_compl = fields.get(19).to_optional_string();
+        let ind_aprop = fields.get(17).to_arc();
+        let num_rec = fields.get(18).to_arc();
+        let info_compl = fields.get(19).to_arc();
 
         let reg = Registro1050 {
             nivel: 2,

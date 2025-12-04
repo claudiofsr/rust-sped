@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0145";
 
@@ -18,11 +18,11 @@ pub struct Registro0145 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_inc_trib: Option<String>,        // 2
+    pub cod_inc_trib: Option<Arc<str>>,      // 2
     pub vl_rec_tot: Option<Decimal>,         // 3
     pub vl_rec_ativ: Option<Decimal>,        // 4
     pub vl_rec_demais_ativ: Option<Decimal>, // 5
-    pub info_compl: Option<String>,          // 6
+    pub info_compl: Option<Arc<str>>,        // 6
 }
 
 impl_sped_record_trait!(Registro0145);
@@ -49,11 +49,11 @@ impl SpedParser for Registro0145 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_inc_trib = fields.get(2).to_optional_string();
+        let cod_inc_trib = fields.get(2).to_arc();
         let vl_rec_tot = get_decimal_field(3, "VL_REC_TOT")?;
         let vl_rec_ativ = get_decimal_field(4, "VL_REC_ATIV")?;
         let vl_rec_demais_ativ = get_decimal_field(5, "VL_REC_DEMAIS_ATIV")?;
-        let info_compl = fields.get(6).to_optional_string();
+        let info_compl = fields.get(6).to_arc();
 
         let reg = Registro0145 {
             nivel: 3,

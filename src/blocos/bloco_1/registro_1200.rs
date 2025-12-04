@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1200";
 
@@ -22,8 +21,8 @@ pub struct Registro1200 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_apur_ant: Option<String>,      // 2
-    pub nat_cont_rec: Option<String>,      // 3
+    pub per_apur_ant: Option<Arc<str>>,    // 2
+    pub nat_cont_rec: Option<Arc<str>>,    // 3
     pub vl_cont_apur: Option<Decimal>,     // 4
     pub vl_cred_pis_desc: Option<Decimal>, // 5
     pub vl_cont_dev: Option<Decimal>,      // 6
@@ -66,8 +65,8 @@ impl SpedParser for Registro1200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_apur_ant = fields.get(2).to_optional_string();
-        let nat_cont_rec = fields.get(3).to_optional_string();
+        let per_apur_ant = fields.get(2).to_arc();
+        let nat_cont_rec = fields.get(3).to_arc();
         let vl_cont_apur = get_decimal_field(4, "VL_CONT_APUR")?;
         let vl_cred_pis_desc = get_decimal_field(5, "VL_CRED_PIS_DESC")?;
         let vl_cont_dev = get_decimal_field(6, "VL_CONT_DEV")?;

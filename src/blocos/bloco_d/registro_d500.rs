@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "D500";
 
@@ -22,14 +21,14 @@ pub struct RegistroD500 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_oper: Option<String>,    // 2
-    pub ind_emit: Option<String>,    // 3
-    pub cod_part: Option<String>,    // 4
-    pub cod_mod: Option<String>,     // 5
-    pub cod_sit: Option<String>,     // 6
-    pub ser: Option<String>,         // 7
-    pub sub: Option<String>,         // 8
-    pub num_doc: Option<String>,     // 9
+    pub ind_oper: Option<Arc<str>>,  // 2
+    pub ind_emit: Option<Arc<str>>,  // 3
+    pub cod_part: Option<Arc<str>>,  // 4
+    pub cod_mod: Option<Arc<str>>,   // 5
+    pub cod_sit: Option<Arc<str>>,   // 6
+    pub ser: Option<Arc<str>>,       // 7
+    pub sub: Option<Arc<str>>,       // 8
+    pub num_doc: Option<Arc<str>>,   // 9
     pub dt_doc: Option<NaiveDate>,   // 10
     pub dt_a_p: Option<NaiveDate>,   // 11
     pub vl_doc: Option<Decimal>,     // 12
@@ -40,7 +39,7 @@ pub struct RegistroD500 {
     pub vl_da: Option<Decimal>,      // 17
     pub vl_bc_icms: Option<Decimal>, // 18
     pub vl_icms: Option<Decimal>,    // 19
-    pub cod_inf: Option<String>,     // 20
+    pub cod_inf: Option<Arc<str>>,   // 20
     pub vl_pis: Option<Decimal>,     // 21
     pub vl_cofins: Option<Decimal>,  // 22
 }
@@ -78,14 +77,14 @@ impl SpedParser for RegistroD500 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).to_optional_string();
-        let ind_emit = fields.get(3).to_optional_string();
-        let cod_part = fields.get(4).to_optional_string();
-        let cod_mod = fields.get(5).to_optional_string();
-        let cod_sit = fields.get(6).to_optional_string();
-        let ser = fields.get(7).to_optional_string();
-        let sub = fields.get(8).to_optional_string();
-        let num_doc = fields.get(9).to_optional_string();
+        let ind_oper = fields.get(2).to_arc();
+        let ind_emit = fields.get(3).to_arc();
+        let cod_part = fields.get(4).to_arc();
+        let cod_mod = fields.get(5).to_arc();
+        let cod_sit = fields.get(6).to_arc();
+        let ser = fields.get(7).to_arc();
+        let sub = fields.get(8).to_arc();
+        let num_doc = fields.get(9).to_arc();
         let dt_doc = get_date_field(10, "DT_DOC")?;
         let dt_a_p = get_date_field(11, "DT_A_P")?;
         let vl_doc = get_decimal_field(12, "VL_DOC")?;
@@ -96,7 +95,7 @@ impl SpedParser for RegistroD500 {
         let vl_da = get_decimal_field(17, "VL_DA")?;
         let vl_bc_icms = get_decimal_field(18, "VL_BC_ICMS")?;
         let vl_icms = get_decimal_field(19, "VL_ICMS")?;
-        let cod_inf = fields.get(20).to_optional_string();
+        let cod_inf = fields.get(20).to_arc();
         let vl_pis = get_decimal_field(21, "VL_PIS")?;
         let vl_cofins = get_decimal_field(22, "VL_COFINS")?;
 

@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1500";
 
@@ -21,9 +18,9 @@ pub struct Registro1500 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_apu_cred: Option<String>,          // 2
-    pub orig_cred: Option<String>,             // 3
-    pub cnpj_suc: Option<String>,              // 4
+    pub per_apu_cred: Option<Arc<str>>,        // 2
+    pub orig_cred: Option<Arc<str>>,           // 3
+    pub cnpj_suc: Option<Arc<str>>,            // 4
     pub cod_cred: Option<u16>,                 // 5
     pub vl_cred_apu: Option<Decimal>,          // 6
     pub vl_cred_ext_apu: Option<Decimal>,      // 7
@@ -31,7 +28,7 @@ pub struct Registro1500 {
     pub vl_cred_desc_pa_ant: Option<Decimal>,  // 9
     pub vl_cred_per_pa_ant: Option<Decimal>,   // 10
     pub vl_cred_dcomp_pa_ant: Option<Decimal>, // 11
-    pub sd_cred_disp_efd: Option<String>,      // 12
+    pub sd_cred_disp_efd: Option<Arc<str>>,    // 12
     pub vl_cred_desc_efd: Option<Decimal>,     // 13
     pub vl_cred_per_efd: Option<Decimal>,      // 14
     pub vl_cred_dcomp_efd: Option<Decimal>,    // 15
@@ -65,9 +62,9 @@ impl SpedParser for Registro1500 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_apu_cred = fields.get(2).to_optional_string();
-        let orig_cred = fields.get(3).to_optional_string();
-        let cnpj_suc = fields.get(4).to_optional_string();
+        let per_apu_cred = fields.get(2).to_arc();
+        let orig_cred = fields.get(3).to_arc();
+        let cnpj_suc = fields.get(4).to_arc();
         let cod_cred = fields.get(5).parse_opt();
         let vl_cred_apu = get_decimal_field(6, "VL_CRED_APU")?;
         let vl_cred_ext_apu = get_decimal_field(7, "VL_CRED_EXT_APU")?;
@@ -75,7 +72,7 @@ impl SpedParser for Registro1500 {
         let vl_cred_desc_pa_ant = get_decimal_field(9, "VL_CRED_DESC_PA_ANT")?;
         let vl_cred_per_pa_ant = get_decimal_field(10, "VL_CRED_PER_PA_ANT")?;
         let vl_cred_dcomp_pa_ant = get_decimal_field(11, "VL_CRED_DCOMP_PA_ANT")?;
-        let sd_cred_disp_efd = fields.get(12).to_optional_string();
+        let sd_cred_disp_efd = fields.get(12).to_arc();
         let vl_cred_desc_efd = get_decimal_field(13, "VL_CRED_DESC_EFD")?;
         let vl_cred_per_efd = get_decimal_field(14, "VL_CRED_PER_EFD")?;
         let vl_cred_dcomp_efd = get_decimal_field(15, "VL_CRED_DCOMP_EFD")?;

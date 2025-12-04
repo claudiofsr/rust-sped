@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C491";
 
@@ -13,16 +10,16 @@ pub struct RegistroC491 {
     pub bloco: char,
     pub registro: String,
     pub line_number: usize,
-    pub cod_item: Option<String>,        // 2
+    pub cod_item: Option<Arc<str>>,      // 2
     pub cst_pis: Option<u16>,            // 3
     pub cfop: Option<u16>,               // 4
     pub vl_item: Option<Decimal>,        // 5
     pub vl_bc_pis: Option<Decimal>,      // 6
     pub aliq_pis: Option<Decimal>,       // 7
-    pub quant_bc_pis: Option<String>,    // 8 (Pode ser Decimal dependendo do formato SPED)
+    pub quant_bc_pis: Option<Arc<str>>,  // 8 (Pode ser Decimal dependendo do formato SPED)
     pub aliq_pis_quant: Option<Decimal>, // 9
     pub vl_pis: Option<Decimal>,         // 10
-    pub cod_cta: Option<String>,         // 11
+    pub cod_cta: Option<Arc<str>>,       // 11
 }
 
 impl_sped_record_trait!(RegistroC491);
@@ -49,16 +46,16 @@ impl SpedParser for RegistroC491 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_item = fields.get(2).to_optional_string();
+        let cod_item = fields.get(2).to_arc();
         let cst_pis = fields.get(3).parse_opt();
         let cfop = fields.get(4).parse_opt();
         let vl_item = get_decimal_field(5, "VL_ITEM")?;
         let vl_bc_pis = get_decimal_field(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(7, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(8).to_optional_string();
+        let quant_bc_pis = fields.get(8).to_arc();
         let aliq_pis_quant = get_decimal_field(9, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal_field(10, "VL_PIS")?;
-        let cod_cta = fields.get(11).to_optional_string();
+        let cod_cta = fields.get(11).to_arc();
 
         let reg = RegistroC491 {
             nivel: 4,

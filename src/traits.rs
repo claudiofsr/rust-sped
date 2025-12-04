@@ -4,6 +4,7 @@ use std::{
     fmt::Debug,
     path::Path,
     str::FromStr,
+    sync::Arc,
 };
 
 use chrono::NaiveDate;
@@ -308,20 +309,38 @@ impl DecimalExt for Option<Decimal> {
 // Conversões seguras e funcionais para tipos primitivos e Options
 // ============================================================================
 
-/// Extension para facilitar o parsing de `Option<U>` para `Option<T>`.
+/// Extension para facilitar o parsing de `Option<T>` para `Option<U>`.
 ///
 /// U pode ser String ou &str.
 pub trait StringParser {
-    /// Parse `Option<U>` para `Option<T>`
-    fn parse_opt<T: FromStr>(&self) -> Option<T>;
+    /// Parse `Option<T>` para `Option<U>`.
+    ///
+    /// Tenta realizar o parse para um tipo `U` (ex: u32, f64, Decimal).
+    /// Retorna `None` se a entrada for `None`, vazia ou se o parse falhar.
+    fn parse_opt<U: FromStr>(&self) -> Option<U>;
+
+    /// Converte `Option<T>` para `Option<Arc<str>>`.
+    ///
+    /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).
+    fn to_arc(&self) -> Option<Arc<str>>;
 }
 
-impl<U> StringParser for Option<U>
+impl<T> StringParser for Option<T>
 where
-    U: AsRef<str>,
+    T: AsRef<str>,
 {
-    fn parse_opt<T: FromStr>(&self) -> Option<T> {
-        self.as_ref().and_then(|u| u.as_ref().parse().ok())
+    fn parse_opt<U: FromStr>(&self) -> Option<U> {
+        self.as_ref()
+            .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
+            .filter(|s| !s.is_empty()) // 2. "Fail fast": Se vazio, nem tenta parsear
+            .and_then(|s| s.parse().ok())
+    }
+
+    fn to_arc(&self) -> Option<Arc<str>> {
+        self.as_ref()
+            .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
+            .filter(|s| !s.is_empty()) // 2. CRUCIAL: Transforma Some("") em None
+            .map(Arc::from) // 3. Só aloca na Heap se tiver conteúdo real
     }
 }
 

@@ -1,8 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_sped_record_trait};
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0500";
 
@@ -20,14 +18,14 @@ pub struct Registro0500 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub dt_alt: Option<NaiveDate>,   // 2
-    pub cod_nat_cc: Option<String>,  // 3
-    pub ind_cta: Option<String>,     // 4
-    pub nivel_conta: Option<String>, // 5 (renomeado para evitar conflito com 'nivel' do struct)
-    pub cod_cta: Option<String>,     // 6
-    pub nome_cta: Option<String>,    // 7
-    pub cod_cta_ref: Option<String>, // 8
-    pub cnpj_est: Option<String>,    // 9
+    pub dt_alt: Option<NaiveDate>,     // 2
+    pub cod_nat_cc: Option<Arc<str>>,  // 3
+    pub ind_cta: Option<Arc<str>>,     // 4
+    pub nivel_conta: Option<Arc<str>>, // 5 (renomeado para evitar conflito com 'nivel' do struct)
+    pub cod_cta: Option<Arc<str>>,     // 6
+    pub nome_cta: Option<Arc<str>>,    // 7
+    pub cod_cta_ref: Option<Arc<str>>, // 8
+    pub cnpj_est: Option<Arc<str>>,    // 9
 }
 
 impl_sped_record_trait!(Registro0500);
@@ -55,13 +53,13 @@ impl SpedParser for Registro0500 {
         };
 
         let dt_alt = get_date_field(2, "DT_ALT")?;
-        let cod_nat_cc = fields.get(3).to_optional_string();
-        let ind_cta = fields.get(4).to_optional_string();
-        let nivel_conta = fields.get(5).to_optional_string();
-        let cod_cta = fields.get(6).to_optional_string();
-        let nome_cta = fields.get(7).to_optional_string();
-        let cod_cta_ref = fields.get(8).to_optional_string();
-        let cnpj_est = fields.get(9).to_optional_string();
+        let cod_nat_cc = fields.get(3).to_arc();
+        let ind_cta = fields.get(4).to_arc();
+        let nivel_conta = fields.get(5).to_arc();
+        let cod_cta = fields.get(6).to_arc();
+        let nome_cta = fields.get(7).to_arc();
+        let cod_cta_ref = fields.get(8).to_arc();
+        let cnpj_est = fields.get(9).to_arc();
 
         let reg = Registro0500 {
             nivel: 2,

@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C800";
 
@@ -22,16 +21,16 @@ pub struct RegistroC800 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<String>,       // 2
-    pub cod_sit: Option<String>,       // 3
-    pub num_cfe: Option<String>,       // 4
+    pub cod_mod: Option<Arc<str>>,     // 2
+    pub cod_sit: Option<Arc<str>>,     // 3
+    pub num_cfe: Option<Arc<str>>,     // 4
     pub dt_doc: Option<NaiveDate>,     // 5
     pub vl_cfe: Option<Decimal>,       // 6
     pub vl_pis: Option<Decimal>,       // 7
     pub vl_cofins: Option<Decimal>,    // 8
-    pub cnpj_cpf: Option<String>,      // 9
-    pub nr_sat: Option<String>,        // 10
-    pub chv_cfe: Option<String>,       // 11
+    pub cnpj_cpf: Option<Arc<str>>,    // 9
+    pub nr_sat: Option<Arc<str>>,      // 10
+    pub chv_cfe: Option<Arc<str>>,     // 11
     pub vl_desc: Option<Decimal>,      // 12
     pub vl_merc: Option<Decimal>,      // 13
     pub vl_out_da: Option<Decimal>,    // 14
@@ -71,16 +70,16 @@ impl SpedParser for RegistroC800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_optional_string();
-        let cod_sit = fields.get(3).to_optional_string();
-        let num_cfe = fields.get(4).to_optional_string();
+        let cod_mod = fields.get(2).to_arc();
+        let cod_sit = fields.get(3).to_arc();
+        let num_cfe = fields.get(4).to_arc();
         let dt_doc = get_date_field(5, "DT_DOC")?;
         let vl_cfe = get_decimal_field(6, "VL_CFE")?;
         let vl_pis = get_decimal_field(7, "VL_PIS")?;
         let vl_cofins = get_decimal_field(8, "VL_COFINS")?;
-        let cnpj_cpf = fields.get(9).to_optional_string();
-        let nr_sat = fields.get(10).to_optional_string();
-        let chv_cfe = fields.get(11).to_optional_string();
+        let cnpj_cpf = fields.get(9).to_arc();
+        let nr_sat = fields.get(10).to_arc();
+        let chv_cfe = fields.get(11).to_arc();
         let vl_desc = get_decimal_field(12, "VL_DESC")?;
         let vl_merc = get_decimal_field(13, "VL_MERC")?;
         let vl_out_da = get_decimal_field(14, "VL_OUT_DA")?;

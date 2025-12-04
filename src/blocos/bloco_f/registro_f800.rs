@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "F800";
 
@@ -22,14 +21,14 @@ pub struct RegistroF800 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_nat_even: Option<String>,    // 2
+    pub ind_nat_even: Option<Arc<str>>,  // 2
     pub dt_even: Option<NaiveDate>,      // 3
-    pub cnpj_suced: Option<String>,      // 4
-    pub pa_cont_cred: Option<String>,    // 5
+    pub cnpj_suced: Option<Arc<str>>,    // 4
+    pub pa_cont_cred: Option<Arc<str>>,  // 5
     pub cod_cred: Option<u16>,           // 6
     pub vl_cred_pis: Option<Decimal>,    // 7
     pub vl_cred_cofins: Option<Decimal>, // 8
-    pub per_cred_cis: Option<String>,    // 9
+    pub per_cred_cis: Option<Arc<str>>,  // 9
 }
 
 impl_sped_record_trait!(RegistroF800);
@@ -63,14 +62,14 @@ impl SpedParser for RegistroF800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_nat_even = fields.get(2).to_optional_string();
+        let ind_nat_even = fields.get(2).to_arc();
         let dt_even = get_date_field(3, "DT_EVEN")?;
-        let cnpj_suced = fields.get(4).to_optional_string();
-        let pa_cont_cred = fields.get(5).to_optional_string();
+        let cnpj_suced = fields.get(4).to_arc();
+        let pa_cont_cred = fields.get(5).to_arc();
         let cod_cred = fields.get(6).parse_opt();
         let vl_cred_pis = get_decimal_field(7, "VL_CRED_PIS")?;
         let vl_cred_cofins = get_decimal_field(8, "VL_CRED_COFINS")?;
-        let per_cred_cis = fields.get(9).to_optional_string();
+        let per_cred_cis = fields.get(9).to_arc();
 
         let reg = RegistroF800 {
             nivel: 3,

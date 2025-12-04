@@ -1,5 +1,5 @@
-use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
-use std::path::Path;
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_sped_record_trait};
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C400";
 
@@ -17,10 +17,10 @@ pub struct RegistroC400 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<String>, // 2
-    pub ecf_mod: Option<String>, // 3
-    pub ecf_fab: Option<String>, // 4
-    pub ecf_cx: Option<String>,  // 5
+    pub cod_mod: Option<Arc<str>>, // 2
+    pub ecf_mod: Option<Arc<str>>, // 3
+    pub ecf_fab: Option<Arc<str>>, // 4
+    pub ecf_cx: Option<Arc<str>>,  // 5
 }
 
 impl_sped_record_trait!(RegistroC400);
@@ -42,10 +42,10 @@ impl SpedParser for RegistroC400 {
             });
         }
 
-        let cod_mod = fields.get(2).to_optional_string();
-        let ecf_mod = fields.get(3).to_optional_string();
-        let ecf_fab = fields.get(4).to_optional_string();
-        let ecf_cx = fields.get(5).to_optional_string();
+        let cod_mod = fields.get(2).to_arc();
+        let ecf_mod = fields.get(3).to_arc();
+        let ecf_fab = fields.get(4).to_arc();
+        let ecf_cx = fields.get(5).to_arc();
 
         let reg = RegistroC400 {
             nivel: 3,

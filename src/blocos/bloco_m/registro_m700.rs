@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M700";
 
@@ -22,12 +21,12 @@ pub struct RegistroM700 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_cont: Option<String>,            // 2
+    pub cod_cont: Option<Arc<str>>,          // 2
     pub vl_cont_apur_difer: Option<Decimal>, // 3
-    pub nat_cred_desc: Option<String>,       // 4
+    pub nat_cred_desc: Option<Arc<str>>,     // 4
     pub vl_cred_desc_difer: Option<Decimal>, // 5
     pub vl_cont_difer_ant: Option<Decimal>,  // 6
-    pub per_apur: Option<String>, // 7 (Pode ser NaiveDate ou String dependendo do formato)
+    pub per_apur: Option<Arc<str>>, // 7 (Pode ser NaiveDate ou String dependendo do formato)
     pub dt_receb: Option<NaiveDate>, // 8
 }
 
@@ -66,12 +65,12 @@ impl SpedParser for RegistroM700 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let cod_cont = fields.get(2).to_optional_string();
+        let cod_cont = fields.get(2).to_arc();
         let vl_cont_apur_difer = get_decimal_field(3, "VL_CONT_APUR_DIFER")?;
-        let nat_cred_desc = fields.get(4).to_optional_string();
+        let nat_cred_desc = fields.get(4).to_arc();
         let vl_cred_desc_difer = get_decimal_field(5, "VL_CRED_DESC_DIFER")?;
         let vl_cont_difer_ant = get_decimal_field(6, "VL_CONT_DIFER_ANT")?;
-        let per_apur = fields.get(7).to_optional_string(); // Manter como String, se for um período sem formato de data
+        let per_apur = fields.get(7).to_arc(); // Manter como String, se for um período sem formato de data
         let dt_receb = get_date_field(8, "DT_RECEB")?;
 
         let reg = RegistroM700 {

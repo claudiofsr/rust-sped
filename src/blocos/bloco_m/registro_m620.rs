@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M620";
 
@@ -22,12 +21,12 @@ pub struct RegistroM620 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_aj: Option<String>,    // 2
-    pub vl_aj: Option<Decimal>,    // 3
-    pub cod_aj: Option<String>,    // 4
-    pub num_doc: Option<String>,   // 5
-    pub descr_aj: Option<String>,  // 6
-    pub dt_ref: Option<NaiveDate>, // 7
+    pub ind_aj: Option<Arc<str>>,   // 2
+    pub vl_aj: Option<Decimal>,     // 3
+    pub cod_aj: Option<Arc<str>>,   // 4
+    pub num_doc: Option<Arc<str>>,  // 5
+    pub descr_aj: Option<Arc<str>>, // 6
+    pub dt_ref: Option<NaiveDate>,  // 7
 }
 
 impl_sped_record_trait!(RegistroM620);
@@ -65,11 +64,11 @@ impl SpedParser for RegistroM620 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let ind_aj = fields.get(2).to_optional_string();
+        let ind_aj = fields.get(2).to_arc();
         let vl_aj = get_decimal_field(3, "VL_AJ")?;
-        let cod_aj = fields.get(4).to_optional_string();
-        let num_doc = fields.get(5).to_optional_string();
-        let descr_aj = fields.get(6).to_optional_string();
+        let cod_aj = fields.get(4).to_arc();
+        let num_doc = fields.get(5).to_arc();
+        let descr_aj = fields.get(6).to_arc();
         let dt_ref = get_date_field(7, "DT_REF")?;
 
         let reg = RegistroM620 {

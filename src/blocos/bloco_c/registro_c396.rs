@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C396";
 
@@ -21,10 +18,10 @@ pub struct RegistroC396 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_item: Option<String>,      // 2
+    pub cod_item: Option<Arc<str>>,    // 2
     pub vl_item: Option<Decimal>,      // 3
     pub vl_desc: Option<Decimal>,      // 4
-    pub nat_bc_cred: Option<String>,   // 5
+    pub nat_bc_cred: Option<Arc<str>>, // 5
     pub cst_pis: Option<u16>,          // 6
     pub vl_bc_pis: Option<Decimal>,    // 7
     pub aliq_pis: Option<Decimal>,     // 8
@@ -33,7 +30,7 @@ pub struct RegistroC396 {
     pub vl_bc_cofins: Option<Decimal>, // 11
     pub aliq_cofins: Option<Decimal>,  // 12
     pub vl_cofins: Option<Decimal>,    // 13
-    pub cod_cta: Option<String>,       // 14
+    pub cod_cta: Option<Arc<str>>,     // 14
 }
 
 impl_sped_record_trait!(RegistroC396);
@@ -61,10 +58,10 @@ impl SpedParser for RegistroC396 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_item = fields.get(2).to_optional_string();
+        let cod_item = fields.get(2).to_arc();
         let vl_item = get_decimal_field(3, "VL_ITEM")?;
         let vl_desc = get_decimal_field(4, "VL_DESC")?;
-        let nat_bc_cred = fields.get(5).to_optional_string();
+        let nat_bc_cred = fields.get(5).to_arc();
         let cst_pis = fields.get(6).parse_opt();
         let vl_bc_pis = get_decimal_field(7, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(8, "ALIQ_PIS")?;
@@ -73,7 +70,7 @@ impl SpedParser for RegistroC396 {
         let vl_bc_cofins = get_decimal_field(11, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(12, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(13, "VL_COFINS")?;
-        let cod_cta = fields.get(14).to_optional_string();
+        let cod_cta = fields.get(14).to_arc();
 
         let reg = RegistroC396 {
             nivel: 4,

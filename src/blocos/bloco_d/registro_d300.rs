@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "D300";
 
@@ -22,11 +21,11 @@ pub struct RegistroD300 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<String>,       // 2
-    pub ser: Option<String>,           // 3
-    pub sub: Option<String>,           // 4
-    pub num_doc_ini: Option<String>,   // 5
-    pub num_doc_fin: Option<String>,   // 6
+    pub cod_mod: Option<Arc<str>>,     // 2
+    pub ser: Option<Arc<str>>,         // 3
+    pub sub: Option<Arc<str>>,         // 4
+    pub num_doc_ini: Option<Arc<str>>, // 5
+    pub num_doc_fin: Option<Arc<str>>, // 6
     pub cfop: Option<u16>,             // 7
     pub dt_ref: Option<NaiveDate>,     // 8
     pub vl_doc: Option<Decimal>,       // 9
@@ -39,7 +38,7 @@ pub struct RegistroD300 {
     pub vl_bc_cofins: Option<Decimal>, // 16
     pub aliq_cofins: Option<Decimal>,  // 17
     pub vl_cofins: Option<Decimal>,    // 18
-    pub cod_cta: Option<String>,       // 19
+    pub cod_cta: Option<Arc<str>>,     // 19
 }
 
 impl_sped_record_trait!(RegistroD300);
@@ -75,11 +74,11 @@ impl SpedParser for RegistroD300 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_optional_string();
-        let ser = fields.get(3).to_optional_string();
-        let sub = fields.get(4).to_optional_string();
-        let num_doc_ini = fields.get(5).to_optional_string();
-        let num_doc_fin = fields.get(6).to_optional_string();
+        let cod_mod = fields.get(2).to_arc();
+        let ser = fields.get(3).to_arc();
+        let sub = fields.get(4).to_arc();
+        let num_doc_ini = fields.get(5).to_arc();
+        let num_doc_fin = fields.get(6).to_arc();
         let cfop = fields.get(7).parse_opt();
         let dt_ref = get_date_field(8, "DT_REF")?;
         let vl_doc = get_decimal_field(9, "VL_DOC")?;
@@ -92,7 +91,7 @@ impl SpedParser for RegistroD300 {
         let vl_bc_cofins = get_decimal_field(16, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(17, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(18, "VL_COFINS")?;
-        let cod_cta = fields.get(19).to_optional_string();
+        let cod_cta = fields.get(19).to_arc();
 
         let reg = RegistroD300 {
             nivel: 3,

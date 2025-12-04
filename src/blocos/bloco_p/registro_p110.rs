@@ -1,5 +1,5 @@
-use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
-use std::path::Path;
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_sped_record_trait};
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "P110";
 
@@ -17,10 +17,10 @@ pub struct RegistroP110 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_campo: Option<String>, // 2
-    pub cod_det: Option<String>,   // 3
-    pub det_valor: Option<String>, // 4
-    pub inf_compl: Option<String>, // 5
+    pub num_campo: Option<Arc<str>>, // 2
+    pub cod_det: Option<Arc<str>>,   // 3
+    pub det_valor: Option<Arc<str>>, // 4
+    pub inf_compl: Option<Arc<str>>, // 5
 }
 
 impl_sped_record_trait!(RegistroP110);
@@ -42,10 +42,10 @@ impl SpedParser for RegistroP110 {
             });
         }
 
-        let num_campo = fields.get(2).to_optional_string();
-        let cod_det = fields.get(3).to_optional_string();
-        let det_valor = fields.get(4).to_optional_string();
-        let inf_compl = fields.get(5).to_optional_string();
+        let num_campo = fields.get(2).to_arc();
+        let cod_det = fields.get(3).to_arc();
+        let det_valor = fields.get(4).to_arc();
+        let inf_compl = fields.get(5).to_arc();
 
         let reg = RegistroP110 {
             nivel: 4,

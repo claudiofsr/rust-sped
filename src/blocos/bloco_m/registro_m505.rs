@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M505";
 
@@ -21,15 +18,15 @@ pub struct RegistroM505 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub nat_bc_cred: Option<String>,         // 2
-    pub cst_cofins: Option<u16>,             // 3
-    pub vl_bc_cofins_tot: Option<Decimal>,   // 4
-    pub vl_bc_cofins_cum: Option<Decimal>,   // 5
-    pub vl_bc_cofins_nc: Option<Decimal>,    // 6
-    pub vl_bc_cofins: Option<Decimal>,       // 7
-    pub quant_bc_cofins_tot: Option<String>, // 8 (Pode ser String ou Decimal)
-    pub quant_bc_cofins: Option<String>,     // 9 (Pode ser String ou Decimal)
-    pub desc_cred: Option<String>,           // 10
+    pub nat_bc_cred: Option<Arc<str>>,         // 2
+    pub cst_cofins: Option<u16>,               // 3
+    pub vl_bc_cofins_tot: Option<Decimal>,     // 4
+    pub vl_bc_cofins_cum: Option<Decimal>,     // 5
+    pub vl_bc_cofins_nc: Option<Decimal>,      // 6
+    pub vl_bc_cofins: Option<Decimal>,         // 7
+    pub quant_bc_cofins_tot: Option<Arc<str>>, // 8 (Pode ser String ou Decimal)
+    pub quant_bc_cofins: Option<Arc<str>>,     // 9 (Pode ser String ou Decimal)
+    pub desc_cred: Option<Arc<str>>,           // 10
 }
 
 impl_sped_record_trait!(RegistroM505);
@@ -58,15 +55,15 @@ impl SpedParser for RegistroM505 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let nat_bc_cred = fields.get(2).to_optional_string();
+        let nat_bc_cred = fields.get(2).to_arc();
         let cst_cofins = fields.get(3).parse_opt();
         let vl_bc_cofins_tot = get_decimal_field(4, "VL_BC_COFINS_TOT")?;
         let vl_bc_cofins_cum = get_decimal_field(5, "VL_BC_COFINS_CUM")?;
         let vl_bc_cofins_nc = get_decimal_field(6, "VL_BC_COFINS_NC")?;
         let vl_bc_cofins = get_decimal_field(7, "VL_BC_COFINS")?;
-        let quant_bc_cofins_tot = fields.get(8).to_optional_string();
-        let quant_bc_cofins = fields.get(9).to_optional_string();
-        let desc_cred = fields.get(10).to_optional_string();
+        let quant_bc_cofins_tot = fields.get(8).to_arc();
+        let quant_bc_cofins = fields.get(9).to_arc();
+        let desc_cred = fields.get(10).to_arc();
 
         let reg = RegistroM505 {
             nivel: 3,

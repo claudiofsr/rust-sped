@@ -1,8 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_sped_record_trait};
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C490";
 
@@ -14,7 +12,7 @@ pub struct RegistroC490 {
     pub line_number: usize,
     pub dt_doc_ini: Option<NaiveDate>, // 2
     pub dt_doc_fin: Option<NaiveDate>, // 3
-    pub cod_mod: Option<String>,       // 4
+    pub cod_mod: Option<Arc<str>>,     // 4
 }
 
 impl_sped_record_trait!(RegistroC490);
@@ -43,7 +41,7 @@ impl SpedParser for RegistroC490 {
 
         let dt_doc_ini = get_date_field(2, "DT_DOC_INI")?;
         let dt_doc_fin = get_date_field(3, "DT_DOC_FIN")?;
-        let cod_mod = fields.get(4).to_optional_string();
+        let cod_mod = fields.get(4).to_arc();
 
         let reg = RegistroC490 {
             nivel: 3,

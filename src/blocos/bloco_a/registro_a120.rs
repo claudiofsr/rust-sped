@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "A120";
 
@@ -29,7 +28,7 @@ pub struct RegistroA120 {
     pub vl_bc_cofins: Option<Decimal>,    // 6
     pub vl_cofins_imp: Option<Decimal>,   // 7
     pub dt_pag_cofins: Option<NaiveDate>, // 8 (Assumindo que é data)
-    pub loc_exe_serv: Option<String>,     // 9
+    pub loc_exe_serv: Option<Arc<str>>,   // 9
 }
 
 impl_sped_record_trait!(RegistroA120);
@@ -74,7 +73,7 @@ impl SpedParser for RegistroA120 {
         let vl_bc_cofins = get_decimal_field(6, "VL_BC_COFINS")?;
         let vl_cofins_imp = get_decimal_field(7, "VL_COFINS_IMP")?;
         let dt_pag_cofins = get_date_field(8, "DT_PAG_COFINS")?;
-        let loc_exe_serv = fields.get(9).to_optional_string();
+        let loc_exe_serv = fields.get(9).to_arc();
 
         let reg = RegistroA120 {
             nivel: 4,

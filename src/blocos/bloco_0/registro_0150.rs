@@ -1,5 +1,5 @@
-use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
-use std::path::Path;
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_sped_record_trait};
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0150";
 
@@ -17,18 +17,18 @@ pub struct Registro0150 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_part: Option<String>, // 2
-    pub nome: Option<String>,     // 3
-    pub cod_pais: Option<String>, // 4
-    pub cnpj: Option<String>,     // 5
-    pub cpf: Option<String>,      // 6
-    pub ie: Option<String>,       // 7
-    pub cod_mun: Option<String>,  // 8
-    pub suframa: Option<String>,  // 9
-    pub end: Option<String>,      // 10
-    pub num: Option<String>,      // 11
-    pub compl: Option<String>,    // 12
-    pub bairro: Option<String>,   // 13
+    pub cod_part: Option<Arc<str>>, // 2
+    pub nome: Option<Arc<str>>,     // 3
+    pub cod_pais: Option<Arc<str>>, // 4
+    pub cnpj: Option<Arc<str>>,     // 5
+    pub cpf: Option<Arc<str>>,      // 6
+    pub ie: Option<Arc<str>>,       // 7
+    pub cod_mun: Option<Arc<str>>,  // 8
+    pub suframa: Option<Arc<str>>,  // 9
+    pub end: Option<Arc<str>>,      // 10
+    pub num: Option<Arc<str>>,      // 11
+    pub compl: Option<Arc<str>>,    // 12
+    pub bairro: Option<Arc<str>>,   // 13
 }
 
 impl_sped_record_trait!(Registro0150);
@@ -49,18 +49,18 @@ impl SpedParser for Registro0150 {
             });
         }
 
-        let cod_part = fields.get(2).to_optional_string();
-        let nome = fields.get(3).to_optional_string();
-        let cod_pais = fields.get(4).to_optional_string();
-        let cnpj = fields.get(5).to_optional_string();
-        let cpf = fields.get(6).to_optional_string();
-        let ie = fields.get(7).to_optional_string();
-        let cod_mun = fields.get(8).to_optional_string();
-        let suframa = fields.get(9).to_optional_string();
-        let end = fields.get(10).to_optional_string();
-        let num = fields.get(11).to_optional_string();
-        let compl = fields.get(12).to_optional_string();
-        let bairro = fields.get(13).to_optional_string();
+        let cod_part = fields.get(2).to_arc();
+        let nome = fields.get(3).to_arc();
+        let cod_pais = fields.get(4).to_arc();
+        let cnpj = fields.get(5).to_arc();
+        let cpf = fields.get(6).to_arc();
+        let ie = fields.get(7).to_arc();
+        let cod_mun = fields.get(8).to_arc();
+        let suframa = fields.get(9).to_arc();
+        let end = fields.get(10).to_arc();
+        let num = fields.get(11).to_arc();
+        let compl = fields.get(12).to_arc();
+        let bairro = fields.get(13).to_arc();
 
         let reg = Registro0150 {
             nivel: 3,

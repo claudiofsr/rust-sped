@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1011";
 
@@ -22,10 +21,10 @@ pub struct Registro1011 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub reg_ref: Option<String>,            // 2
-    pub chave_doc: Option<String>,          // 3
-    pub cod_part: Option<String>,           // 4
-    pub cod_item: Option<String>,           // 5
+    pub reg_ref: Option<Arc<str>>,          // 2
+    pub chave_doc: Option<Arc<str>>,        // 3
+    pub cod_part: Option<Arc<str>>,         // 4
+    pub cod_item: Option<Arc<str>>,         // 5
     pub dt_oper: Option<NaiveDate>,         // 6
     pub vl_oper: Option<Decimal>,           // 7
     pub cst_pis: Option<u16>,               // 8
@@ -44,9 +43,9 @@ pub struct Registro1011 {
     pub vl_bc_cofins_susp: Option<Decimal>, // 21
     pub aliq_cofins_susp: Option<Decimal>,  // 22
     pub vl_cofins_susp: Option<Decimal>,    // 23
-    pub cod_cta: Option<String>,            // 24
-    pub cod_ccus: Option<String>,           // 25
-    pub desc_doc_oper: Option<String>,      // 26
+    pub cod_cta: Option<Arc<str>>,          // 24
+    pub cod_ccus: Option<Arc<str>>,         // 25
+    pub desc_doc_oper: Option<Arc<str>>,    // 26
 }
 
 impl_sped_record_trait!(Registro1011);
@@ -81,10 +80,10 @@ impl SpedParser for Registro1011 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let reg_ref = fields.get(2).to_optional_string();
-        let chave_doc = fields.get(3).to_optional_string();
-        let cod_part = fields.get(4).to_optional_string();
-        let cod_item = fields.get(5).to_optional_string();
+        let reg_ref = fields.get(2).to_arc();
+        let chave_doc = fields.get(3).to_arc();
+        let cod_part = fields.get(4).to_arc();
+        let cod_item = fields.get(5).to_arc();
         let dt_oper = get_date_field(6, "DT_OPER")?;
         let vl_oper = get_decimal_field(7, "VL_OPER")?;
         let cst_pis = fields.get(8).parse_opt();
@@ -103,9 +102,9 @@ impl SpedParser for Registro1011 {
         let vl_bc_cofins_susp = get_decimal_field(21, "VL_BC_COFINS_SUSP")?;
         let aliq_cofins_susp = get_decimal_field(22, "ALIQ_COFINS_SUSP")?;
         let vl_cofins_susp = get_decimal_field(23, "VL_COFINS_SUSP")?;
-        let cod_cta = fields.get(24).to_optional_string();
-        let cod_ccus = fields.get(25).to_optional_string();
-        let desc_doc_oper = fields.get(26).to_optional_string();
+        let cod_cta = fields.get(24).to_arc();
+        let cod_ccus = fields.get(25).to_arc();
+        let desc_doc_oper = fields.get(26).to_arc();
 
         let reg = Registro1011 {
             nivel: 3,

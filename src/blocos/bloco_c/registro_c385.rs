@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C385";
 
@@ -22,14 +19,14 @@ pub struct RegistroC385 {
     pub line_number: usize,
 
     pub cst_cofins: Option<u16>,            // 2
-    pub cod_item: Option<String>,           // 3
+    pub cod_item: Option<Arc<str>>,         // 3
     pub vl_item: Option<Decimal>,           // 4
     pub vl_bc_cofins: Option<Decimal>,      // 5
     pub aliq_cofins: Option<Decimal>,       // 6
-    pub quant_bc_cofins: Option<String>,    // 7
+    pub quant_bc_cofins: Option<Arc<str>>,  // 7
     pub aliq_cofins_quant: Option<Decimal>, // 8
     pub vl_cofins: Option<Decimal>,         // 9
-    pub cod_cta: Option<String>,            // 10
+    pub cod_cta: Option<Arc<str>>,          // 10
 }
 
 impl_sped_record_trait!(RegistroC385);
@@ -59,14 +56,14 @@ impl SpedParser for RegistroC385 {
         };
 
         let cst_cofins = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).to_optional_string();
+        let cod_item = fields.get(3).to_arc();
         let vl_item = get_decimal_field(4, "VL_ITEM")?;
         let vl_bc_cofins = get_decimal_field(5, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(6, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(7).to_optional_string();
+        let quant_bc_cofins = fields.get(7).to_arc();
         let aliq_cofins_quant = get_decimal_field(8, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal_field(9, "VL_COFINS")?;
-        let cod_cta = fields.get(10).to_optional_string();
+        let cod_cta = fields.get(10).to_arc();
 
         let reg = RegistroC385 {
             nivel: 4,

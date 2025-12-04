@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M215";
 
@@ -22,15 +21,15 @@ pub struct RegistroM215 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_aj_bc: Option<String>,   // 2
-    pub vl_aj_bc: Option<Decimal>,   // 3
-    pub cod_aj_bc: Option<String>,   // 4
-    pub num_doc: Option<String>,     // 5
-    pub descr_aj_bc: Option<String>, // 6
-    pub dt_ref: Option<NaiveDate>,   // 7
-    pub cod_cta: Option<String>,     // 8
-    pub cnpj: Option<String>,        // 9
-    pub info_compl: Option<String>,  // 10
+    pub ind_aj_bc: Option<Arc<str>>,   // 2
+    pub vl_aj_bc: Option<Decimal>,     // 3
+    pub cod_aj_bc: Option<Arc<str>>,   // 4
+    pub num_doc: Option<Arc<str>>,     // 5
+    pub descr_aj_bc: Option<Arc<str>>, // 6
+    pub dt_ref: Option<NaiveDate>,     // 7
+    pub cod_cta: Option<Arc<str>>,     // 8
+    pub cnpj: Option<Arc<str>>,        // 9
+    pub info_compl: Option<Arc<str>>,  // 10
 }
 
 impl_sped_record_trait!(RegistroM215);
@@ -66,15 +65,15 @@ impl SpedParser for RegistroM215 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_aj_bc = fields.get(2).to_optional_string();
+        let ind_aj_bc = fields.get(2).to_arc();
         let vl_aj_bc = get_decimal_field(3, "VL_AJ_BC")?;
-        let cod_aj_bc = fields.get(4).to_optional_string();
-        let num_doc = fields.get(5).to_optional_string();
-        let descr_aj_bc = fields.get(6).to_optional_string();
+        let cod_aj_bc = fields.get(4).to_arc();
+        let num_doc = fields.get(5).to_arc();
+        let descr_aj_bc = fields.get(6).to_arc();
         let dt_ref = get_date_field(7, "DT_REF")?;
-        let cod_cta = fields.get(8).to_optional_string();
-        let cnpj = fields.get(9).to_optional_string();
-        let info_compl = fields.get(10).to_optional_string();
+        let cod_cta = fields.get(8).to_arc();
+        let cnpj = fields.get(9).to_arc();
+        let info_compl = fields.get(10).to_arc();
 
         let reg = RegistroM215 {
             nivel: 4,

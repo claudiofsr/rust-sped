@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0200";
 
@@ -18,17 +18,17 @@ pub struct Registro0200 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_item: Option<String>,     // 2
-    pub descr_item: Option<String>,   // 3
-    pub cod_barra: Option<String>,    // 4
-    pub cod_ant_item: Option<String>, // 5
-    pub unid_inv: Option<String>,     // 6
-    pub tipo_item: Option<String>,    // 7
-    pub cod_ncm: Option<String>,      // 8
-    pub ex_ipi: Option<String>,       // 9
-    pub cod_gen: Option<String>,      // 10
-    pub cod_lst: Option<String>,      // 11
-    pub aliq_icms: Option<Decimal>,   // 12
+    pub cod_item: Option<Arc<str>>,     // 2
+    pub descr_item: Option<Arc<str>>,   // 3
+    pub cod_barra: Option<Arc<str>>,    // 4
+    pub cod_ant_item: Option<Arc<str>>, // 5
+    pub unid_inv: Option<Arc<str>>,     // 6
+    pub tipo_item: Option<Arc<str>>,    // 7
+    pub cod_ncm: Option<Arc<str>>,      // 8
+    pub ex_ipi: Option<Arc<str>>,       // 9
+    pub cod_gen: Option<Arc<str>>,      // 10
+    pub cod_lst: Option<Arc<str>>,      // 11
+    pub aliq_icms: Option<Decimal>,     // 12
 }
 
 impl_sped_record_trait!(Registro0200);
@@ -55,16 +55,16 @@ impl SpedParser for Registro0200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_item = fields.get(2).to_optional_string();
-        let descr_item = fields.get(3).to_optional_string();
-        let cod_barra = fields.get(4).to_optional_string();
-        let cod_ant_item = fields.get(5).to_optional_string();
-        let unid_inv = fields.get(6).to_optional_string();
-        let tipo_item = fields.get(7).to_optional_string();
-        let cod_ncm = fields.get(8).to_optional_string();
-        let ex_ipi = fields.get(9).to_optional_string();
-        let cod_gen = fields.get(10).to_optional_string();
-        let cod_lst = fields.get(11).to_optional_string();
+        let cod_item = fields.get(2).to_arc();
+        let descr_item = fields.get(3).to_arc();
+        let cod_barra = fields.get(4).to_arc();
+        let cod_ant_item = fields.get(5).to_arc();
+        let unid_inv = fields.get(6).to_arc();
+        let tipo_item = fields.get(7).to_arc();
+        let cod_ncm = fields.get(8).to_arc();
+        let ex_ipi = fields.get(9).to_arc();
+        let cod_gen = fields.get(10).to_arc();
+        let cod_lst = fields.get(11).to_arc();
         let aliq_icms = get_decimal_field(12, "ALIQ_ICMS")?;
 
         let reg = Registro0200 {

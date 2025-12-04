@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "A170";
 
@@ -21,23 +18,23 @@ pub struct RegistroA170 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_item: Option<u16>,         // 2
-    pub cod_item: Option<String>,      // 3
-    pub descr_compl: Option<String>,   // 4
-    pub vl_item: Option<Decimal>,      // 5
-    pub vl_desc: Option<Decimal>,      // 6
-    pub nat_bc_cred: Option<String>,   // 7
-    pub ind_orig_cred: Option<String>, // 8
-    pub cst_pis: Option<u16>,          // 9
-    pub vl_bc_pis: Option<Decimal>,    // 10
-    pub aliq_pis: Option<Decimal>,     // 11
-    pub vl_pis: Option<Decimal>,       // 12
-    pub cst_cofins: Option<u16>,       // 13
-    pub vl_bc_cofins: Option<Decimal>, // 14
-    pub aliq_cofins: Option<Decimal>,  // 15
-    pub vl_cofins: Option<Decimal>,    // 16
-    pub cod_cta: Option<String>,       // 17
-    pub cod_ccus: Option<String>,      // 18
+    pub num_item: Option<u16>,           // 2
+    pub cod_item: Option<Arc<str>>,      // 3
+    pub descr_compl: Option<Arc<str>>,   // 4
+    pub vl_item: Option<Decimal>,        // 5
+    pub vl_desc: Option<Decimal>,        // 6
+    pub nat_bc_cred: Option<Arc<str>>,   // 7
+    pub ind_orig_cred: Option<Arc<str>>, // 8
+    pub cst_pis: Option<u16>,            // 9
+    pub vl_bc_pis: Option<Decimal>,      // 10
+    pub aliq_pis: Option<Decimal>,       // 11
+    pub vl_pis: Option<Decimal>,         // 12
+    pub cst_cofins: Option<u16>,         // 13
+    pub vl_bc_cofins: Option<Decimal>,   // 14
+    pub aliq_cofins: Option<Decimal>,    // 15
+    pub vl_cofins: Option<Decimal>,      // 16
+    pub cod_cta: Option<Arc<str>>,       // 17
+    pub cod_ccus: Option<Arc<str>>,      // 18
 }
 
 impl_sped_record_trait!(RegistroA170);
@@ -69,12 +66,12 @@ impl SpedParser for RegistroA170 {
         };
 
         let num_item = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).to_optional_string();
-        let descr_compl = fields.get(4).to_optional_string();
+        let cod_item = fields.get(3).to_arc();
+        let descr_compl = fields.get(4).to_arc();
         let vl_item = get_decimal_field(5, "VL_ITEM")?;
         let vl_desc = get_decimal_field(6, "VL_DESC")?;
-        let nat_bc_cred = fields.get(7).to_optional_string();
-        let ind_orig_cred = fields.get(8).to_optional_string();
+        let nat_bc_cred = fields.get(7).to_arc();
+        let ind_orig_cred = fields.get(8).to_arc();
         let cst_pis = fields.get(9).parse_opt();
         let vl_bc_pis = get_decimal_field(10, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(11, "ALIQ_PIS")?;
@@ -83,8 +80,8 @@ impl SpedParser for RegistroA170 {
         let vl_bc_cofins = get_decimal_field(14, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal_field(15, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal_field(16, "VL_COFINS")?;
-        let cod_cta = fields.get(17).to_optional_string();
-        let cod_ccus = fields.get(18).to_optional_string();
+        let cod_cta = fields.get(17).to_arc();
+        let cod_ccus = fields.get(18).to_arc();
 
         let reg = RegistroA170 {
             nivel: 4,

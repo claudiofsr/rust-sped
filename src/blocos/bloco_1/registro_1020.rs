@@ -1,8 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_sped_record_trait};
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1020";
 
@@ -20,9 +18,9 @@ pub struct Registro1020 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_proc: Option<String>,      // 2
-    pub ind_nat_acao: Option<String>,  // 3
-    pub dt_dec_adm: Option<NaiveDate>, // 4
+    pub num_proc: Option<Arc<str>>,     // 2
+    pub ind_nat_acao: Option<Arc<str>>, // 3
+    pub dt_dec_adm: Option<NaiveDate>,  // 4
 }
 
 impl_sped_record_trait!(Registro1020);
@@ -51,8 +49,8 @@ impl SpedParser for Registro1020 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let num_proc = fields.get(2).to_optional_string();
-        let ind_nat_acao = fields.get(3).to_optional_string();
+        let num_proc = fields.get(2).to_arc();
+        let ind_nat_acao = fields.get(3).to_arc();
         let dt_dec_adm = get_date_field(4, "DT_DEC_ADM")?;
 
         let reg = Registro1020 {

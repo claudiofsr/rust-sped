@@ -1,8 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_sped_record_trait};
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1010";
 
@@ -20,11 +18,11 @@ pub struct Registro1010 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_proc: Option<String>,       // 2
-    pub id_sec_jud: Option<String>,     // 3
-    pub id_vara: Option<String>,        // 4
-    pub ind_nat_acao: Option<String>,   // 5
-    pub desc_dec_jud: Option<String>,   // 6
+    pub num_proc: Option<Arc<str>>,     // 2
+    pub id_sec_jud: Option<Arc<str>>,   // 3
+    pub id_vara: Option<Arc<str>>,      // 4
+    pub ind_nat_acao: Option<Arc<str>>, // 5
+    pub desc_dec_jud: Option<Arc<str>>, // 6
     pub dt_sent_jud: Option<NaiveDate>, // 7
 }
 
@@ -54,11 +52,11 @@ impl SpedParser for Registro1010 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let num_proc = fields.get(2).to_optional_string();
-        let id_sec_jud = fields.get(3).to_optional_string();
-        let id_vara = fields.get(4).to_optional_string();
-        let ind_nat_acao = fields.get(5).to_optional_string();
-        let desc_dec_jud = fields.get(6).to_optional_string();
+        let num_proc = fields.get(2).to_arc();
+        let id_sec_jud = fields.get(3).to_arc();
+        let id_vara = fields.get(4).to_arc();
+        let ind_nat_acao = fields.get(5).to_arc();
+        let desc_dec_jud = fields.get(6).to_arc();
         let dt_sent_jud = get_date_field(7, "DT_SENT_JUD")?;
 
         let reg = Registro1010 {

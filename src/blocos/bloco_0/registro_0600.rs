@@ -1,8 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_sped_record_trait};
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0600";
 
@@ -20,9 +18,9 @@ pub struct Registro0600 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub dt_alt: Option<NaiveDate>, // 2
-    pub cod_ccus: Option<String>,  // 3
-    pub ccus: Option<String>,      // 4
+    pub dt_alt: Option<NaiveDate>,  // 2
+    pub cod_ccus: Option<Arc<str>>, // 3
+    pub ccus: Option<Arc<str>>,     // 4
 }
 
 impl_sped_record_trait!(Registro0600);
@@ -50,8 +48,8 @@ impl SpedParser for Registro0600 {
         };
 
         let dt_alt = get_date_field(2, "DT_ALT")?;
-        let cod_ccus = fields.get(3).to_optional_string();
-        let ccus = fields.get(4).to_optional_string();
+        let cod_ccus = fields.get(3).to_arc();
+        let ccus = fields.get(4).to_arc();
 
         let reg = Registro0600 {
             nivel: 2,

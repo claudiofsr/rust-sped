@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1800";
 
@@ -22,14 +21,14 @@ pub struct Registro1800 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub inc_imob: Option<String>,       // 2
+    pub inc_imob: Option<Arc<str>>,     // 2
     pub rec_receb_ret: Option<Decimal>, // 3
     pub rec_fin_ret: Option<Decimal>,   // 4
-    pub bc_ret: Option<String>,         // 5
+    pub bc_ret: Option<Arc<str>>,       // 5
     pub aliq_ret: Option<Decimal>,      // 6
     pub vl_rec_uni: Option<Decimal>,    // 7
     pub dt_rec_uni: Option<NaiveDate>,  // 8
-    pub cod_rec: Option<String>,        // 9
+    pub cod_rec: Option<Arc<str>>,      // 9
 }
 
 impl_sped_record_trait!(Registro1800);
@@ -63,14 +62,14 @@ impl SpedParser for Registro1800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let inc_imob = fields.get(2).to_optional_string();
+        let inc_imob = fields.get(2).to_arc();
         let rec_receb_ret = get_decimal_field(3, "REC_RECEB_RET")?;
         let rec_fin_ret = get_decimal_field(4, "REC_FIN_RET")?;
-        let bc_ret = fields.get(5).to_optional_string();
+        let bc_ret = fields.get(5).to_arc();
         let aliq_ret = get_decimal_field(6, "ALIQ_RET")?;
         let vl_rec_uni = get_decimal_field(7, "VL_REC_UNI")?;
         let dt_rec_uni = get_date_field(8, "DT_REC_UNI")?;
-        let cod_rec = fields.get(9).to_optional_string();
+        let cod_rec = fields.get(9).to_arc();
 
         let reg = Registro1800 {
             nivel: 2,

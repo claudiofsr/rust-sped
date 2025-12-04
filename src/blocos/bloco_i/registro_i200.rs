@@ -1,5 +1,5 @@
-use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
-use std::path::Path;
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_sped_record_trait};
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "I200";
 
@@ -17,11 +17,11 @@ pub struct RegistroI200 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_campo: Option<String>,  // 2
-    pub cod_det: Option<String>,    // 3
-    pub det_valor: Option<String>,  // 4
-    pub cod_cta: Option<String>,    // 5
-    pub info_compl: Option<String>, // 6
+    pub num_campo: Option<Arc<str>>,  // 2
+    pub cod_det: Option<Arc<str>>,    // 3
+    pub det_valor: Option<Arc<str>>,  // 4
+    pub cod_cta: Option<Arc<str>>,    // 5
+    pub info_compl: Option<Arc<str>>, // 6
 }
 
 impl_sped_record_trait!(RegistroI200);
@@ -43,11 +43,11 @@ impl SpedParser for RegistroI200 {
             });
         }
 
-        let num_campo = fields.get(2).to_optional_string();
-        let cod_det = fields.get(3).to_optional_string();
-        let det_valor = fields.get(4).to_optional_string();
-        let cod_cta = fields.get(5).to_optional_string();
-        let info_compl = fields.get(6).to_optional_string();
+        let num_campo = fields.get(2).to_arc();
+        let cod_det = fields.get(3).to_arc();
+        let det_valor = fields.get(4).to_arc();
+        let cod_cta = fields.get(5).to_arc();
+        let info_compl = fields.get(6).to_arc();
 
         let reg = RegistroI200 {
             nivel: 4,

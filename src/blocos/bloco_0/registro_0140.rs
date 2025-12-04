@@ -1,5 +1,5 @@
-use crate::{EFDError, EFDResult, SpedParser, ToOptionalString, impl_sped_record_trait};
-use std::path::Path;
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_sped_record_trait};
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "0140";
 
@@ -17,14 +17,14 @@ pub struct Registro0140 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_est: Option<String>, // 2
-    pub nome: Option<String>,    // 3
-    pub cnpj: Option<String>,    // 4
-    pub uf: Option<String>,      // 5
-    pub ie: Option<String>,      // 6
-    pub cod_mun: Option<String>, // 7
-    pub im: Option<String>,      // 8
-    pub suframa: Option<String>, // 9
+    pub cod_est: Option<Arc<str>>, // 2
+    pub nome: Option<Arc<str>>,    // 3
+    pub cnpj: Option<Arc<str>>,    // 4
+    pub uf: Option<Arc<str>>,      // 5
+    pub ie: Option<Arc<str>>,      // 6
+    pub cod_mun: Option<Arc<str>>, // 7
+    pub im: Option<Arc<str>>,      // 8
+    pub suframa: Option<Arc<str>>, // 9
 }
 
 impl_sped_record_trait!(Registro0140);
@@ -45,14 +45,14 @@ impl SpedParser for Registro0140 {
             });
         }
 
-        let cod_est = fields.get(2).to_optional_string();
-        let nome = fields.get(3).to_optional_string();
-        let cnpj = fields.get(4).to_optional_string();
-        let uf = fields.get(5).to_optional_string();
-        let ie = fields.get(6).to_optional_string();
-        let cod_mun = fields.get(7).to_optional_string();
-        let im = fields.get(8).to_optional_string();
-        let suframa = fields.get(9).to_optional_string();
+        let cod_est = fields.get(2).to_arc();
+        let nome = fields.get(3).to_arc();
+        let cnpj = fields.get(4).to_arc();
+        let uf = fields.get(5).to_arc();
+        let ie = fields.get(6).to_arc();
+        let cod_mun = fields.get(7).to_arc();
+        let im = fields.get(8).to_arc();
+        let suframa = fields.get(9).to_arc();
 
         let reg = Registro0140 {
             nivel: 2,

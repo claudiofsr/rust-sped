@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "D600";
 
@@ -22,12 +21,12 @@ pub struct RegistroD600 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<String>,       // 2
-    pub cod_mun: Option<String>,       // 3
-    pub ser: Option<String>,           // 4
-    pub sub: Option<String>,           // 5
-    pub ind_rec: Option<String>,       // 6
-    pub qtd_cons: Option<String>,      // 7
+    pub cod_mod: Option<Arc<str>>,     // 2
+    pub cod_mun: Option<Arc<str>>,     // 3
+    pub ser: Option<Arc<str>>,         // 4
+    pub sub: Option<Arc<str>>,         // 5
+    pub ind_rec: Option<Arc<str>>,     // 6
+    pub qtd_cons: Option<Arc<str>>,    // 7
     pub dt_doc_ini: Option<NaiveDate>, // 8
     pub dt_doc_fin: Option<NaiveDate>, // 9
     pub vl_doc: Option<Decimal>,       // 10
@@ -75,12 +74,12 @@ impl SpedParser for RegistroD600 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_optional_string();
-        let cod_mun = fields.get(3).to_optional_string();
-        let ser = fields.get(4).to_optional_string();
-        let sub = fields.get(5).to_optional_string();
-        let ind_rec = fields.get(6).to_optional_string();
-        let qtd_cons = fields.get(7).to_optional_string(); // Pode ser Decimal se sempre numérico
+        let cod_mod = fields.get(2).to_arc();
+        let cod_mun = fields.get(3).to_arc();
+        let ser = fields.get(4).to_arc();
+        let sub = fields.get(5).to_arc();
+        let ind_rec = fields.get(6).to_arc();
+        let qtd_cons = fields.get(7).to_arc(); // Pode ser Decimal se sempre numérico
         let dt_doc_ini = get_date_field(8, "DT_DOC_INI")?;
         let dt_doc_fin = get_date_field(9, "DT_DOC_FIN")?;
         let vl_doc = get_decimal_field(10, "VL_DOC")?;

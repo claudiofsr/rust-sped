@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M625";
 
@@ -22,14 +21,14 @@ pub struct RegistroM625 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub det_valor_aj: Option<String>,  // 2
-    pub cst_cofins: Option<u16>,       // 3
-    pub det_bc_cred: Option<Decimal>,  // 4 (Assumindo que DET_BC_CRED é um valor)
-    pub det_aliq: Option<Decimal>,     // 5 (Assumindo que DET_ALIQ é uma alíquota)
-    pub dt_oper_aj: Option<NaiveDate>, // 6
-    pub desc_aj: Option<String>,       // 7
-    pub cod_cta: Option<String>,       // 8
-    pub info_compl: Option<String>,    // 9
+    pub det_valor_aj: Option<Arc<str>>, // 2
+    pub cst_cofins: Option<u16>,        // 3
+    pub det_bc_cred: Option<Decimal>,   // 4 (Assumindo que DET_BC_CRED é um valor)
+    pub det_aliq: Option<Decimal>,      // 5 (Assumindo que DET_ALIQ é uma alíquota)
+    pub dt_oper_aj: Option<NaiveDate>,  // 6
+    pub desc_aj: Option<Arc<str>>,      // 7
+    pub cod_cta: Option<Arc<str>>,      // 8
+    pub info_compl: Option<Arc<str>>,   // 9
 }
 
 impl_sped_record_trait!(RegistroM625);
@@ -67,14 +66,14 @@ impl SpedParser for RegistroM625 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let det_valor_aj = fields.get(2).to_optional_string();
+        let det_valor_aj = fields.get(2).to_arc();
         let cst_cofins = fields.get(3).parse_opt();
         let det_bc_cred = get_decimal_field(4, "DET_BC_CRED")?;
         let det_aliq = get_decimal_field(5, "DET_ALIQ")?;
         let dt_oper_aj = get_date_field(6, "DT_OPER_AJ")?;
-        let desc_aj = fields.get(7).to_optional_string();
-        let cod_cta = fields.get(8).to_optional_string();
-        let info_compl = fields.get(9).to_optional_string();
+        let desc_aj = fields.get(7).to_arc();
+        let cod_cta = fields.get(8).to_arc();
+        let info_compl = fields.get(9).to_arc();
 
         let reg = RegistroM625 {
             nivel: 5,

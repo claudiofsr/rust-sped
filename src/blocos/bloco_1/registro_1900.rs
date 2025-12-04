@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1900";
 
@@ -21,18 +18,18 @@ pub struct Registro1900 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cnpj: Option<String>,        // 2
-    pub cod_mod: Option<String>,     // 3
-    pub ser: Option<String>,         // 4
-    pub sub_ser: Option<String>,     // 5
-    pub cod_sit: Option<String>,     // 6
+    pub cnpj: Option<Arc<str>>,      // 2
+    pub cod_mod: Option<Arc<str>>,   // 3
+    pub ser: Option<Arc<str>>,       // 4
+    pub sub_ser: Option<Arc<str>>,   // 5
+    pub cod_sit: Option<Arc<str>>,   // 6
     pub vl_tot_rec: Option<Decimal>, // 7
-    pub quant_doc: Option<String>,   // 8 (Assumindo que pode ser string para quantidade ou Decimal)
+    pub quant_doc: Option<Arc<str>>, // 8 (Assumindo que pode ser string para quantidade ou Decimal)
     pub cst_pis: Option<u16>,        // 9
     pub cst_cofins: Option<u16>,     // 10
     pub cfop: Option<u16>,           // 11
-    pub inf_compl: Option<String>,   // 12
-    pub cod_cta: Option<String>,     // 13
+    pub inf_compl: Option<Arc<str>>, // 12
+    pub cod_cta: Option<Arc<str>>,   // 13
 }
 
 impl_sped_record_trait!(Registro1900);
@@ -60,18 +57,18 @@ impl SpedParser for Registro1900 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cnpj = fields.get(2).to_optional_string();
-        let cod_mod = fields.get(3).to_optional_string();
-        let ser = fields.get(4).to_optional_string();
-        let sub_ser = fields.get(5).to_optional_string();
-        let cod_sit = fields.get(6).to_optional_string();
+        let cnpj = fields.get(2).to_arc();
+        let cod_mod = fields.get(3).to_arc();
+        let ser = fields.get(4).to_arc();
+        let sub_ser = fields.get(5).to_arc();
+        let cod_sit = fields.get(6).to_arc();
         let vl_tot_rec = get_decimal_field(7, "VL_TOT_REC")?;
-        let quant_doc = fields.get(8).to_optional_string(); // Pode ser String se a quantidade for tratada como tal, ou Decimal
+        let quant_doc = fields.get(8).to_arc(); // Pode ser String se a quantidade for tratada como tal, ou Decimal
         let cst_pis = fields.get(9).parse_opt();
         let cst_cofins = fields.get(10).parse_opt();
         let cfop = fields.get(11).parse_opt();
-        let inf_compl = fields.get(12).to_optional_string();
-        let cod_cta = fields.get(13).to_optional_string();
+        let inf_compl = fields.get(12).to_arc();
+        let cod_cta = fields.get(13).to_arc();
 
         let reg = Registro1900 {
             nivel: 2,

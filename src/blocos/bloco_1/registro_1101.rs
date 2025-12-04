@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1101";
 
@@ -22,27 +21,27 @@ pub struct Registro1101 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_part: Option<String>,      // 2
-    pub cod_item: Option<String>,      // 3
-    pub cod_mod: Option<String>,       // 4
-    pub ser: Option<String>,           // 5
-    pub sub_ser: Option<String>,       // 6
-    pub num_doc: Option<String>,       // 7
-    pub dt_oper: Option<NaiveDate>,    // 8
-    pub chv_nfe: Option<String>,       // 9
-    pub vl_oper: Option<Decimal>,      // 10
-    pub cfop: Option<u16>,             // 11
-    pub nat_bc_cred: Option<String>,   // 12
-    pub ind_orig_cred: Option<String>, // 13
-    pub cst_pis: Option<u16>,          // 14
-    pub vl_bc_pis: Option<Decimal>,    // 15
-    pub aliq_pis: Option<Decimal>,     // 16
-    pub vl_pis: Option<Decimal>,       // 17
-    pub cod_cta: Option<String>,       // 18
-    pub cod_ccus: Option<String>,      // 19
-    pub desc_compl: Option<String>,    // 20
-    pub per_escrit: Option<String>,    // 21
-    pub cnpj: Option<String>,          // 22
+    pub cod_part: Option<Arc<str>>,      // 2
+    pub cod_item: Option<Arc<str>>,      // 3
+    pub cod_mod: Option<Arc<str>>,       // 4
+    pub ser: Option<Arc<str>>,           // 5
+    pub sub_ser: Option<Arc<str>>,       // 6
+    pub num_doc: Option<Arc<str>>,       // 7
+    pub dt_oper: Option<NaiveDate>,      // 8
+    pub chv_nfe: Option<Arc<str>>,       // 9
+    pub vl_oper: Option<Decimal>,        // 10
+    pub cfop: Option<u16>,               // 11
+    pub nat_bc_cred: Option<Arc<str>>,   // 12
+    pub ind_orig_cred: Option<Arc<str>>, // 13
+    pub cst_pis: Option<u16>,            // 14
+    pub vl_bc_pis: Option<Decimal>,      // 15
+    pub aliq_pis: Option<Decimal>,       // 16
+    pub vl_pis: Option<Decimal>,         // 17
+    pub cod_cta: Option<Arc<str>>,       // 18
+    pub cod_ccus: Option<Arc<str>>,      // 19
+    pub desc_compl: Option<Arc<str>>,    // 20
+    pub per_escrit: Option<Arc<str>>,    // 21
+    pub cnpj: Option<Arc<str>>,          // 22
 }
 
 impl_sped_record_trait!(Registro1101);
@@ -77,27 +76,27 @@ impl SpedParser for Registro1101 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_part = fields.get(2).to_optional_string();
-        let cod_item = fields.get(3).to_optional_string();
-        let cod_mod = fields.get(4).to_optional_string();
-        let ser = fields.get(5).to_optional_string();
-        let sub_ser = fields.get(6).to_optional_string();
-        let num_doc = fields.get(7).to_optional_string();
+        let cod_part = fields.get(2).to_arc();
+        let cod_item = fields.get(3).to_arc();
+        let cod_mod = fields.get(4).to_arc();
+        let ser = fields.get(5).to_arc();
+        let sub_ser = fields.get(6).to_arc();
+        let num_doc = fields.get(7).to_arc();
         let dt_oper = get_date_field(8, "DT_OPER")?;
-        let chv_nfe = fields.get(9).to_optional_string();
+        let chv_nfe = fields.get(9).to_arc();
         let vl_oper = get_decimal_field(10, "VL_OPER")?;
         let cfop = fields.get(11).parse_opt();
-        let nat_bc_cred = fields.get(12).to_optional_string();
-        let ind_orig_cred = fields.get(13).to_optional_string();
+        let nat_bc_cred = fields.get(12).to_arc();
+        let ind_orig_cred = fields.get(13).to_arc();
         let cst_pis = fields.get(14).parse_opt();
         let vl_bc_pis = get_decimal_field(15, "VL_BC_PIS")?;
         let aliq_pis = get_decimal_field(16, "ALIQ_PIS")?;
         let vl_pis = get_decimal_field(17, "VL_PIS")?;
-        let cod_cta = fields.get(18).to_optional_string();
-        let cod_ccus = fields.get(19).to_optional_string();
-        let desc_compl = fields.get(20).to_optional_string();
-        let per_escrit = fields.get(21).to_optional_string();
-        let cnpj = fields.get(22).to_optional_string();
+        let cod_cta = fields.get(18).to_arc();
+        let cod_ccus = fields.get(19).to_arc();
+        let desc_compl = fields.get(20).to_arc();
+        let per_escrit = fields.get(21).to_arc();
+        let cnpj = fields.get(22).to_arc();
 
         let reg = Registro1101 {
             nivel: 3,

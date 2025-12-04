@@ -1,8 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, ToNaiveDate, ToOptionalString, impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_sped_record_trait};
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "C860";
 
@@ -20,11 +18,11 @@ pub struct RegistroC860 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<String>,   // 2
-    pub nr_sat: Option<String>,    // 3
+    pub cod_mod: Option<Arc<str>>, // 2
+    pub nr_sat: Option<Arc<str>>,  // 3
     pub dt_doc: Option<NaiveDate>, // 4
-    pub doc_ini: Option<String>,   // 5
-    pub doc_fim: Option<String>,   // 6
+    pub doc_ini: Option<Arc<str>>, // 5
+    pub doc_fim: Option<Arc<str>>, // 6
 }
 
 impl_sped_record_trait!(RegistroC860);
@@ -52,11 +50,11 @@ impl SpedParser for RegistroC860 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_optional_string();
-        let nr_sat = fields.get(3).to_optional_string();
+        let cod_mod = fields.get(2).to_arc();
+        let nr_sat = fields.get(3).to_arc();
         let dt_doc = get_date_field(4, "DT_DOC")?;
-        let doc_ini = fields.get(5).to_optional_string();
-        let doc_fim = fields.get(6).to_optional_string();
+        let doc_ini = fields.get(5).to_arc();
+        let doc_fim = fields.get(6).to_arc();
 
         let reg = RegistroC860 {
             nivel: 3,

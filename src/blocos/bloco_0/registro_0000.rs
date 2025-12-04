@@ -1,9 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToCNPJ, ToNaiveDate, ToOptionalInteger, ToOptionalString,
+    EFDError, EFDResult, SpedParser, StringParser, ToCNPJ, ToNaiveDate, ToOptionalInteger,
     impl_sped_record_trait,
 };
 use chrono::NaiveDate;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const EXPECTED_FIELDS: usize = 16;
 const REGISTRO: &str = "0000";
@@ -23,19 +23,19 @@ pub struct Registro0000 {
     pub line_number: usize,
 
     // dt_ini, dt_fin e cnpj são itens obrigatórios
-    pub cod_ver: Option<u8>,              // 2
-    pub tipo_escrit: Option<u8>,          // 3
-    pub ind_sit_esp: Option<u8>,          // 4
-    pub num_rec_anterior: Option<String>, // 5
-    pub dt_ini: NaiveDate,                // 6
-    pub dt_fin: NaiveDate,                // 7
-    pub nome: Option<String>,             // 8
-    pub cnpj: String,                     // 9
-    pub uf: Option<String>,               // 10
-    pub cod_mun: Option<String>,          // 11
-    pub suframa: Option<String>,          // 12
-    pub ind_nat_pj: Option<String>,       // 13
-    pub ind_ativ: Option<String>,         // 14
+    pub cod_ver: Option<u8>,                // 2
+    pub tipo_escrit: Option<u8>,            // 3
+    pub ind_sit_esp: Option<u8>,            // 4
+    pub num_rec_anterior: Option<Arc<str>>, // 5
+    pub dt_ini: NaiveDate,                  // 6
+    pub dt_fin: NaiveDate,                  // 7
+    pub nome: Option<Arc<str>>,             // 8
+    pub cnpj: String,                       // 9
+    pub uf: Option<Arc<str>>,               // 10
+    pub cod_mun: Option<Arc<str>>,          // 11
+    pub suframa: Option<Arc<str>>,          // 12
+    pub ind_nat_pj: Option<Arc<str>>,       // 13
+    pub ind_ativ: Option<Arc<str>>,         // 14
 }
 
 impl_sped_record_trait!(Registro0000);
@@ -96,19 +96,19 @@ impl SpedParser for Registro0000 {
         let cod_ver = get_integer_field(2, "COD_VER")?; // O '?' propagará o erro se houver
         let tipo_escrit = get_integer_field(3, "TIPO_ESCRIT")?;
         let ind_sit_esp = get_integer_field(4, "IND_SIT_ESP")?;
-        let num_rec_anterior = fields.get(5).to_optional_string();
+        let num_rec_anterior = fields.get(5).to_arc();
 
         // Using the closure for the MANDATORY date field
         let dt_ini = get_required_date_field(6, "DT_INI")?; // Will error if empty or invalid date
         let dt_fin = get_required_date_field(7, "DT_FIN")?;
 
-        let nome = fields.get(8).to_optional_string();
+        let nome = fields.get(8).to_arc();
         let cnpj = get_cnpj_field(9, "CNPJ")?;
-        let uf = fields.get(10).to_optional_string();
-        let cod_mun = fields.get(11).to_optional_string();
-        let suframa = fields.get(12).to_optional_string();
-        let ind_nat_pj = fields.get(13).to_optional_string();
-        let ind_ativ = fields.get(14).to_optional_string();
+        let uf = fields.get(10).to_arc();
+        let cod_mun = fields.get(11).to_arc();
+        let suframa = fields.get(12).to_arc();
+        let ind_nat_pj = fields.get(13).to_arc();
+        let ind_ativ = fields.get(14).to_arc();
 
         let reg = Registro0000 {
             nivel: 0,

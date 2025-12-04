@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M611";
 
@@ -18,7 +18,7 @@ pub struct RegistroM611 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_tip_coop: Option<String>,             // 2
+    pub ind_tip_coop: Option<Arc<str>>,           // 2
     pub vl_bc_cont_ant_exc_coop: Option<Decimal>, // 3
     pub vl_exc_coop_ger: Option<Decimal>,         // 4
     pub vl_exc_esp_coop: Option<Decimal>,         // 5
@@ -51,7 +51,7 @@ impl SpedParser for RegistroM611 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_tip_coop = fields.get(2).to_optional_string();
+        let ind_tip_coop = fields.get(2).to_arc();
         let vl_bc_cont_ant_exc_coop = get_decimal_field(3, "VL_BC_CONT_ANT_EXC_COOP")?;
         let vl_exc_coop_ger = get_decimal_field(4, "VL_EXC_COOP_GER")?;
         let vl_exc_esp_coop = get_decimal_field(5, "VL_EXC_ESP_COOP")?;

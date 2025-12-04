@@ -1,9 +1,6 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToOptionalString,
-    impl_sped_record_trait,
-};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M105";
 
@@ -21,15 +18,15 @@ pub struct RegistroM105 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub nat_bc_cred: Option<String>,      // 2
-    pub cst_pis: Option<u16>,             // 3
-    pub vl_bc_pis_tot: Option<Decimal>,   // 4
-    pub vl_bc_pis_cum: Option<Decimal>,   // 5
-    pub vl_bc_pis_nc: Option<Decimal>,    // 6
-    pub vl_bc_pis: Option<Decimal>,       // 7
-    pub quant_bc_pis_tot: Option<String>, // 8 (Pode ser String ou Decimal)
-    pub quant_bc_pis: Option<String>,     // 9 (Pode ser String ou Decimal)
-    pub desc_cred: Option<String>,        // 10
+    pub nat_bc_cred: Option<Arc<str>>,      // 2
+    pub cst_pis: Option<u16>,               // 3
+    pub vl_bc_pis_tot: Option<Decimal>,     // 4
+    pub vl_bc_pis_cum: Option<Decimal>,     // 5
+    pub vl_bc_pis_nc: Option<Decimal>,      // 6
+    pub vl_bc_pis: Option<Decimal>,         // 7
+    pub quant_bc_pis_tot: Option<Arc<str>>, // 8 (Pode ser String ou Decimal)
+    pub quant_bc_pis: Option<Arc<str>>,     // 9 (Pode ser String ou Decimal)
+    pub desc_cred: Option<Arc<str>>,        // 10
 }
 
 impl_sped_record_trait!(RegistroM105);
@@ -58,15 +55,15 @@ impl SpedParser for RegistroM105 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let nat_bc_cred = fields.get(2).to_optional_string();
+        let nat_bc_cred = fields.get(2).to_arc();
         let cst_pis = fields.get(3).parse_opt();
         let vl_bc_pis_tot = get_decimal_field(4, "VL_BC_PIS_TOT")?;
         let vl_bc_pis_cum = get_decimal_field(5, "VL_BC_PIS_CUM")?;
         let vl_bc_pis_nc = get_decimal_field(6, "VL_BC_PIS_NC")?;
         let vl_bc_pis = get_decimal_field(7, "VL_BC_PIS")?;
-        let quant_bc_pis_tot = fields.get(8).to_optional_string();
-        let quant_bc_pis = fields.get(9).to_optional_string();
-        let desc_cred = fields.get(10).to_optional_string();
+        let quant_bc_pis_tot = fields.get(8).to_arc();
+        let quant_bc_pis = fields.get(9).to_arc();
+        let desc_cred = fields.get(10).to_arc();
 
         let reg = RegistroM105 {
             nivel: 3,

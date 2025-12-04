@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "1700";
 
@@ -18,8 +18,8 @@ pub struct Registro1700 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_nat_ret: Option<String>,   // 2
-    pub pr_rec_ret: Option<String>,    // 3
+    pub ind_nat_ret: Option<Arc<str>>, // 2
+    pub pr_rec_ret: Option<Arc<str>>,  // 3
     pub vl_ret_apu: Option<Decimal>,   // 4
     pub vl_ret_ded: Option<Decimal>,   // 5
     pub vl_ret_per: Option<Decimal>,   // 6
@@ -52,8 +52,8 @@ impl SpedParser for Registro1700 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_nat_ret = fields.get(2).to_optional_string();
-        let pr_rec_ret = fields.get(3).to_optional_string();
+        let ind_nat_ret = fields.get(2).to_arc();
+        let pr_rec_ret = fields.get(3).to_arc();
         let vl_ret_apu = get_decimal_field(4, "VL_RET_APU")?;
         let vl_ret_ded = get_decimal_field(5, "VL_RET_DED")?;
         let vl_ret_per = get_decimal_field(6, "VL_RET_PER")?;

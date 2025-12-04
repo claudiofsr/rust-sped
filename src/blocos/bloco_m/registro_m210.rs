@@ -1,6 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToOptionalString, impl_sped_record_trait};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M210";
 
@@ -18,14 +18,14 @@ pub struct RegistroM210 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_cont: Option<String>,              // 2
+    pub cod_cont: Option<Arc<str>>,            // 2
     pub vl_rec_brt: Option<Decimal>,           // 3
     pub vl_bc_cont: Option<Decimal>,           // 4
     pub vl_ajus_acres_bc_pis: Option<Decimal>, // 5
     pub vl_ajus_reduc_bc_pis: Option<Decimal>, // 6
     pub vl_bc_cont_ajus: Option<Decimal>,      // 7
     pub aliq_pis: Option<Decimal>,             // 8
-    pub quant_bc_pis: Option<String>,          // 9 (Pode ser String ou Decimal)
+    pub quant_bc_pis: Option<Arc<str>>,        // 9 (Pode ser String ou Decimal)
     pub aliq_pis_quant: Option<Decimal>,       // 10
     pub vl_cont_apur: Option<Decimal>,         // 11
     pub vl_ajus_acres: Option<Decimal>,        // 12
@@ -61,14 +61,14 @@ impl SpedParser for RegistroM210 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_cont = fields.get(2).to_optional_string();
+        let cod_cont = fields.get(2).to_arc();
         let vl_rec_brt = get_decimal_field(3, "VL_REC_BRT")?;
         let vl_bc_cont = get_decimal_field(4, "VL_BC_CONT")?;
         let vl_ajus_acres_bc_pis = get_decimal_field(5, "VL_AJUS_ACRES_BC_PIS")?;
         let vl_ajus_reduc_bc_pis = get_decimal_field(6, "VL_AJUS_REDUC_BC_PIS")?;
         let vl_bc_cont_ajus = get_decimal_field(7, "VL_BC_CONT_AJUS")?;
         let aliq_pis = get_decimal_field(8, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(9).to_optional_string();
+        let quant_bc_pis = fields.get(9).to_arc();
         let aliq_pis_quant = get_decimal_field(10, "ALIQ_PIS_QUANT")?;
         let vl_cont_apur = get_decimal_field(11, "VL_CONT_APUR")?;
         let vl_ajus_acres = get_decimal_field(12, "VL_AJUS_ACRES")?;

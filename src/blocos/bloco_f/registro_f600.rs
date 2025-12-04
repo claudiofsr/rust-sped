@@ -1,10 +1,9 @@
 use crate::{
-    EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, ToOptionalString,
-    impl_sped_record_trait,
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "F600";
 
@@ -22,16 +21,16 @@ pub struct RegistroF600 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_nat_ret: Option<String>,    // 2
+    pub ind_nat_ret: Option<Arc<str>>,  // 2
     pub dt_ret: Option<NaiveDate>,      // 3
     pub vl_bc_ret: Option<Decimal>,     // 4
     pub vl_ret: Option<Decimal>,        // 5
-    pub cod_rec: Option<String>,        // 6
-    pub ind_nat_rec: Option<String>,    // 7
-    pub cnpj: Option<String>,           // 8
+    pub cod_rec: Option<Arc<str>>,      // 6
+    pub ind_nat_rec: Option<Arc<str>>,  // 7
+    pub cnpj: Option<Arc<str>>,         // 8
     pub vl_ret_pis: Option<Decimal>,    // 9
     pub vl_ret_cofins: Option<Decimal>, // 10
-    pub ind_dec: Option<String>,        // 11
+    pub ind_dec: Option<Arc<str>>,      // 11
 }
 
 impl_sped_record_trait!(RegistroF600);
@@ -65,16 +64,16 @@ impl SpedParser for RegistroF600 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_nat_ret = fields.get(2).to_optional_string();
+        let ind_nat_ret = fields.get(2).to_arc();
         let dt_ret = get_date_field(3, "DT_RET")?;
         let vl_bc_ret = get_decimal_field(4, "VL_BC_RET")?;
         let vl_ret = get_decimal_field(5, "VL_RET")?;
-        let cod_rec = fields.get(6).to_optional_string();
-        let ind_nat_rec = fields.get(7).to_optional_string();
-        let cnpj = fields.get(8).to_optional_string();
+        let cod_rec = fields.get(6).to_arc();
+        let ind_nat_rec = fields.get(7).to_arc();
+        let cnpj = fields.get(8).to_arc();
         let vl_ret_pis = get_decimal_field(9, "VL_RET_PIS")?;
         let vl_ret_cofins = get_decimal_field(10, "VL_RET_COFINS")?;
-        let ind_dec = fields.get(11).to_optional_string();
+        let ind_dec = fields.get(11).to_arc();
 
         let reg = RegistroF600 {
             nivel: 3,
