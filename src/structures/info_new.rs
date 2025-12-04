@@ -576,27 +576,28 @@ impl CorrelationManager {
     fn store(
         &mut self,
         cst: Option<u16>,
-        val_item: Option<Decimal>,
-        aliq: Option<Decimal>,
-        val: Option<Decimal>,
+        vl_item: Option<Decimal>,
+        aliq_pis: Option<Decimal>,
+        vl_pis: Option<Decimal>,
         cfop: Option<u16>,
         part: Option<&str>,
     ) {
         // Pattern matching em tupla para garantir que todos os dados obrigatórios existem
-        if let (Some(c), Some(v_item), Some(a), Some(v)) = (cst, val_item, aliq, val) {
-            let data = (
-                a.to_f64().unwrap_or_default(),
-                v.to_f64().unwrap_or_default(),
+        if let (Some(c), Some(v_item), Some(a_pis), Some(v_pis)) = (cst, vl_item, aliq_pis, vl_pis)
+        {
+            let data_pis = (
+                a_pis.to_f64().unwrap_or_default(),
+                v_pis.to_f64().unwrap_or_default(),
             );
 
             // 1. Armazena na Cache Fraca
             // Clone do Arc é barato (apenas incrementa contador)
-            self.weak_cache.insert((c, v_item), data);
+            self.weak_cache.insert((c, v_item), data_pis);
 
             // 2. Armazena na Cache Forte (se houver contexto)
             // Move cst_arc (sem clone extra) se possível, ou usa o clone anterior
             if let Some(strong_key) = Self::make_strong_key(c, v_item, cfop, part) {
-                self.strong_cache.insert(strong_key, data);
+                self.strong_cache.insert(strong_key, data_pis);
             }
         }
     }
@@ -613,10 +614,10 @@ impl CorrelationManager {
         let (c, val) = cst.zip(val_item)?;
 
         // 1. Tenta Chave Forte
-        if let Some(pis_data) =
+        if let Some(data_pis) =
             Self::make_strong_key(c, val, cfop, part).and_then(|key| self.strong_cache.get(&key))
         {
-            Some(*pis_data)
+            Some(*data_pis)
         } else {
             // 2. Fallback: Chave Fraca
             self.weak_cache.get(&(c, val)).copied()
