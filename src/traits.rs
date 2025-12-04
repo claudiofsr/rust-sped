@@ -323,6 +323,13 @@ pub trait StringParser {
     ///
     /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).
     fn to_arc(&self) -> Option<Arc<str>>;
+
+    /// Helper para converter string para Arc<str> uppercase de forma eficiente;.
+    ///
+    /// Só aloca nova string se houver alguma letra minúscula.
+    /// - "NOTA 123" -> Retorna Arc(original) (Zero Copy)
+    /// - "Nota 123" -> Retorna Arc("NOTA 123") (Alocação necessária)
+    fn to_upper_arc(&self) -> Option<Arc<str>>;
 }
 
 impl<T> StringParser for Option<T>
@@ -341,6 +348,24 @@ where
             .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
             .filter(|s| !s.is_empty()) // 2. CRUCIAL: Transforma Some("") em None
             .map(Arc::from) // 3. Só aloca na Heap se tiver conteúdo real
+    }
+
+    fn to_upper_arc(&self) -> Option<Arc<str>> {
+        self.as_ref()
+            .map(|t| t.as_ref()) // 1. Obtém o &str de T
+            .filter(|s| !s.is_empty()) // 2. Filtra vazios (consistência com to_arc)
+            .map(|s| {
+                // Verifica se há minúsculas percorrendo os caracteres
+                if s.chars().any(|c| c.is_lowercase()) {
+                    // Caminho Lento: Aloca String (Heap) -> Move para Arc (Heap)
+                    // Arc::from(String) é eficiente pois rouba o buffer da String se possível
+                    Arc::from(s.to_uppercase())
+                } else {
+                    // Caminho Rápido: Copia bytes do &str direto para o Arc
+                    // Evita a alocação intermediária de uma String desnecessária
+                    Arc::from(s)
+                }
+            })
     }
 }
 

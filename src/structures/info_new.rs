@@ -831,8 +831,8 @@ impl<'a> DocsBuilder<'a> {
                 self.doc.tipo_item = obter_tipo_do_item(tipo).into();
             }
 
-            if let Some(desc) = info.get("DESCR_ITEM") {
-                self.doc.descr_item = Self::to_upper_arc(desc);
+            if let Some(desc) = info.get("DESCR_ITEM").to_upper_arc() {
+                self.doc.descr_item = desc;
             }
         }
     }
@@ -870,7 +870,7 @@ impl<'a> DocsBuilder<'a> {
         F: RegistroFilho + ?Sized,
     {
         // Se houver descrição complementar, ela tem precedência e deve ser uppercase
-        if let Some(compl) = filho.get_descr_compl().map(Self::to_upper_arc) {
+        if let Some(compl) = filho.get_descr_compl().to_upper_arc() {
             self.doc.descr_item = compl;
         }
 
@@ -916,20 +916,6 @@ impl<'a> DocsBuilder<'a> {
             .and_then(|h| h.get("NOME_CTA"))
         {
             self.doc.nome_da_conta = nome.clone();
-        }
-    }
-
-    // Helper para converter string para Arc<str> uppercase de forma eficiente
-    // Só aloca nova string se houver alguma letra minúscula.
-    // "NOTA 123" -> Retorna Arc(original) (Zero Copy)
-    // "Nota 123" -> Retorna Arc("NOTA 123") (Alocação necessária)
-    fn to_upper_arc(s: &str) -> Arc<str> {
-        if s.chars().any(|c| c.is_lowercase()) {
-            // Aloca nova string apenas se necessário
-            Arc::from(s.to_uppercase().as_str())
-        } else {
-            // Zero-allocation (apenas envolve o ponteiro)
-            Arc::from(s)
         }
     }
 

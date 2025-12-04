@@ -43,7 +43,8 @@ impl_sped_record_trait!(Registro0000);
 impl Registro0000 {
     /// Extrai o CNPJ Base (8 primeiros caracteres).
     pub fn get_cnpj_base(&self) -> String {
-        self.cnpj[..8].to_string()
+        // Evitar panic se CNPJ vier quebrado (safety)
+        self.cnpj.get(..8).unwrap_or(&self.cnpj).to_string()
     }
 
     /// Retorna o nome da empresa, ou uma string vazia/padrão se for None
@@ -102,9 +103,9 @@ impl SpedParser for Registro0000 {
         let dt_ini = get_required_date_field(6, "DT_INI")?; // Will error if empty or invalid date
         let dt_fin = get_required_date_field(7, "DT_FIN")?;
 
-        let nome = fields.get(8).to_arc();
+        let nome = fields.get(8).to_upper_arc(); // Normaliza nome para Uppercase
         let cnpj = get_cnpj_field(9, "CNPJ")?;
-        let uf = fields.get(10).to_arc();
+        let uf = fields.get(10).to_upper_arc(); // UF sempre Uppercase
         let cod_mun = fields.get(11).to_arc();
         let suframa = fields.get(12).to_arc();
         let ind_nat_pj = fields.get(13).to_arc();

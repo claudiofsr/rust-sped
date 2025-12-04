@@ -11,8 +11,8 @@ use std::sync::Arc;
 use struct_iterable::Iterable;
 
 use crate::{
-    IndicadorOrigem, InfoExtension, MesesDoAno, TipoDeCredito, TipoDeRateio, TipoOperacao,
-    serialize_natureza,
+    FloatExt, IndicadorOrigem, InfoExtension, MesesDoAno, TipoDeCredito, TipoDeRateio,
+    TipoOperacao, serialize_natureza,
 };
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Iterable)]
@@ -212,7 +212,7 @@ trait PrintOptionFloat {
 impl PrintOptionFloat for Option<f64> {
     fn to_some_string(&self) -> Option<String> {
         self.map(|float_64| {
-            if float_64 == float_64.trunc() {
+            if float_64.fract().eh_zero() {
                 format!("{float_64:.1}")
             } else {
                 float_64.to_string()
@@ -230,7 +230,7 @@ impl DocsFiscaisNew {
     pub fn get_values(&self) -> Vec<String> {
         self.iter()
             .map(|(_field, value)| {
-                let opt_string: Option<String> = match_cast!( value {
+                match_cast!( value {
                     val as Option<u16> => { val.as_ref().map(|s| s.to_string()) },
                     val as Option<u32> => { val.as_ref().map(|s| s.to_string()) },
                     val as Option<i32> => { val.as_ref().map(|s| s.to_string()) },
@@ -245,9 +245,7 @@ impl DocsFiscaisNew {
                     val as usize => { Some(val.to_string()) },
                     val as Arc<str> => { Some(val.to_string()) },
                     val as String => { Some(val.to_string()) },
-                });
-
-                opt_string.unwrap_or_default()
+                }).unwrap_or_default()
             })
             .collect()
     }
@@ -325,26 +323,31 @@ impl DocsFiscaisNew {
     /// Formatação dos campos.
     /// Como Arc<str> é imutável, criamos novas strings formatadas e reatribuímos.
     pub fn format(&mut self) {
-        if self.estabelecimento_cnpj.len() == 14
-            && self.estabelecimento_cnpj.chars().all(char::is_numeric)
+        // Helper para formatar e substituir apenas se necessário
+        fn format_if_needed<F>(
+            target: &mut Arc<str>,
+            len_check: usize,
+            predicate: fn(char) -> bool,
+            formatter: F,
+        ) where
+            F: Fn(&str) -> String,
         {
-            self.estabelecimento_cnpj = Arc::from(self.estabelecimento_cnpj.format_cnpj());
+            if target.len() == len_check && target.chars().all(predicate) {
+                // formatter retorna String, Arc::from toma posse sem cópia extra se possível
+                *target = Arc::from(formatter(target));
+            }
         }
 
-        if self.participante_cnpj.len() == 14
-            && self.participante_cnpj.chars().all(char::is_numeric)
-        {
-            self.participante_cnpj = Arc::from(self.participante_cnpj.format_cnpj());
-        }
-
-        if self.participante_cpf.len() == 11 && self.participante_cpf.chars().all(char::is_numeric)
-        {
-            self.participante_cpf = Arc::from(self.participante_cpf.format_cpf());
-        }
-
-        if self.cod_ncm.len() == 8 && self.cod_ncm.chars().all(char::is_numeric) {
-            self.cod_ncm = Arc::from(self.cod_ncm.format_ncm());
-        }
+        format_if_needed(&mut self.estabelecimento_cnpj, 14, char::is_numeric, |s| {
+            s.format_cnpj()
+        });
+        format_if_needed(&mut self.participante_cnpj, 14, char::is_numeric, |s| {
+            s.format_cnpj()
+        });
+        format_if_needed(&mut self.participante_cpf, 11, char::is_numeric, |s| {
+            s.format_cpf()
+        });
+        format_if_needed(&mut self.cod_ncm, 8, char::is_numeric, |s| s.format_ncm());
 
         let chave = &self.chave_doc;
         if chave.len() == 44 && chave.chars().all(char::is_numeric) {

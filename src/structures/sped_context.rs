@@ -6,7 +6,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{EFDResult, SpedFile, SpedRecord, blocos::*, obter_grupo_de_contas};
+use crate::{EFDResult, SpedFile, SpedRecord, StringParser, blocos::*, obter_grupo_de_contas};
 
 // ============================================================================
 // 1. Contexto Imutável (Dados Globais e Tabelas)
@@ -46,38 +46,37 @@ pub struct SpedContext {
     pub rec_bru_cum: Option<Decimal>,
     pub rec_bru_total: Option<Decimal>,
 
-    // --- Tabelas de consulta (Lookups) ---
-    // Valores convertidos para Arc<str> para clonagem barata no Builder
-    pub complementar: HashMap<String, Arc<str>>,
-    pub contabil: HashMap<String, HashMap<String, Arc<str>>>,
+    // --- Tabelas de consulta (Lookups com Arc<str>) ---
+    // (Chaves Arc<str> economizam RAM se repetidas, Valores Arc<str> evitam cópia)
+    pub complementar: HashMap<Arc<str>, Arc<str>>,
+    pub contabil: HashMap<Arc<str>, HashMap<Arc<str>, Arc<str>>>,
     pub estabelecimentos: HashMap<Arc<str>, Arc<str>>,
-    pub nat_operacao: HashMap<String, Arc<str>>,
-    pub participantes: BTreeMap<String, HashMap<String, Arc<str>>>,
-    pub produtos: BTreeMap<String, HashMap<String, Arc<str>>>,
-    pub unidade_de_medida: HashMap<String, Arc<str>>,
+    pub nat_operacao: HashMap<Arc<str>, Arc<str>>,
+    pub participantes: BTreeMap<Arc<str>, HashMap<Arc<str>, Arc<str>>>,
+    pub produtos: BTreeMap<Arc<str>, HashMap<Arc<str>, Arc<str>>>,
+    pub unidade_de_medida: HashMap<Arc<str>, Arc<str>>,
 
     // Cache de Nomes para Lookup Rápido
-    pub nome_do_cnpj: BTreeMap<String, Arc<str>>,
-    pub nome_do_cpf: BTreeMap<String, Arc<str>>,
+    pub nome_do_cnpj: BTreeMap<Arc<str>, Arc<str>>,
+    pub nome_do_cpf: BTreeMap<Arc<str>, Arc<str>>,
 }
 
 impl SpedContext {
     /// Constrói o contexto lendo apenas o Bloco 0 do arquivo SPED.
     pub fn new(file: &SpedFile, path: &Path) -> EFDResult<Self> {
-        let path_buf = path.to_path_buf();
-        // Conversão inicial para Arc
-        let arquivo_efd: Arc<str> = path.to_string_lossy().into();
-
+        // Inicialização "Lazy" ou default
         let mut ctx = Self {
-            path: path_buf,
-            arquivo_efd,
-            // Inicializa com Arcs vazios, serão preenchidos no Reg 0000
+            path: path.to_path_buf(),
+            arquivo_efd: path.to_string_lossy().into(), // Cow -> Arc<str>
+
+            // Inicializa vazios (serão sobrescritos pelo Reg 0000)
             estabelecimento_cnpj: Arc::from(""),
             estabelecimento_cnpj_base: Arc::from(""),
             estabelecimento_nome: Arc::from(""),
             ..Self::default()
         };
 
+        // Fail fast se não houver bloco 0
         let bloco_0 = match file.obter_bloco_option('0') {
             Some(recs) => recs,
             None => return Ok(ctx),
@@ -94,9 +93,14 @@ impl SpedContext {
                 "0000" => {
                     // Registro 0000: Abertura do Arquivo Digital e Identificação da Pessoa Jurídica
                     if let Ok(r) = sped_record.downcast_ref::<Registro0000>() {
+                        // Conversão direta de String -> &str -> Arc<str>
                         ctx.estabelecimento_cnpj = Arc::from(r.cnpj.as_str());
                         ctx.estabelecimento_cnpj_base = Arc::from(r.get_cnpj_base().as_str());
-                        ctx.estabelecimento_nome = Arc::from(r.get_nome().to_uppercase().as_str());
+
+                        // to_upper_arc garante normalização e retorna Option<Arc>.
+                        // Unwrap_or cria um Arc vazio se None.
+                        ctx.estabelecimento_nome =
+                            r.nome.to_upper_arc().unwrap_or_else(|| Arc::from(""));
 
                         ctx.periodo_de_apuracao = Some(r.dt_ini);
                         ctx.dt_ini = r.dt_ini;
@@ -106,6 +110,7 @@ impl SpedContext {
                 "0110" => {
                     // Registro 0110: Regimes de Apuração da Contribuição Social e de Apropriação de Crédito
                     if let Ok(r) = sped_record.downcast_ref::<Registro0110>() {
+                        // Clone de Arc é barato (apenas incrementa contador)
                         ctx.ind_apro_cred = r.ind_apro_cred.clone();
                     }
                 }
@@ -132,25 +137,26 @@ impl SpedContext {
                 }
                 "0150" => {
                     // Registro 0150: Tabela de Cadastro do Participante
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0150>() {
-                        let mut hash: HashMap<String, Arc<str>> = HashMap::new();
+                    if let Ok(r) = sped_record.downcast_ref::<Registro0150>()
+                        && let Some(cod_part) = &r.cod_part
+                        && !cod_part.is_empty()
+                    {
+                        let mut hash: HashMap<Arc<str>, Arc<str>> = HashMap::new();
 
                         if let Some(nome) = r.nome.as_ref().filter(|s| !s.is_empty()) {
-                            hash.insert("NOME".to_string(), nome.clone());
+                            hash.insert("NOME".into(), nome.clone());
 
                             if let Some(cnpj) = r.cnpj.as_ref().filter(|s| !s.is_empty()) {
-                                hash.insert("CNPJ".to_string(), cnpj.clone());
-                                ctx.nome_do_cnpj.insert(cnpj.to_string(), nome.clone());
+                                hash.insert("CNPJ".into(), cnpj.clone());
+                                ctx.nome_do_cnpj.insert(cnpj.clone(), nome.clone());
                             }
                             if let Some(cpf) = r.cpf.as_ref().filter(|s| !s.is_empty()) {
-                                hash.insert("CPF".to_string(), cpf.clone());
-                                ctx.nome_do_cpf.insert(cpf.to_string(), nome.clone());
+                                hash.insert("CPF".into(), cpf.clone());
+                                ctx.nome_do_cpf.insert(cpf.clone(), nome.clone());
                             }
                         }
 
-                        if let Some(cod_part) = r.cod_part.as_ref().filter(|s| !s.is_empty()) {
-                            ctx.participantes.insert(cod_part.to_string(), hash);
-                        }
+                        ctx.participantes.insert(cod_part.clone(), hash);
                     }
                 }
                 "0190" => {
@@ -162,7 +168,7 @@ impl SpedContext {
                         && !descricao.is_empty()
                     {
                         ctx.unidade_de_medida
-                            .insert(cod_unidade.to_string(), descricao.clone());
+                            .insert(cod_unidade.clone(), descricao.clone());
                     }
                 }
                 "0200" => {
@@ -171,12 +177,12 @@ impl SpedContext {
                         && let Some(cod_item) = &r.cod_item
                         && !cod_item.is_empty()
                     {
-                        let mut item_data: HashMap<String, Arc<str>> = HashMap::with_capacity(5);
+                        let mut item_data: HashMap<Arc<str>, Arc<str>> = HashMap::with_capacity(5);
 
                         // Helper closure para inserir Arc se não for vazio
                         let mut insert_arc = |key: &str, val: &Option<Arc<str>>| {
                             if let Some(v) = val {
-                                item_data.insert(key.to_string(), v.clone());
+                                item_data.insert(key.into(), v.clone());
                             }
                         };
 
@@ -186,7 +192,7 @@ impl SpedContext {
                         insert_arc("COD_GEN", &r.cod_gen);
                         insert_arc("COD_LST", &r.cod_lst);
 
-                        ctx.produtos.insert(cod_item.to_string(), item_data);
+                        ctx.produtos.insert(cod_item.clone(), item_data);
                     }
                 }
                 "0400" => {
@@ -197,8 +203,7 @@ impl SpedContext {
                         && !cod_nat.is_empty()
                         && !descr_nat.is_empty()
                     {
-                        ctx.nat_operacao
-                            .insert(cod_nat.to_string(), descr_nat.clone());
+                        ctx.nat_operacao.insert(cod_nat.clone(), descr_nat.clone());
                     }
                 }
                 "0450" => {
@@ -209,7 +214,7 @@ impl SpedContext {
                         && !cod_inf.is_empty()
                         && !txt.is_empty()
                     {
-                        ctx.complementar.insert(cod_inf.to_string(), txt.clone());
+                        ctx.complementar.insert(cod_inf.clone(), txt.clone());
                     }
                 }
                 "0500" => {
@@ -218,8 +223,7 @@ impl SpedContext {
                         && let Some(cod_conta) = &r.cod_cta
                         && !cod_conta.is_empty()
                     {
-                        let nome_da_conta =
-                            r.nome_cta.as_deref().unwrap_or_default().to_uppercase();
+                        let nome_da_conta = r.nome_cta.to_upper_arc();
 
                         // Resolve o grupo e o código
                         let (cod_nat_cc, grupo_de_contas) = r
@@ -229,26 +233,29 @@ impl SpedContext {
                             .unwrap_or((None, String::new()));
 
                         // Formatação do nome da conta
-                        let conta_contabil =
-                            match (grupo_de_contas.is_empty(), nome_da_conta.is_empty()) {
-                                (true, true) => String::new(),
-                                (true, false) => nome_da_conta,
-                                (false, true) => grupo_de_contas,
-                                (false, false) => format!("{}: {}", grupo_de_contas, nome_da_conta),
+                        // Decisão sobre o nome final
+                        let conta_contabil: Arc<str> =
+                            match (grupo_de_contas.is_empty(), nome_da_conta) {
+                                (true, None) => Arc::from(""),
+                                (true, Some(nome)) => nome,
+                                (false, None) => grupo_de_contas.into(),
+                                (false, Some(nome)) => {
+                                    // Aqui infelizmente precisamos alocar uma nova String composta
+                                    Arc::from(format!("{}: {}", grupo_de_contas, nome))
+                                }
                             };
 
-                        let mut dados: HashMap<String, Arc<str>> = HashMap::with_capacity(2);
+                        let mut dados: HashMap<Arc<str>, Arc<str>> = HashMap::with_capacity(2);
 
                         if !conta_contabil.is_empty() {
-                            dados
-                                .insert("NOME_CTA".to_string(), Arc::from(conta_contabil.as_str()));
+                            dados.insert("NOME_CTA".into(), conta_contabil);
                         }
 
                         if let Some(cod) = cod_nat_cc {
-                            dados.insert("COD_NAT_CC".to_string(), cod);
+                            dados.insert("COD_NAT_CC".into(), cod);
                         }
 
-                        ctx.contabil.insert(cod_conta.to_string(), dados);
+                        ctx.contabil.insert(cod_conta.clone(), dados);
                     }
                 }
                 _ => {}
