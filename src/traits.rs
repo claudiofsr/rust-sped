@@ -733,4 +733,43 @@ mod optional_integer_tests {
             panic!("Expected ParseIntError but got {:?}", result);
         }
     }
+
+    /// cargo test -- --show-output test_string_parser
+    #[test]
+    fn test_string_parser() {
+        let campo_a: Option<String> = Some("07".to_string());
+        println!("campo_a: '{campo_a:?}'");
+        let resultado_a: Option<u16> = campo_a.parse_opt();
+        println!("resultado_a: '{resultado_a:?}'\n");
+
+        assert_eq!(resultado_a, Some(7));
+
+        let campo_b: Option<&str> = Some("00123");
+        println!("campo_b: '{campo_b:?}'");
+        let resultado_b: Option<u16> = campo_b.parse_opt();
+        println!("resultado_b: '{resultado_b:?}'\n");
+
+        assert_eq!(resultado_b, Some(123));
+
+        let campo_c: Option<String> = Some(" 54".to_string());
+        println!("campo_c: '{campo_c:?}'");
+        let resultado_c: Option<u16> = campo_c.parse_opt();
+        println!("resultado_c: '{resultado_c:?}'\n");
+
+        assert!(resultado_c.is_none());
+
+        let campo_d: Option<String> = Some("".to_string());
+        println!("campo_d: '{campo_d:?}'");
+        let resultado_d: Option<u16> = campo_d.parse_opt();
+        println!("resultado_d: '{resultado_d:?}'\n");
+
+        assert!(resultado_d.is_none());
+
+        let campo_e: Option<String> = None;
+        println!("campo_e: '{campo_e:?}'");
+        let resultado_e: Option<u16> = campo_e.parse_opt();
+        println!("resultado_e: '{resultado_e:?}'\n");
+
+        assert!(resultado_e.is_none());
+    }
 }
