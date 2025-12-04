@@ -563,10 +563,10 @@ impl CorrelationManager {
         part: Option<&str>,
     ) -> Option<StrongKey> {
         // filter + map é a forma perfeita de transformar Option<&str> vazio em None
-        let pt = part.filter(|s| !s.is_empty()).map(Arc::from);
+        let participant = part.filter(|s| !s.is_empty()).map(Arc::from);
 
-        if cfop.is_some() || pt.is_some() {
-            Some((cst, val, cfop, pt))
+        if cfop.is_some() || participant.is_some() {
+            Some((cst, val, cfop, participant))
         } else {
             None
         }
