@@ -375,8 +375,18 @@ impl DocsFiscaisNew {
     }
 }
 
+//----------------------------------------------------------------------------//
+//                                   Tests                                    //
+//----------------------------------------------------------------------------//
+//
+// cargo test -- --help
+// cargo test -- --nocapture
+// cargo test -- --show-output
+
+/// Run tests with:
+/// cargo test -- --show-output docs_fiscais_new_tests
 #[cfg(test)]
-mod docs_fiscais_tests {
+mod docs_fiscais_new_tests {
     use super::*;
     use claudiofsr_lib::print_split;
 
