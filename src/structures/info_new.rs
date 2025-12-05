@@ -911,10 +911,7 @@ impl<'a> DocsBuilder<'a> {
 
     /// Helper para buscar e aplicar nome da conta
     fn apply_account_name(&mut self, cod_cta: Option<&str>) {
-        if let Some(nome) = cod_cta
-            .and_then(|c| self.ctx.contabil.get(c))
-            .and_then(|h| h.get("NOME_CTA"))
-        {
+        if let Some(nome) = cod_cta.and_then(|c| self.ctx.contabil.get(c)) {
             self.doc.nome_da_conta = nome.clone();
         }
     }

@@ -30,7 +30,7 @@ pub struct Registro0000 {
     pub dt_ini: NaiveDate,                  // 6
     pub dt_fin: NaiveDate,                  // 7
     pub nome: Option<Arc<str>>,             // 8
-    pub cnpj: String,                       // 9
+    pub cnpj: Arc<str>,                     // 9
     pub uf: Option<Arc<str>>,               // 10
     pub cod_mun: Option<Arc<str>>,          // 11
     pub suframa: Option<Arc<str>>,          // 12
@@ -42,14 +42,19 @@ impl_sped_record_trait!(Registro0000);
 
 impl Registro0000 {
     /// Extrai o CNPJ Base (8 primeiros caracteres).
-    pub fn get_cnpj_base(&self) -> String {
-        // Evitar panic se CNPJ vier quebrado (safety)
-        self.cnpj.get(..8).unwrap_or(&self.cnpj).to_string()
+    ///
+    /// Retorna Arc vazio se o CNPJ for inválido/curto.
+    #[inline]
+    pub fn get_cnpj_base(&self) -> Arc<str> {
+        self.cnpj.get(..8).map(Arc::from).unwrap_or_default()
     }
 
-    /// Retorna o nome da empresa, ou uma string vazia/padrão se for None
-    pub fn get_nome(&self) -> &str {
-        self.nome.as_deref().unwrap_or("")
+    /// Retorna o nome da empresa, ou uma string vazia/padrão se for None.
+    #[inline]
+    pub fn get_nome(&self) -> Arc<str> {
+        // Option<Arc<str>> implementa Clone, incrementando o contador atômico se Some.
+        // unwrap_or_default retorna um Arc::from("") estático/barato se None.
+        self.nome.clone().unwrap_or_default()
     }
 }
 
@@ -104,14 +109,14 @@ impl SpedParser for Registro0000 {
         let dt_fin = get_required_date_field(7, "DT_FIN")?;
 
         let nome = fields.get(8).to_upper_arc(); // Normaliza nome para Uppercase
-        let cnpj = get_cnpj_field(9, "CNPJ")?;
+        let cnpj = get_cnpj_field(9, "CNPJ")?.into();
         let uf = fields.get(10).to_upper_arc(); // UF sempre Uppercase
         let cod_mun = fields.get(11).to_arc();
         let suframa = fields.get(12).to_arc();
         let ind_nat_pj = fields.get(13).to_arc();
         let ind_ativ = fields.get(14).to_arc();
 
-        let reg = Registro0000 {
+        Ok(Registro0000 {
             nivel: 0,
             bloco: '0',
             registro: REGISTRO.to_string(), // Aloca String apenas aqui, no sucesso
@@ -129,8 +134,6 @@ impl SpedParser for Registro0000 {
             suframa,
             ind_nat_pj,
             ind_ativ,
-        };
-
-        Ok(reg)
+        })
     }
 }

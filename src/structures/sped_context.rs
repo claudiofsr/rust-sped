@@ -49,7 +49,7 @@ pub struct SpedContext {
     // --- Tabelas de consulta (Lookups com Arc<str>) ---
     // (Chaves Arc<str> economizam RAM se repetidas, Valores Arc<str> evitam cópia)
     pub complementar: HashMap<Arc<str>, Arc<str>>,
-    pub contabil: HashMap<Arc<str>, HashMap<Arc<str>, Arc<str>>>,
+    pub contabil: HashMap<Arc<str>, Arc<str>>,
     pub estabelecimentos: HashMap<Arc<str>, Arc<str>>,
     pub nat_operacao: HashMap<Arc<str>, Arc<str>>,
     pub participantes: BTreeMap<Arc<str>, HashMap<Arc<str>, Arc<str>>>,
@@ -57,212 +57,222 @@ pub struct SpedContext {
     pub unidade_de_medida: HashMap<Arc<str>, Arc<str>>,
 
     // Cache de Nomes para Lookup Rápido
+    // Usamos BTreeMap para manter ordem e facilitar buscas determinísticas se necessário
     pub nome_do_cnpj: BTreeMap<Arc<str>, Arc<str>>,
     pub nome_do_cpf: BTreeMap<Arc<str>, Arc<str>>,
 }
 
 impl SpedContext {
-    /// Constrói o contexto lendo apenas o Bloco 0 do arquivo SPED.
+    /// Constrói o contexto lendo apenas o Bloco 0.
     pub fn new(file: &SpedFile, path: &Path) -> EFDResult<Self> {
-        // Inicialização "Lazy" ou default
         let mut ctx = Self {
             path: path.to_path_buf(),
-            arquivo_efd: path.to_string_lossy().into(), // Cow -> Arc<str>
-
-            // Inicializa vazios (serão sobrescritos pelo Reg 0000)
-            estabelecimento_cnpj: Arc::from(""),
-            estabelecimento_cnpj_base: Arc::from(""),
-            estabelecimento_nome: Arc::from(""),
+            arquivo_efd: path.to_string_lossy().into(),
             ..Self::default()
         };
 
-        // Fail fast se não houver bloco 0
-        let bloco_0 = match file.obter_bloco_option('0') {
-            Some(recs) => recs,
-            None => return Ok(ctx),
+        // Fail fast usando let-else
+        let Some(bloco_0) = file.obter_bloco_option('0') else {
+            return Ok(ctx);
         };
 
-        // Itera sobre os registros do Bloco 0 para popular as tabelas
         for sped_record in bloco_0 {
-            // Guard clause para filtrar Generic records
+            // Garante que é um registro genérico antes de tentar downcast
             let SpedRecord::Generic(inner) = sped_record else {
                 continue;
             };
 
             match inner.registro_name() {
-                "0000" => {
-                    // Registro 0000: Abertura do Arquivo Digital e Identificação da Pessoa Jurídica
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0000>() {
-                        // Conversão direta de String -> &str -> Arc<str>
-                        ctx.estabelecimento_cnpj = Arc::from(r.cnpj.as_str());
-                        ctx.estabelecimento_cnpj_base = Arc::from(r.get_cnpj_base().as_str());
-
-                        // to_upper_arc garante normalização e retorna Option<Arc>.
-                        // Unwrap_or cria um Arc vazio se None.
-                        ctx.estabelecimento_nome =
-                            r.nome.to_upper_arc().unwrap_or_else(|| Arc::from(""));
-
-                        ctx.periodo_de_apuracao = Some(r.dt_ini);
-                        ctx.dt_ini = r.dt_ini;
-                        ctx.dt_fin = r.dt_fin;
-                    }
-                }
-                "0110" => {
-                    // Registro 0110: Regimes de Apuração da Contribuição Social e de Apropriação de Crédito
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0110>() {
-                        // Clone de Arc é barato (apenas incrementa contador)
-                        ctx.ind_apro_cred = r.ind_apro_cred.clone();
-                    }
-                }
-                "0111" => {
-                    // Registro 0111: Tabela de Receita Bruta Mensal Para Fins de Rateio de Créditos Comuns
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0111>() {
-                        ctx.rec_bru_ncum_trib_mi = r.rec_bru_ncum_trib_mi;
-                        ctx.rec_bru_ncum_nt_mi = r.rec_bru_ncum_nt_mi;
-                        ctx.rec_bru_ncum_exp = r.rec_bru_ncum_exp;
-                        ctx.rec_bru_cum = r.rec_bru_cum;
-                        ctx.rec_bru_total = r.rec_bru_total;
-                    }
-                }
-                "0140" => {
-                    // Registro 0140: Tabela de Cadastro de Estabelecimentos
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0140>()
-                        && let Some(cnpj) = &r.cnpj
-                        && let Some(nome) = &r.nome
-                        && !cnpj.is_empty()
-                        && !nome.is_empty()
-                    {
-                        ctx.estabelecimentos.insert(cnpj.clone(), nome.clone());
-                    }
-                }
-                "0150" => {
-                    // Registro 0150: Tabela de Cadastro do Participante
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0150>()
-                        && let Some(cod_part) = &r.cod_part
-                        && !cod_part.is_empty()
-                    {
-                        let mut hash: HashMap<Arc<str>, Arc<str>> = HashMap::new();
-
-                        if let Some(nome) = r.nome.as_ref().filter(|s| !s.is_empty()) {
-                            hash.insert("NOME".into(), nome.clone());
-
-                            if let Some(cnpj) = r.cnpj.as_ref().filter(|s| !s.is_empty()) {
-                                hash.insert("CNPJ".into(), cnpj.clone());
-                                ctx.nome_do_cnpj.insert(cnpj.clone(), nome.clone());
-                            }
-                            if let Some(cpf) = r.cpf.as_ref().filter(|s| !s.is_empty()) {
-                                hash.insert("CPF".into(), cpf.clone());
-                                ctx.nome_do_cpf.insert(cpf.clone(), nome.clone());
-                            }
-                        }
-
-                        ctx.participantes.insert(cod_part.clone(), hash);
-                    }
-                }
-                "0190" => {
-                    // Registro 0190: Identificação das Unidades de Medida
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0190>()
-                        && let Some(cod_unidade) = &r.unid
-                        && let Some(descricao) = &r.descr
-                        && !cod_unidade.is_empty()
-                        && !descricao.is_empty()
-                    {
-                        ctx.unidade_de_medida
-                            .insert(cod_unidade.clone(), descricao.clone());
-                    }
-                }
-                "0200" => {
-                    // Registro 0200: Tabela de Identificação do Item (Produtos e Serviços)
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0200>()
-                        && let Some(cod_item) = &r.cod_item
-                        && !cod_item.is_empty()
-                    {
-                        let mut item_data: HashMap<Arc<str>, Arc<str>> = HashMap::with_capacity(5);
-
-                        // Helper closure para inserir Arc se não for vazio
-                        let mut insert_arc = |key: &str, val: &Option<Arc<str>>| {
-                            if let Some(v) = val {
-                                item_data.insert(key.into(), v.clone());
-                            }
-                        };
-
-                        insert_arc("DESCR_ITEM", &r.descr_item);
-                        insert_arc("TIPO_ITEM", &r.tipo_item);
-                        insert_arc("COD_NCM", &r.cod_ncm);
-                        insert_arc("COD_GEN", &r.cod_gen);
-                        insert_arc("COD_LST", &r.cod_lst);
-
-                        ctx.produtos.insert(cod_item.clone(), item_data);
-                    }
-                }
-                "0400" => {
-                    // Registro 0400: Tabela de Natureza da Operação/Prestação
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0400>()
-                        && let Some(cod_nat) = &r.cod_nat
-                        && let Some(descr_nat) = &r.descr_nat
-                        && !cod_nat.is_empty()
-                        && !descr_nat.is_empty()
-                    {
-                        ctx.nat_operacao.insert(cod_nat.clone(), descr_nat.clone());
-                    }
-                }
-                "0450" => {
-                    // Registro 0450: Tabela de Informação Complementar do Documento Fiscal
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0450>()
-                        && let Some(cod_inf) = &r.cod_inf
-                        && let Some(txt) = &r.txt
-                        && !cod_inf.is_empty()
-                        && !txt.is_empty()
-                    {
-                        ctx.complementar.insert(cod_inf.clone(), txt.clone());
-                    }
-                }
-                "0500" => {
-                    // Registro 0500: Plano de Contas Contábeis
-                    if let Ok(r) = sped_record.downcast_ref::<Registro0500>()
-                        && let Some(cod_conta) = &r.cod_cta
-                        && !cod_conta.is_empty()
-                    {
-                        let nome_da_conta = r.nome_cta.to_upper_arc();
-
-                        // Resolve o grupo e o código
-                        let (cod_nat_cc, grupo_de_contas) = r
-                            .cod_nat_cc
-                            .as_deref()
-                            .map(|cod| (Some(Arc::from(cod)), obter_grupo_de_contas(cod)))
-                            .unwrap_or((None, String::new()));
-
-                        // Formatação do nome da conta
-                        // Decisão sobre o nome final
-                        let conta_contabil: Arc<str> =
-                            match (grupo_de_contas.is_empty(), nome_da_conta) {
-                                (true, None) => Arc::from(""),
-                                (true, Some(nome)) => nome,
-                                (false, None) => grupo_de_contas.into(),
-                                (false, Some(nome)) => {
-                                    // Aqui infelizmente precisamos alocar uma nova String composta
-                                    Arc::from(format!("{}: {}", grupo_de_contas, nome))
-                                }
-                            };
-
-                        let mut dados: HashMap<Arc<str>, Arc<str>> = HashMap::with_capacity(2);
-
-                        if !conta_contabil.is_empty() {
-                            dados.insert("NOME_CTA".into(), conta_contabil);
-                        }
-
-                        if let Some(cod) = cod_nat_cc {
-                            dados.insert("COD_NAT_CC".into(), cod);
-                        }
-
-                        ctx.contabil.insert(cod_conta.clone(), dados);
-                    }
-                }
+                "0000" => ctx.handle_0000(sped_record),
+                "0110" => ctx.handle_0110(sped_record),
+                "0111" => ctx.handle_0111(sped_record),
+                "0140" => ctx.handle_0140(sped_record),
+                "0150" => ctx.handle_0150(sped_record),
+                "0190" => ctx.handle_0190(sped_record),
+                "0200" => ctx.handle_0200(sped_record),
+                "0400" => ctx.handle_0400(sped_record),
+                "0450" => ctx.handle_0450(sped_record),
+                "0500" => ctx.handle_0500(sped_record),
                 _ => {}
             }
         }
 
         Ok(ctx)
+    }
+
+    // --- Handlers Específicos (Inline logic separation) ---
+
+    /// Registro 0000: Abertura do Arquivo Digital e Identificação da Pessoa Jurídica
+    fn handle_0000(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0000>() {
+            self.estabelecimento_cnpj = r.cnpj.clone();
+            self.estabelecimento_cnpj_base = r.get_cnpj_base();
+            self.estabelecimento_nome = r.get_nome();
+            self.periodo_de_apuracao = Some(r.dt_ini);
+            self.dt_ini = r.dt_ini;
+            self.dt_fin = r.dt_fin;
+        }
+    }
+
+    /// Registro 0110: Regimes de Apuração da Contribuição Social e de Apropriação de Crédito
+    fn handle_0110(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0110>() {
+            // Clone de Arc é barato (apenas incrementa contador)
+            self.ind_apro_cred = r.ind_apro_cred.clone();
+        }
+    }
+
+    /// Registro 0111: Tabela de Receita Bruta Mensal Para Fins de Rateio de Créditos Comuns
+    fn handle_0111(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0111>() {
+            self.rec_bru_ncum_trib_mi = r.rec_bru_ncum_trib_mi;
+            self.rec_bru_ncum_nt_mi = r.rec_bru_ncum_nt_mi;
+            self.rec_bru_ncum_exp = r.rec_bru_ncum_exp;
+            self.rec_bru_cum = r.rec_bru_cum;
+            self.rec_bru_total = r.rec_bru_total;
+        }
+    }
+
+    /// Registro 0140: Tabela de Cadastro de Estabelecimentos
+    fn handle_0140(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0140>()
+            && let Some(cnpj) = &r.cnpj
+            && let Some(nome) = &r.nome
+            && !cnpj.is_empty()
+            && !nome.is_empty()
+        {
+            self.estabelecimentos.insert(cnpj.clone(), nome.clone());
+        }
+    }
+
+    /// Registro 0150: Tabela de Cadastro do Participante
+    fn handle_0150(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0150>()
+            && let Some(cod_part) = &r.cod_part
+            && let Some(nome) = &r.nome
+            && !cod_part.is_empty()
+            && !nome.is_empty()
+        {
+            let mut hash: HashMap<Arc<str>, Arc<str>> = HashMap::with_capacity(3);
+
+            hash.insert("NOME".into(), nome.clone());
+
+            if let Some(cnpj) = r.cnpj.as_ref().filter(|s| !s.is_empty()) {
+                hash.insert("CNPJ".into(), cnpj.clone());
+                self.nome_do_cnpj.insert(cnpj.clone(), nome.clone());
+            }
+            if let Some(cpf) = r.cpf.as_ref().filter(|s| !s.is_empty()) {
+                hash.insert("CPF".into(), cpf.clone());
+                self.nome_do_cpf.insert(cpf.clone(), nome.clone());
+            }
+
+            self.participantes.insert(cod_part.clone(), hash);
+        }
+    }
+
+    /// Registro 0190: Identificação das Unidades de Medida
+    fn handle_0190(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0190>()
+            && let Some(cod_unidade) = &r.unid
+            && let Some(descricao) = &r.descr
+            && !cod_unidade.is_empty()
+            && !descricao.is_empty()
+        {
+            self.unidade_de_medida
+                .insert(cod_unidade.clone(), descricao.clone());
+        }
+    }
+
+    /// Registro 0200: Tabela de Identificação do Item (Produtos e Serviços)
+    fn handle_0200(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0200>()
+            && let Some(cod_item) = &r.cod_item
+            && !cod_item.is_empty()
+        {
+            let mut item_data: HashMap<Arc<str>, Arc<str>> = HashMap::with_capacity(5);
+
+            // Helper local para reduzir boilerplate
+            let mut add = |k: &str, v: &Option<Arc<str>>| {
+                if let Some(val) = v {
+                    item_data.insert(k.into(), val.clone());
+                }
+            };
+
+            add("DESCR_ITEM", &r.descr_item);
+            add("TIPO_ITEM", &r.tipo_item);
+            add("COD_NCM", &r.cod_ncm);
+            add("COD_GEN", &r.cod_gen);
+            add("COD_LST", &r.cod_lst);
+
+            self.produtos.insert(cod_item.clone(), item_data);
+        }
+    }
+
+    /// Registro 0400: Tabela de Natureza da Operação/Prestação
+    fn handle_0400(&mut self, sped_record: &SpedRecord) {
+        // Registro 0400: Tabela de Natureza da Operação/Prestação
+        if let Ok(r) = sped_record.downcast_ref::<Registro0400>()
+            && let Some(cod_nat) = &r.cod_nat
+            && let Some(descr_nat) = &r.descr_nat
+            && !cod_nat.is_empty()
+            && !descr_nat.is_empty()
+        {
+            self.nat_operacao.insert(cod_nat.clone(), descr_nat.clone());
+        }
+    }
+
+    /// Registro 0450: Tabela de Informação Complementar do Documento Fiscal
+    fn handle_0450(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0450>()
+            && let Some(cod_inf) = &r.cod_inf
+            && let Some(txt) = &r.txt
+            && !cod_inf.is_empty()
+            && !txt.is_empty()
+        {
+            self.complementar.insert(cod_inf.clone(), txt.clone());
+        }
+    }
+
+    /// Registro 0500: Plano de Contas Contábeis
+    fn handle_0500(&mut self, sped_record: &SpedRecord) {
+        if let Ok(r) = sped_record.downcast_ref::<Registro0500>()
+            && let Some(cod_conta) = &r.cod_cta
+            && !cod_conta.is_empty()
+        {
+            // 1. Obtém o nome da conta normalizado (Option<Arc>)
+            let nome_da_conta = r.nome_cta.to_upper_arc();
+
+            // 2. Resolve o grupo de contas (se existir)
+            //    Filtra strings vazias para transformar Some("") em None
+            let grupo_de_contas = r
+                .cod_nat_cc
+                .as_deref()
+                .map(obter_grupo_de_contas)
+                .filter(|s| !s.is_empty());
+
+            // 3. Match funcional para decidir o formato final
+            //    Evita alocações (format!) a menos que necessário
+            let conta_contabil: Arc<str> = match (grupo_de_contas, nome_da_conta) {
+                (Some(grupo), Some(nome)) => {
+                    // Caso ambos existam: Alocação necessária
+                    Arc::from(format!("{}: {}", grupo, nome))
+                }
+                (Some(grupo), None) => {
+                    // Apenas grupo: Alocação String -> Arc
+                    Arc::from(grupo)
+                }
+                (None, Some(nome)) => {
+                    // Apenas nome: Zero Copy (move o Arc existente)
+                    nome
+                }
+                (None, None) => {
+                    // Fallback
+                    Arc::from("")
+                }
+            };
+
+            self.contabil.insert(cod_conta.clone(), conta_contabil);
+        }
     }
 
     /// Obtém o nome do participante baseado no CNPJ/CPF se não encontrado pelo código.
@@ -274,5 +284,49 @@ impl SpedContext {
             .or_else(|| cpf.and_then(|c| self.nome_do_cpf.get(c)))
             .cloned()
             .unwrap_or_default()
+    }
+
+    /// Obtém o nome mais frequente para cada Base de CNPJ (8 primeiros dígitos).
+    ///
+    /// Processa o mapa `nome_do_cnpj` (que contém CNPJ completo -> Nome) e retorna
+    /// um mapa de `CNPJBase -> Nome`.
+    ///
+    /// Esta função utiliza uma abordagem funcional eficiente (`fold` + `entry`),
+    /// mantendo a contagem e preservando o `Arc<str>` original para economizar memória.
+    pub fn obter_nomes_por_cnpj_base(&self) -> HashMap<String, Arc<str>> {
+        self.nome_do_cnpj
+            .iter()
+            // 1. Filtra nomes vazios
+            .filter(|(_cnpj, name)| !name.trim().is_empty())
+            // 2. Agrupa por CNPJ Base e conta frequências
+            .fold(
+                // Acumulador: Map<CNPJBase, Map<NomeLowerCase, (Contagem, NomeOriginalArc)>>
+                HashMap::new(),
+                |mut acc: HashMap<String, HashMap<String, (u32, Arc<str>)>>, (cnpj, name)| {
+                    // Garante que temos ao menos 8 dígitos para a base
+                    if cnpj.len() >= 8 {
+                        let cnpj_base = cnpj[0..8].to_string();
+
+                        acc.entry(cnpj_base)
+                            .or_default()
+                            .entry(name.to_lowercase()) // Chave normalizada para contagem agnóstica de case
+                            .and_modify(|(count, _)| *count += 1)
+                            .or_insert_with(|| (1, name.clone())); // Clona o Arc (barato), não a string
+                    }
+                    acc
+                },
+            )
+            // 3. Transforma o acumulador no resultado final
+            .into_iter()
+            .filter_map(|(cnpj_base, counts_map)| {
+                // Para cada base, pega o nome com maior contagem
+                counts_map
+                    .into_values()
+                    // Em caso de empate, max_by_key escolhe o último (ou é arbitrário em HashMap),
+                    // mas para contagem de nomes isso geralmente é suficiente.
+                    .max_by_key(|(count, _)| *count)
+                    .map(|(_, original_arc_name)| (cnpj_base, original_arc_name))
+            })
+            .collect()
     }
 }
