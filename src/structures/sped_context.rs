@@ -293,7 +293,7 @@ impl SpedContext {
     ///
     /// Esta função utiliza uma abordagem funcional eficiente (`fold` + `entry`),
     /// mantendo a contagem e preservando o `Arc<str>` original para economizar memória.
-    pub fn obter_nomes_por_cnpj_base(&self) -> HashMap<String, Arc<str>> {
+    pub fn obter_nome_mais_frequente(&self) -> HashMap<String, Arc<str>> {
         self.nome_do_cnpj
             .iter()
             // 1. Filtra nomes vazios
