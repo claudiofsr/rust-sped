@@ -51,13 +51,13 @@ impl SpedParser for RegistroC500 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -69,13 +69,13 @@ impl SpedParser for RegistroC500 {
         let ser = fields.get(5).to_arc();
         let sub = fields.get(6).to_arc();
         let num_doc = fields.get(7).to_arc();
-        let dt_doc = get_date_field(8, "DT_DOC")?;
-        let dt_ent = get_date_field(9, "DT_ENT")?;
-        let vl_doc = get_decimal_field(10, "VL_DOC")?;
-        let vl_icms = get_decimal_field(11, "VL_ICMS")?;
+        let dt_doc = get_date(8, "DT_DOC")?;
+        let dt_ent = get_date(9, "DT_ENT")?;
+        let vl_doc = get_decimal(10, "VL_DOC")?;
+        let vl_icms = get_decimal(11, "VL_ICMS")?;
         let cod_inf = fields.get(12).to_arc();
-        let vl_pis = get_decimal_field(13, "VL_PIS")?;
-        let vl_cofins = get_decimal_field(14, "VL_COFINS")?;
+        let vl_pis = get_decimal(13, "VL_PIS")?;
+        let vl_cofins = get_decimal(14, "VL_COFINS")?;
         let chv_doce = fields.get(15).to_arc();
 
         let reg = RegistroC500 {

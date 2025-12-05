@@ -43,16 +43,16 @@ impl SpedParser for Registro0145 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cod_inc_trib = fields.get(2).to_arc();
-        let vl_rec_tot = get_decimal_field(3, "VL_REC_TOT")?;
-        let vl_rec_ativ = get_decimal_field(4, "VL_REC_ATIV")?;
-        let vl_rec_demais_ativ = get_decimal_field(5, "VL_REC_DEMAIS_ATIV")?;
+        let vl_rec_tot = get_decimal(3, "VL_REC_TOT")?;
+        let vl_rec_ativ = get_decimal(4, "VL_REC_ATIV")?;
+        let vl_rec_demais_ativ = get_decimal(5, "VL_REC_DEMAIS_ATIV")?;
         let info_compl = fields.get(6).to_arc();
 
         let reg = Registro0145 {

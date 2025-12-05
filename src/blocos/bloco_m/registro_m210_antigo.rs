@@ -52,24 +52,24 @@ impl SpedParser for RegistroM210Antigo {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cod_cont = fields.get(2).to_arc();
-        let vl_rec_brt = get_decimal_field(3, "VL_REC_BRT")?;
-        let vl_bc_cont = get_decimal_field(4, "VL_BC_CONT")?;
-        let aliq_pis = get_decimal_field(5, "ALIQ_PIS")?;
+        let vl_rec_brt = get_decimal(3, "VL_REC_BRT")?;
+        let vl_bc_cont = get_decimal(4, "VL_BC_CONT")?;
+        let aliq_pis = get_decimal(5, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(6).to_arc();
-        let aliq_pis_quant = get_decimal_field(7, "ALIQ_PIS_QUANT")?;
-        let vl_cont_apur = get_decimal_field(8, "VL_CONT_APUR")?;
-        let vl_ajus_acres = get_decimal_field(9, "VL_AJUS_ACRES")?;
-        let vl_ajus_reduc = get_decimal_field(10, "VL_AJUS_REDUC")?;
-        let vl_cont_difer = get_decimal_field(11, "VL_CONT_DIFER")?;
-        let vl_cont_difer_ant = get_decimal_field(12, "VL_CONT_DIFER_ANT")?;
-        let vl_cont_per = get_decimal_field(13, "VL_CONT_PER")?;
+        let aliq_pis_quant = get_decimal(7, "ALIQ_PIS_QUANT")?;
+        let vl_cont_apur = get_decimal(8, "VL_CONT_APUR")?;
+        let vl_ajus_acres = get_decimal(9, "VL_AJUS_ACRES")?;
+        let vl_ajus_reduc = get_decimal(10, "VL_AJUS_REDUC")?;
+        let vl_cont_difer = get_decimal(11, "VL_CONT_DIFER")?;
+        let vl_cont_difer_ant = get_decimal(12, "VL_CONT_DIFER_ANT")?;
+        let vl_cont_per = get_decimal(13, "VL_CONT_PER")?;
 
         let reg = RegistroM210Antigo {
             nivel: 3,

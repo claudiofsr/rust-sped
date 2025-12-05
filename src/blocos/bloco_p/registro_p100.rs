@@ -56,28 +56,28 @@ impl SpedParser for RegistroP100 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let dt_ini = get_date_field(2, "DT_INI")?;
-        let dt_fin = get_date_field(3, "DT_FIN")?;
-        let vl_rec_tot_est = get_decimal_field(4, "VL_REC_TOT_EST")?;
+        let dt_ini = get_date(2, "DT_INI")?;
+        let dt_fin = get_date(3, "DT_FIN")?;
+        let vl_rec_tot_est = get_decimal(4, "VL_REC_TOT_EST")?;
         let cod_ativ_econ = fields.get(5).to_arc();
-        let vl_rec_ativ_estab = get_decimal_field(6, "VL_REC_ATIV_ESTAB")?;
-        let vl_exc = get_decimal_field(7, "VL_EXC")?;
-        let vl_bc_cont = get_decimal_field(8, "VL_BC_CONT")?;
-        let aliq_cont = get_decimal_field(9, "ALIQ_CONT")?;
-        let vl_cont_apu = get_decimal_field(10, "VL_CONT_APU")?;
+        let vl_rec_ativ_estab = get_decimal(6, "VL_REC_ATIV_ESTAB")?;
+        let vl_exc = get_decimal(7, "VL_EXC")?;
+        let vl_bc_cont = get_decimal(8, "VL_BC_CONT")?;
+        let aliq_cont = get_decimal(9, "ALIQ_CONT")?;
+        let vl_cont_apu = get_decimal(10, "VL_CONT_APU")?;
         let cod_cta = fields.get(11).to_arc();
         let info_compl = fields.get(12).to_arc();
 

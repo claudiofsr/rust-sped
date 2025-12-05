@@ -53,14 +53,14 @@ impl SpedParser for RegistroD200 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -73,9 +73,9 @@ impl SpedParser for RegistroD200 {
         let num_doc_ini = fields.get(6).to_arc();
         let num_doc_fin = fields.get(7).to_arc();
         let cfop = fields.get(8).parse_opt();
-        let dt_ref = get_date_field(9, "DT_REF")?;
-        let vl_doc = get_decimal_field(10, "VL_DOC")?;
-        let vl_desc = get_decimal_field(11, "VL_DESC")?;
+        let dt_ref = get_date(9, "DT_REF")?;
+        let vl_doc = get_decimal(10, "VL_DOC")?;
+        let vl_desc = get_decimal(11, "VL_DESC")?;
 
         let reg = RegistroD200 {
             nivel: 3,

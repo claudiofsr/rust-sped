@@ -42,15 +42,15 @@ impl SpedParser for Registro0205 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         let descr_ant_item = fields.get(2).to_arc();
-        let dt_ini = get_date_field(3, "DT_INI")?;
-        let dt_fim = get_date_field(4, "DT_FIM")?;
+        let dt_ini = get_date(3, "DT_INI")?;
+        let dt_fim = get_date(4, "DT_FIM")?;
         let cod_ant_item = fields.get(5).to_arc();
 
         let reg = Registro0205 {

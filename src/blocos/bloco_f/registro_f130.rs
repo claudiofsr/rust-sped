@@ -59,7 +59,7 @@ impl SpedParser for RegistroF130 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -70,18 +70,18 @@ impl SpedParser for RegistroF130 {
         let ind_orig_cred = fields.get(4).to_arc();
         let ind_util_bem_imob = fields.get(5).to_arc();
         let mes_oper_aquis = fields.get(6).to_arc();
-        let vl_oper_aquis = get_decimal_field(7, "VL_OPER_AQUIS")?;
+        let vl_oper_aquis = get_decimal(7, "VL_OPER_AQUIS")?;
         let parc_oper_nao_bc_cred = fields.get(8).to_arc();
-        let vl_bc_cred = get_decimal_field(9, "VL_BC_CRED")?;
+        let vl_bc_cred = get_decimal(9, "VL_BC_CRED")?;
         let ind_nr_parc = fields.get(10).to_arc();
         let cst_pis = fields.get(11).parse_opt();
-        let vl_bc_pis = get_decimal_field(12, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(13, "ALIQ_PIS")?;
-        let vl_pis = get_decimal_field(14, "VL_PIS")?;
+        let vl_bc_pis = get_decimal(12, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(13, "ALIQ_PIS")?;
+        let vl_pis = get_decimal(14, "VL_PIS")?;
         let cst_cofins = fields.get(15).parse_opt();
-        let vl_bc_cofins = get_decimal_field(16, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(17, "ALIQ_COFINS")?;
-        let vl_cofins = get_decimal_field(18, "VL_COFINS")?;
+        let vl_bc_cofins = get_decimal(16, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(17, "ALIQ_COFINS")?;
+        let vl_cofins = get_decimal(18, "VL_COFINS")?;
         let cod_cta = fields.get(19).to_arc();
         let cod_ccus = fields.get(20).to_arc();
         let desc_bem_imob = fields.get(21).to_arc();

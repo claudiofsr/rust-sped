@@ -46,14 +46,14 @@ impl SpedParser for RegistroM800 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cst_cofins = fields.get(2).parse_opt();
-        let vl_tot_rec = get_decimal_field(3, "VL_TOT_REC")?;
+        let vl_tot_rec = get_decimal(3, "VL_TOT_REC")?;
         let cod_cta = fields.get(4).to_arc();
         let desc_compl = fields.get(5).to_arc();
 

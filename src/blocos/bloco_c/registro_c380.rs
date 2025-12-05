@@ -49,25 +49,25 @@ impl SpedParser for RegistroC380 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cod_mod = fields.get(2).to_arc();
-        let dt_doc_ini = get_date_field(3, "DT_DOC_INI")?;
-        let dt_doc_fin = get_date_field(4, "DT_DOC_FIN")?;
+        let dt_doc_ini = get_date(3, "DT_DOC_INI")?;
+        let dt_doc_fin = get_date(4, "DT_DOC_FIN")?;
         let num_doc_ini = fields.get(5).to_arc();
         let num_doc_fin = fields.get(6).to_arc();
-        let vl_doc = get_decimal_field(7, "VL_DOC")?;
-        let vl_doc_canc = get_decimal_field(8, "VL_DOC_CANC")?;
+        let vl_doc = get_decimal(7, "VL_DOC")?;
+        let vl_doc_canc = get_decimal(8, "VL_DOC_CANC")?;
 
         let reg = RegistroC380 {
             nivel: 3,

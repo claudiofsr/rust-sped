@@ -50,25 +50,25 @@ impl SpedParser for Registro1800 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let inc_imob = fields.get(2).to_arc();
-        let rec_receb_ret = get_decimal_field(3, "REC_RECEB_RET")?;
-        let rec_fin_ret = get_decimal_field(4, "REC_FIN_RET")?;
+        let rec_receb_ret = get_decimal(3, "REC_RECEB_RET")?;
+        let rec_fin_ret = get_decimal(4, "REC_FIN_RET")?;
         let bc_ret = fields.get(5).to_arc();
-        let aliq_ret = get_decimal_field(6, "ALIQ_RET")?;
-        let vl_rec_uni = get_decimal_field(7, "VL_REC_UNI")?;
-        let dt_rec_uni = get_date_field(8, "DT_REC_UNI")?;
+        let aliq_ret = get_decimal(6, "ALIQ_RET")?;
+        let vl_rec_uni = get_decimal(7, "VL_REC_UNI")?;
+        let dt_rec_uni = get_date(8, "DT_REC_UNI")?;
         let cod_rec = fields.get(9).to_arc();
 
         let reg = Registro1800 {

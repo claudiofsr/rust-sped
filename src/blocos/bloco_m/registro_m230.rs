@@ -46,17 +46,17 @@ impl SpedParser for RegistroM230 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cnpj = fields.get(2).to_arc();
-        let vl_vend = get_decimal_field(3, "VL_VEND")?;
-        let vl_nao_receb = get_decimal_field(4, "VL_NAO_RECEB")?;
-        let vl_cont_dif = get_decimal_field(5, "VL_CONT_DIF")?;
-        let vl_cred_dif = get_decimal_field(6, "VL_CRED_DIF")?;
+        let vl_vend = get_decimal(3, "VL_VEND")?;
+        let vl_nao_receb = get_decimal(4, "VL_NAO_RECEB")?;
+        let vl_cont_dif = get_decimal(5, "VL_CONT_DIF")?;
+        let vl_cred_dif = get_decimal(6, "VL_CRED_DIF")?;
         let cod_cred = fields.get(7).parse_opt();
 
         let reg = RegistroM230 {

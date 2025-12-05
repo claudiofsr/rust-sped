@@ -53,13 +53,13 @@ impl SpedParser for Registro1210 {
         }
 
         // Closures auxiliares
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -68,11 +68,11 @@ impl SpedParser for Registro1210 {
         let cnpj = fields.get(2).to_arc();
         let cst_pis = fields.get(3).parse_opt();
         let cod_part = fields.get(4).to_arc();
-        let dt_oper = get_date_field(5, "DT_OPER")?;
-        let vl_oper = get_decimal_field(6, "VL_OPER")?;
-        let vl_bc_pis = get_decimal_field(7, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(8, "ALIQ_PIS")?;
-        let vl_pis = get_decimal_field(9, "VL_PIS")?;
+        let dt_oper = get_date(5, "DT_OPER")?;
+        let vl_oper = get_decimal(6, "VL_OPER")?;
+        let vl_bc_pis = get_decimal(7, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(8, "ALIQ_PIS")?;
+        let vl_pis = get_decimal(9, "VL_PIS")?;
         let cod_cta = fields.get(10).to_arc();
         let desc_compl = fields.get(11).to_arc();
 

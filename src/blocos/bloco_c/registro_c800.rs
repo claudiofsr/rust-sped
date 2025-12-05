@@ -58,13 +58,13 @@ impl SpedParser for RegistroC800 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -73,19 +73,19 @@ impl SpedParser for RegistroC800 {
         let cod_mod = fields.get(2).to_arc();
         let cod_sit = fields.get(3).to_arc();
         let num_cfe = fields.get(4).to_arc();
-        let dt_doc = get_date_field(5, "DT_DOC")?;
-        let vl_cfe = get_decimal_field(6, "VL_CFE")?;
-        let vl_pis = get_decimal_field(7, "VL_PIS")?;
-        let vl_cofins = get_decimal_field(8, "VL_COFINS")?;
+        let dt_doc = get_date(5, "DT_DOC")?;
+        let vl_cfe = get_decimal(6, "VL_CFE")?;
+        let vl_pis = get_decimal(7, "VL_PIS")?;
+        let vl_cofins = get_decimal(8, "VL_COFINS")?;
         let cnpj_cpf = fields.get(9).to_arc();
         let nr_sat = fields.get(10).to_arc();
         let chv_cfe = fields.get(11).to_arc();
-        let vl_desc = get_decimal_field(12, "VL_DESC")?;
-        let vl_merc = get_decimal_field(13, "VL_MERC")?;
-        let vl_out_da = get_decimal_field(14, "VL_OUT_DA")?;
-        let vl_icms = get_decimal_field(15, "VL_ICMS")?;
-        let vl_pis_st = get_decimal_field(16, "VL_PIS_ST")?;
-        let vl_cofins_st = get_decimal_field(17, "VL_COFINS_ST")?;
+        let vl_desc = get_decimal(12, "VL_DESC")?;
+        let vl_merc = get_decimal(13, "VL_MERC")?;
+        let vl_out_da = get_decimal(14, "VL_OUT_DA")?;
+        let vl_icms = get_decimal(15, "VL_ICMS")?;
+        let vl_pis_st = get_decimal(16, "VL_PIS_ST")?;
+        let vl_cofins_st = get_decimal(17, "VL_COFINS_ST")?;
 
         let reg = RegistroC800 {
             nivel: 3,

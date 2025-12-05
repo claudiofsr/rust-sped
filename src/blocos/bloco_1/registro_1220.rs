@@ -44,7 +44,7 @@ impl SpedParser for Registro1220 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -53,7 +53,7 @@ impl SpedParser for Registro1220 {
         let per_apu_cred = fields.get(2).to_arc();
         let orig_cred = fields.get(3).to_arc();
         let cod_cred = fields.get(4).parse_opt();
-        let vl_cred = get_decimal_field(5, "VL_CRED")?;
+        let vl_cred = get_decimal(5, "VL_CRED")?;
 
         let reg = Registro1220 {
             nivel: 3,

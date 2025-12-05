@@ -52,27 +52,27 @@ impl SpedParser for RegistroF600 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let ind_nat_ret = fields.get(2).to_arc();
-        let dt_ret = get_date_field(3, "DT_RET")?;
-        let vl_bc_ret = get_decimal_field(4, "VL_BC_RET")?;
-        let vl_ret = get_decimal_field(5, "VL_RET")?;
+        let dt_ret = get_date(3, "DT_RET")?;
+        let vl_bc_ret = get_decimal(4, "VL_BC_RET")?;
+        let vl_ret = get_decimal(5, "VL_RET")?;
         let cod_rec = fields.get(6).to_arc();
         let ind_nat_rec = fields.get(7).to_arc();
         let cnpj = fields.get(8).to_arc();
-        let vl_ret_pis = get_decimal_field(9, "VL_RET_PIS")?;
-        let vl_ret_cofins = get_decimal_field(10, "VL_RET_COFINS")?;
+        let vl_ret_pis = get_decimal(9, "VL_RET_PIS")?;
+        let vl_ret_cofins = get_decimal(10, "VL_RET_COFINS")?;
         let ind_dec = fields.get(11).to_arc();
 
         let reg = RegistroF600 {

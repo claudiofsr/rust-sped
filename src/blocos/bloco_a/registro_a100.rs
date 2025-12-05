@@ -65,14 +65,14 @@ impl SpedParser for RegistroA100 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -87,19 +87,19 @@ impl SpedParser for RegistroA100 {
         let num_doc = fields.get(8).to_arc();
         let chv_nfse = fields.get(9).to_arc();
 
-        let dt_doc = get_date_field(10, "DT_DOC")?;
-        let dt_exe_serv = get_date_field(11, "DT_EXE_SERV")?;
+        let dt_doc = get_date(10, "DT_DOC")?;
+        let dt_exe_serv = get_date(11, "DT_EXE_SERV")?;
 
-        let vl_doc = get_decimal_field(12, "VL_DOC")?;
+        let vl_doc = get_decimal(12, "VL_DOC")?;
         let ind_pgto = fields.get(13).to_arc();
-        let vl_desc = get_decimal_field(14, "VL_DESC")?;
-        let vl_bc_pis = get_decimal_field(15, "VL_BC_PIS")?;
-        let vl_pis = get_decimal_field(16, "VL_PIS")?;
-        let vl_bc_cofins = get_decimal_field(17, "VL_BC_COFINS")?;
-        let vl_cofins = get_decimal_field(18, "VL_COFINS")?;
-        let vl_pis_ret = get_decimal_field(19, "VL_PIS_RET")?;
-        let vl_cofins_ret = get_decimal_field(20, "VL_COFINS_RET")?;
-        let vl_iss = get_decimal_field(21, "VL_ISS")?;
+        let vl_desc = get_decimal(14, "VL_DESC")?;
+        let vl_bc_pis = get_decimal(15, "VL_BC_PIS")?;
+        let vl_pis = get_decimal(16, "VL_PIS")?;
+        let vl_bc_cofins = get_decimal(17, "VL_BC_COFINS")?;
+        let vl_cofins = get_decimal(18, "VL_COFINS")?;
+        let vl_pis_ret = get_decimal(19, "VL_PIS_RET")?;
+        let vl_cofins_ret = get_decimal(20, "VL_COFINS_RET")?;
+        let vl_iss = get_decimal(21, "VL_ISS")?;
 
         let reg = RegistroA100 {
             nivel: 3,

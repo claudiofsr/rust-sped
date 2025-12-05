@@ -49,25 +49,25 @@ impl SpedParser for RegistroM510 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let ind_aj = fields.get(2).to_arc();
-        let vl_aj = get_decimal_field(3, "VL_AJ")?;
+        let vl_aj = get_decimal(3, "VL_AJ")?;
         let cod_aj = fields.get(4).to_arc();
         let num_doc = fields.get(5).to_arc();
         let descr_aj = fields.get(6).to_arc();
-        let dt_ref = get_date_field(7, "DT_REF")?;
+        let dt_ref = get_date(7, "DT_REF")?;
 
         let reg = RegistroM510 {
             nivel: 3,

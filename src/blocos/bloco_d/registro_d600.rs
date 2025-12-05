@@ -61,14 +61,14 @@ impl SpedParser for RegistroD600 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -80,18 +80,18 @@ impl SpedParser for RegistroD600 {
         let sub = fields.get(5).to_arc();
         let ind_rec = fields.get(6).to_arc();
         let qtd_cons = fields.get(7).to_arc(); // Pode ser Decimal se sempre numérico
-        let dt_doc_ini = get_date_field(8, "DT_DOC_INI")?;
-        let dt_doc_fin = get_date_field(9, "DT_DOC_FIN")?;
-        let vl_doc = get_decimal_field(10, "VL_DOC")?;
-        let vl_desc = get_decimal_field(11, "VL_DESC")?;
-        let vl_serv = get_decimal_field(12, "VL_SERV")?;
-        let vl_serv_nt = get_decimal_field(13, "VL_SERV_NT")?;
-        let vl_terc = get_decimal_field(14, "VL_TERC")?;
-        let vl_da = get_decimal_field(15, "VL_DA")?;
-        let vl_bc_icms = get_decimal_field(16, "VL_BC_ICMS")?;
-        let vl_icms = get_decimal_field(17, "VL_ICMS")?;
-        let vl_pis = get_decimal_field(18, "VL_PIS")?;
-        let vl_cofins = get_decimal_field(19, "VL_COFINS")?;
+        let dt_doc_ini = get_date(8, "DT_DOC_INI")?;
+        let dt_doc_fin = get_date(9, "DT_DOC_FIN")?;
+        let vl_doc = get_decimal(10, "VL_DOC")?;
+        let vl_desc = get_decimal(11, "VL_DESC")?;
+        let vl_serv = get_decimal(12, "VL_SERV")?;
+        let vl_serv_nt = get_decimal(13, "VL_SERV_NT")?;
+        let vl_terc = get_decimal(14, "VL_TERC")?;
+        let vl_da = get_decimal(15, "VL_DA")?;
+        let vl_bc_icms = get_decimal(16, "VL_BC_ICMS")?;
+        let vl_icms = get_decimal(17, "VL_ICMS")?;
+        let vl_pis = get_decimal(18, "VL_PIS")?;
+        let vl_cofins = get_decimal(19, "VL_COFINS")?;
 
         let reg = RegistroD600 {
             nivel: 3,

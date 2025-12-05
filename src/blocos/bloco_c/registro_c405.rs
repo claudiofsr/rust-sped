@@ -39,24 +39,24 @@ impl SpedParser for RegistroC405 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let dt_doc = get_date_field(2, "DT_DOC")?;
+        let dt_doc = get_date(2, "DT_DOC")?;
         let cro = fields.get(3).to_arc();
         let crz = fields.get(4).to_arc();
         let num_coo_fin = fields.get(5).to_arc();
-        let gt_fin = get_decimal_field(6, "GT_FIN")?;
-        let vl_brt = get_decimal_field(7, "VL_BRT")?;
+        let gt_fin = get_decimal(6, "GT_FIN")?;
+        let vl_brt = get_decimal(7, "VL_BRT")?;
 
         let reg = RegistroC405 {
             nivel: 4,

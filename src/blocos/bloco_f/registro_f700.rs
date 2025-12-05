@@ -46,7 +46,7 @@ impl SpedParser for RegistroF700 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -54,9 +54,9 @@ impl SpedParser for RegistroF700 {
 
         let ind_ori_ded = fields.get(2).to_arc();
         let ind_nat_ded = fields.get(3).to_arc();
-        let vl_ded_pis = get_decimal_field(4, "VL_DED_PIS")?;
-        let vl_ded_cofins = get_decimal_field(5, "VL_DED_COFINS")?;
-        let vl_bc_oper = get_decimal_field(6, "VL_BC_OPER")?;
+        let vl_ded_pis = get_decimal(4, "VL_DED_PIS")?;
+        let vl_ded_cofins = get_decimal(5, "VL_DED_COFINS")?;
+        let vl_bc_oper = get_decimal(6, "VL_BC_OPER")?;
         let cnpj = fields.get(7).to_arc();
         let inf_comp = fields.get(8).to_arc();
 

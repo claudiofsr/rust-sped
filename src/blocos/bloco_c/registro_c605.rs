@@ -45,17 +45,17 @@ impl SpedParser for RegistroC605 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cst_cofins = fields.get(2).parse_opt();
-        let vl_item = get_decimal_field(3, "VL_ITEM")?;
-        let vl_bc_cofins = get_decimal_field(4, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(5, "ALIQ_COFINS")?;
-        let vl_cofins = get_decimal_field(6, "VL_COFINS")?;
+        let vl_item = get_decimal(3, "VL_ITEM")?;
+        let vl_bc_cofins = get_decimal(4, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(5, "ALIQ_COFINS")?;
+        let vl_cofins = get_decimal(6, "VL_COFINS")?;
         let cod_cta = fields.get(7).to_arc();
 
         let reg = RegistroC605 {

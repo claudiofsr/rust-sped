@@ -51,23 +51,23 @@ impl SpedParser for RegistroC820 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cfop = fields.get(2).parse_opt();
-        let vl_item = get_decimal_field(3, "VL_ITEM")?;
+        let vl_item = get_decimal(3, "VL_ITEM")?;
         let cod_item = fields.get(4).to_arc();
         let cst_pis = fields.get(5).parse_opt();
         let quant_bc_pis = fields.get(6).to_arc();
-        let aliq_pis_quant = get_decimal_field(7, "ALIQ_PIS_QUANT")?;
-        let vl_pis = get_decimal_field(8, "VL_PIS")?;
+        let aliq_pis_quant = get_decimal(7, "ALIQ_PIS_QUANT")?;
+        let vl_pis = get_decimal(8, "VL_PIS")?;
         let cst_cofins = fields.get(9).parse_opt();
         let quant_bc_cofins = fields.get(10).to_arc();
-        let aliq_cofins_quant = get_decimal_field(11, "ALIQ_COFINS_QUANT")?;
-        let vl_cofins = get_decimal_field(12, "VL_COFINS")?;
+        let aliq_cofins_quant = get_decimal(11, "ALIQ_COFINS_QUANT")?;
+        let vl_cofins = get_decimal(12, "VL_COFINS")?;
         let cod_cta = fields.get(13).to_arc();
 
         let reg = RegistroC820 {

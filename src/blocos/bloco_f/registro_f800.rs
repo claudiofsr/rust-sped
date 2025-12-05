@@ -50,25 +50,25 @@ impl SpedParser for RegistroF800 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let ind_nat_even = fields.get(2).to_arc();
-        let dt_even = get_date_field(3, "DT_EVEN")?;
+        let dt_even = get_date(3, "DT_EVEN")?;
         let cnpj_suced = fields.get(4).to_arc();
         let pa_cont_cred = fields.get(5).to_arc();
         let cod_cred = fields.get(6).parse_opt();
-        let vl_cred_pis = get_decimal_field(7, "VL_CRED_PIS")?;
-        let vl_cred_cofins = get_decimal_field(8, "VL_CRED_COFINS")?;
+        let vl_cred_pis = get_decimal(7, "VL_CRED_PIS")?;
+        let vl_cred_cofins = get_decimal(8, "VL_CRED_COFINS")?;
         let per_cred_cis = fields.get(9).to_arc();
 
         let reg = RegistroF800 {

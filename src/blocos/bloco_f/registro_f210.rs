@@ -49,22 +49,22 @@ impl SpedParser for RegistroF210 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_cus_orc = get_decimal_field(2, "VL_CUS_ORC")?;
-        let vl_exc = get_decimal_field(3, "VL_EXC")?;
-        let vl_cus_orc_aju = get_decimal_field(4, "VL_CUS_ORC_AJU")?;
-        let vl_bc_cred = get_decimal_field(5, "VL_BC_CRED")?;
+        let vl_cus_orc = get_decimal(2, "VL_CUS_ORC")?;
+        let vl_exc = get_decimal(3, "VL_EXC")?;
+        let vl_cus_orc_aju = get_decimal(4, "VL_CUS_ORC_AJU")?;
+        let vl_bc_cred = get_decimal(5, "VL_BC_CRED")?;
         let cst_pis = fields.get(6).parse_opt();
-        let aliq_pis = get_decimal_field(7, "ALIQ_PIS")?;
-        let vl_cred_pis_util = get_decimal_field(8, "VL_CRED_PIS_UTIL")?;
+        let aliq_pis = get_decimal(7, "ALIQ_PIS")?;
+        let vl_cred_pis_util = get_decimal(8, "VL_CRED_PIS_UTIL")?;
         let cst_cofins = fields.get(9).parse_opt();
-        let aliq_cofins = get_decimal_field(10, "ALIQ_COFINS")?;
-        let vl_cred_cofins_util = get_decimal_field(11, "VL_CRED_COFINS_UTIL")?;
+        let aliq_cofins = get_decimal(10, "ALIQ_COFINS")?;
+        let vl_cred_cofins_util = get_decimal(11, "VL_CRED_COFINS_UTIL")?;
 
         let reg = RegistroF210 {
             nivel: 4,

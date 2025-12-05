@@ -46,7 +46,7 @@ impl SpedParser for Registro1700 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -54,11 +54,11 @@ impl SpedParser for Registro1700 {
 
         let ind_nat_ret = fields.get(2).to_arc();
         let pr_rec_ret = fields.get(3).to_arc();
-        let vl_ret_apu = get_decimal_field(4, "VL_RET_APU")?;
-        let vl_ret_ded = get_decimal_field(5, "VL_RET_DED")?;
-        let vl_ret_per = get_decimal_field(6, "VL_RET_PER")?;
-        let vl_ret_dcomp = get_decimal_field(7, "VL_RET_DCOMP")?;
-        let sld_ret = get_decimal_field(8, "SLD_RET")?;
+        let vl_ret_apu = get_decimal(4, "VL_RET_APU")?;
+        let vl_ret_ded = get_decimal(5, "VL_RET_DED")?;
+        let vl_ret_per = get_decimal(6, "VL_RET_PER")?;
+        let vl_ret_dcomp = get_decimal(7, "VL_RET_DCOMP")?;
+        let sld_ret = get_decimal(8, "SLD_RET")?;
 
         let reg = Registro1700 {
             nivel: 2,

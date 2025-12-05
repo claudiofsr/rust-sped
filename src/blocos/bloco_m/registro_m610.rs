@@ -55,27 +55,27 @@ impl SpedParser for RegistroM610 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cod_cont = fields.get(2).to_arc();
-        let vl_rec_brt = get_decimal_field(3, "VL_REC_BRT")?;
-        let vl_bc_cont = get_decimal_field(4, "VL_BC_CONT")?;
-        let vl_ajus_acres_bc_cofins = get_decimal_field(5, "VL_AJUS_ACRES_BC_COFINS")?;
-        let vl_ajus_reduc_bc_cofins = get_decimal_field(6, "VL_AJUS_REDUC_BC_COFINS")?;
-        let vl_bc_cont_ajus = get_decimal_field(7, "VL_BC_CONT_AJUS")?;
-        let aliq_cofins = get_decimal_field(8, "ALIQ_COFINS")?;
+        let vl_rec_brt = get_decimal(3, "VL_REC_BRT")?;
+        let vl_bc_cont = get_decimal(4, "VL_BC_CONT")?;
+        let vl_ajus_acres_bc_cofins = get_decimal(5, "VL_AJUS_ACRES_BC_COFINS")?;
+        let vl_ajus_reduc_bc_cofins = get_decimal(6, "VL_AJUS_REDUC_BC_COFINS")?;
+        let vl_bc_cont_ajus = get_decimal(7, "VL_BC_CONT_AJUS")?;
+        let aliq_cofins = get_decimal(8, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(9).to_arc();
-        let aliq_cofins_quant = get_decimal_field(10, "ALIQ_COFINS_QUANT")?;
-        let vl_cont_apur = get_decimal_field(11, "VL_CONT_APUR")?;
-        let vl_ajus_acres = get_decimal_field(12, "VL_AJUS_ACRES")?;
-        let vl_ajus_reduc = get_decimal_field(13, "VL_AJUS_REDUC")?;
-        let vl_cont_difer = get_decimal_field(14, "VL_CONT_DIFER")?;
-        let vl_cont_difer_ant = get_decimal_field(15, "VL_CONT_DIFER_ANT")?;
-        let vl_cont_per = get_decimal_field(16, "VL_CONT_PER")?;
+        let aliq_cofins_quant = get_decimal(10, "ALIQ_COFINS_QUANT")?;
+        let vl_cont_apur = get_decimal(11, "VL_CONT_APUR")?;
+        let vl_ajus_acres = get_decimal(12, "VL_AJUS_ACRES")?;
+        let vl_ajus_reduc = get_decimal(13, "VL_AJUS_REDUC")?;
+        let vl_cont_difer = get_decimal(14, "VL_CONT_DIFER")?;
+        let vl_cont_difer_ant = get_decimal(15, "VL_CONT_DIFER_ANT")?;
+        let vl_cont_per = get_decimal(16, "VL_CONT_PER")?;
 
         let reg = RegistroM610 {
             nivel: 3,

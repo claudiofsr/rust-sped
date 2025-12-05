@@ -81,35 +81,35 @@ impl SpedParser for Registro0000 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure for mandatory date fields (returns Result<NaiveDate, EFDError>)
-        let get_required_date_field = |idx: usize, field_name: &str| {
+        let get_required_date = |idx: usize, field_name: &str| {
             fields.get(idx).to_date(file_path, line_number, field_name)
         };
 
         // --- Closure auxiliar para campos u8 ---
-        let get_integer_field = |idx: usize, field_name: &str| {
+        let get_integer = |idx: usize, field_name: &str| {
             fields
                 .get(idx) // fields.get(idx) retorna Option<&&str>
                 .to_optional_integer(file_path, line_number, field_name)
         };
 
         // --- Closure auxiliar para obter CNPJ ---
-        let get_cnpj_field = |idx: usize, field_name: &str| {
+        let get_cnpj = |idx: usize, field_name: &str| {
             fields
                 .get(idx) // fields.get(idx) retorna Option<&&str>
                 .to_cnpj(file_path, line_number, REGISTRO, field_name)
         };
 
-        let cod_ver = get_integer_field(2, "COD_VER")?; // O '?' propagará o erro se houver
-        let tipo_escrit = get_integer_field(3, "TIPO_ESCRIT")?;
-        let ind_sit_esp = get_integer_field(4, "IND_SIT_ESP")?;
+        let cod_ver = get_integer(2, "COD_VER")?; // O '?' propagará o erro se houver
+        let tipo_escrit = get_integer(3, "TIPO_ESCRIT")?;
+        let ind_sit_esp = get_integer(4, "IND_SIT_ESP")?;
         let num_rec_anterior = fields.get(5).to_arc();
 
         // Using the closure for the MANDATORY date field
-        let dt_ini = get_required_date_field(6, "DT_INI")?; // Will error if empty or invalid date
-        let dt_fin = get_required_date_field(7, "DT_FIN")?;
+        let dt_ini = get_required_date(6, "DT_INI")?; // Will error if empty or invalid date
+        let dt_fin = get_required_date(7, "DT_FIN")?;
 
         let nome = fields.get(8).to_upper_arc(); // Normaliza nome para Uppercase
-        let cnpj = get_cnpj_field(9, "CNPJ")?.into();
+        let cnpj = get_cnpj(9, "CNPJ")?.into();
         let uf = fields.get(10).to_upper_arc(); // UF sempre Uppercase
         let cod_mun = fields.get(11).to_arc();
         let suframa = fields.get(12).to_arc();

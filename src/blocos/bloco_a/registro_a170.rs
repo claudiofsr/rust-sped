@@ -59,7 +59,7 @@ impl SpedParser for RegistroA170 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -68,18 +68,18 @@ impl SpedParser for RegistroA170 {
         let num_item = fields.get(2).parse_opt();
         let cod_item = fields.get(3).to_arc();
         let descr_compl = fields.get(4).to_arc();
-        let vl_item = get_decimal_field(5, "VL_ITEM")?;
-        let vl_desc = get_decimal_field(6, "VL_DESC")?;
+        let vl_item = get_decimal(5, "VL_ITEM")?;
+        let vl_desc = get_decimal(6, "VL_DESC")?;
         let nat_bc_cred = fields.get(7).to_arc();
         let ind_orig_cred = fields.get(8).to_arc();
         let cst_pis = fields.get(9).parse_opt();
-        let vl_bc_pis = get_decimal_field(10, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(11, "ALIQ_PIS")?;
-        let vl_pis = get_decimal_field(12, "VL_PIS")?;
+        let vl_bc_pis = get_decimal(10, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(11, "ALIQ_PIS")?;
+        let vl_pis = get_decimal(12, "VL_PIS")?;
         let cst_cofins = fields.get(13).parse_opt();
-        let vl_bc_cofins = get_decimal_field(14, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(15, "ALIQ_COFINS")?;
-        let vl_cofins = get_decimal_field(16, "VL_COFINS")?;
+        let vl_bc_cofins = get_decimal(14, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(15, "ALIQ_COFINS")?;
+        let vl_cofins = get_decimal(16, "VL_COFINS")?;
         let cod_cta = fields.get(17).to_arc();
         let cod_ccus = fields.get(18).to_arc();
 

@@ -36,7 +36,7 @@ impl SpedParser for RegistroC120 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -44,8 +44,8 @@ impl SpedParser for RegistroC120 {
 
         let cod_doc_imp = fields.get(2).to_arc();
         let num_doc_imp = fields.get(3).to_arc();
-        let vl_pis_imp = get_decimal_field(4, "VL_PIS_IMP")?;
-        let vl_cofins_imp = get_decimal_field(5, "VL_COFINS_IMP")?;
+        let vl_pis_imp = get_decimal(4, "VL_PIS_IMP")?;
+        let vl_cofins_imp = get_decimal(5, "VL_COFINS_IMP")?;
         let num_acdraw = fields.get(6).to_arc();
 
         let reg = RegistroC120 {

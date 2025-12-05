@@ -50,7 +50,7 @@ impl SpedParser for RegistroC195 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -59,13 +59,13 @@ impl SpedParser for RegistroC195 {
         let cnpj_cpf_part = fields.get(2).to_arc();
         let cst_cofins = fields.get(3).parse_opt();
         let cfop = fields.get(4).parse_opt();
-        let vl_item = get_decimal_field(5, "VL_ITEM")?;
-        let vl_desc = get_decimal_field(6, "VL_DESC")?;
-        let vl_bc_cofins = get_decimal_field(7, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(8, "ALIQ_COFINS")?;
+        let vl_item = get_decimal(5, "VL_ITEM")?;
+        let vl_desc = get_decimal(6, "VL_DESC")?;
+        let vl_bc_cofins = get_decimal(7, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(8, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(9).to_arc();
-        let aliq_cofins_quant = get_decimal_field(10, "ALIQ_COFINS_QUANT")?;
-        let vl_cofins = get_decimal_field(11, "VL_COFINS")?;
+        let aliq_cofins_quant = get_decimal(10, "ALIQ_COFINS_QUANT")?;
+        let vl_cofins = get_decimal(11, "VL_COFINS")?;
         let cod_cta = fields.get(12).to_arc();
 
         let reg = RegistroC195 {

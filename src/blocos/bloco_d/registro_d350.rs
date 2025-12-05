@@ -65,14 +65,14 @@ impl SpedParser for RegistroD350 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -81,24 +81,24 @@ impl SpedParser for RegistroD350 {
         let cod_mod = fields.get(2).to_arc();
         let ecf_mod = fields.get(3).to_arc();
         let ecf_fab = fields.get(4).to_arc();
-        let dt_doc = get_date_field(5, "DT_DOC")?;
+        let dt_doc = get_date(5, "DT_DOC")?;
         let cro = fields.get(6).to_arc();
         let crz = fields.get(7).to_arc();
         let num_coo_fin = fields.get(8).to_arc();
         let gt_fin = fields.get(9).to_arc();
-        let vl_brt = get_decimal_field(10, "VL_BRT")?;
+        let vl_brt = get_decimal(10, "VL_BRT")?;
         let cst_pis = fields.get(11).parse_opt();
-        let vl_bc_pis = get_decimal_field(12, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(13, "ALIQ_PIS")?;
+        let vl_bc_pis = get_decimal(12, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(13, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(14).to_arc();
-        let aliq_pis_quant = get_decimal_field(15, "ALIQ_PIS_QUANT")?;
-        let vl_pis = get_decimal_field(16, "VL_PIS")?;
+        let aliq_pis_quant = get_decimal(15, "ALIQ_PIS_QUANT")?;
+        let vl_pis = get_decimal(16, "VL_PIS")?;
         let cst_cofins = fields.get(17).parse_opt();
-        let vl_bc_cofins = get_decimal_field(18, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(19, "ALIQ_COFINS")?;
+        let vl_bc_cofins = get_decimal(18, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(19, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(20).to_arc();
-        let aliq_cofins_quant = get_decimal_field(21, "ALIQ_COFINS_QUANT")?;
-        let vl_cofins = get_decimal_field(22, "VL_COFINS")?;
+        let aliq_cofins_quant = get_decimal(21, "ALIQ_COFINS_QUANT")?;
+        let vl_cofins = get_decimal(22, "VL_COFINS")?;
         let cod_cta = fields.get(23).to_arc();
 
         let reg = RegistroD350 {

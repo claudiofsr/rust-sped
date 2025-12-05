@@ -48,7 +48,7 @@ impl SpedParser for RegistroM115 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
@@ -58,7 +58,7 @@ impl SpedParser for RegistroM115 {
         let cst_pis = fields.get(3).parse_opt();
         let det_bc_cred = fields.get(4).to_arc();
         let det_aliq = fields.get(5).to_arc();
-        let dt_oper_aj = get_date_field(6, "DT_OPER_AJ")?;
+        let dt_oper_aj = get_date(6, "DT_OPER_AJ")?;
         let desc_aj = fields.get(7).to_arc();
         let cod_cta = fields.get(8).to_arc();
         let info_compl = fields.get(9).to_arc();

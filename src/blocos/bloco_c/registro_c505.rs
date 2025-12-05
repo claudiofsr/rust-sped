@@ -46,18 +46,18 @@ impl SpedParser for RegistroC505 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cst_cofins = fields.get(2).parse_opt();
-        let vl_item = get_decimal_field(3, "VL_ITEM")?;
+        let vl_item = get_decimal(3, "VL_ITEM")?;
         let nat_bc_cred = fields.get(4).to_arc();
-        let vl_bc_cofins = get_decimal_field(5, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(6, "ALIQ_COFINS")?;
-        let vl_cofins = get_decimal_field(7, "VL_COFINS")?;
+        let vl_bc_cofins = get_decimal(5, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(6, "ALIQ_COFINS")?;
+        let vl_cofins = get_decimal(7, "VL_COFINS")?;
         let cod_cta = fields.get(8).to_arc();
 
         let reg = RegistroC505 {

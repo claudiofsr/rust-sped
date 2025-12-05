@@ -43,17 +43,17 @@ impl SpedParser for Registro0111 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let rec_bru_ncum_trib_mi = get_decimal_field(2, "REC_BRU_NCUM_TRIB_MI")?;
-        let rec_bru_ncum_nt_mi = get_decimal_field(3, "REC_BRU_NCUM_NT_MI")?;
-        let rec_bru_ncum_exp = get_decimal_field(4, "REC_BRU_NCUM_EXP")?;
-        let rec_bru_cum = get_decimal_field(5, "REC_BRU_CUM")?;
-        let rec_bru_total = get_decimal_field(6, "REC_BRU_TOTAL")?;
+        let rec_bru_ncum_trib_mi = get_decimal(2, "REC_BRU_NCUM_TRIB_MI")?;
+        let rec_bru_ncum_nt_mi = get_decimal(3, "REC_BRU_NCUM_NT_MI")?;
+        let rec_bru_ncum_exp = get_decimal(4, "REC_BRU_NCUM_EXP")?;
+        let rec_bru_cum = get_decimal(5, "REC_BRU_CUM")?;
+        let rec_bru_total = get_decimal(6, "REC_BRU_TOTAL")?;
 
         let reg = Registro0111 {
             nivel: 3,

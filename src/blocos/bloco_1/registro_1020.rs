@@ -43,7 +43,7 @@ impl SpedParser for Registro1020 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
@@ -51,7 +51,7 @@ impl SpedParser for Registro1020 {
 
         let num_proc = fields.get(2).to_arc();
         let ind_nat_acao = fields.get(3).to_arc();
-        let dt_dec_adm = get_date_field(4, "DT_DEC_ADM")?;
+        let dt_dec_adm = get_date(4, "DT_DEC_ADM")?;
 
         let reg = Registro1020 {
             nivel: 2,

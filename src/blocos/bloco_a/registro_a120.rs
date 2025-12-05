@@ -53,26 +53,26 @@ impl SpedParser for RegistroA120 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_tot_serv = get_decimal_field(2, "VL_TOT_SERV")?;
-        let vl_bc_pis = get_decimal_field(3, "VL_BC_PIS")?;
-        let vl_pis_imp = get_decimal_field(4, "VL_PIS_IMP")?;
-        let dt_pag_pis = get_date_field(5, "DT_PAG_PIS")?;
-        let vl_bc_cofins = get_decimal_field(6, "VL_BC_COFINS")?;
-        let vl_cofins_imp = get_decimal_field(7, "VL_COFINS_IMP")?;
-        let dt_pag_cofins = get_date_field(8, "DT_PAG_COFINS")?;
+        let vl_tot_serv = get_decimal(2, "VL_TOT_SERV")?;
+        let vl_bc_pis = get_decimal(3, "VL_BC_PIS")?;
+        let vl_pis_imp = get_decimal(4, "VL_PIS_IMP")?;
+        let dt_pag_pis = get_date(5, "DT_PAG_PIS")?;
+        let vl_bc_cofins = get_decimal(6, "VL_BC_COFINS")?;
+        let vl_cofins_imp = get_decimal(7, "VL_COFINS_IMP")?;
+        let dt_pag_cofins = get_date(8, "DT_PAG_COFINS")?;
         let loc_exe_serv = fields.get(9).to_arc();
 
         let reg = RegistroA120 {

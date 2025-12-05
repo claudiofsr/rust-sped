@@ -45,17 +45,17 @@ impl SpedParser for RegistroM611 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let ind_tip_coop = fields.get(2).to_arc();
-        let vl_bc_cont_ant_exc_coop = get_decimal_field(3, "VL_BC_CONT_ANT_EXC_COOP")?;
-        let vl_exc_coop_ger = get_decimal_field(4, "VL_EXC_COOP_GER")?;
-        let vl_exc_esp_coop = get_decimal_field(5, "VL_EXC_ESP_COOP")?;
-        let vl_bc_cont = get_decimal_field(6, "VL_BC_CONT")?;
+        let vl_bc_cont_ant_exc_coop = get_decimal(3, "VL_BC_CONT_ANT_EXC_COOP")?;
+        let vl_exc_coop_ger = get_decimal(4, "VL_EXC_COOP_GER")?;
+        let vl_exc_esp_coop = get_decimal(5, "VL_EXC_ESP_COOP")?;
+        let vl_bc_cont = get_decimal(6, "VL_BC_CONT")?;
 
         let reg = RegistroM611 {
             nivel: 4,

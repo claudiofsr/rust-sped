@@ -52,13 +52,13 @@ impl SpedParser for Registro1600 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -66,14 +66,14 @@ impl SpedParser for Registro1600 {
 
         let per_apur_ant = fields.get(2).to_arc();
         let nat_cont_rec = fields.get(3).to_arc();
-        let vl_cont_apur = get_decimal_field(4, "VL_CONT_APUR")?;
-        let vl_cred_cofins_desc = get_decimal_field(5, "VL_CRED_COFINS_DESC")?;
-        let vl_cont_dev = get_decimal_field(6, "VL_CONT_DEV")?;
-        let vl_out_ded = get_decimal_field(7, "VL_OUT_DED")?;
-        let vl_cont_ext = get_decimal_field(8, "VL_CONT_EXT")?;
-        let vl_mul = get_decimal_field(9, "VL_MUL")?;
-        let vl_jur = get_decimal_field(10, "VL_JUR")?;
-        let dt_recol = get_date_field(11, "DT_RECOL")?;
+        let vl_cont_apur = get_decimal(4, "VL_CONT_APUR")?;
+        let vl_cred_cofins_desc = get_decimal(5, "VL_CRED_COFINS_DESC")?;
+        let vl_cont_dev = get_decimal(6, "VL_CONT_DEV")?;
+        let vl_out_ded = get_decimal(7, "VL_OUT_DED")?;
+        let vl_cont_ext = get_decimal(8, "VL_CONT_EXT")?;
+        let vl_mul = get_decimal(9, "VL_MUL")?;
+        let vl_jur = get_decimal(10, "VL_JUR")?;
+        let dt_recol = get_date(11, "DT_RECOL")?;
 
         let reg = Registro1600 {
             nivel: 2,

@@ -52,24 +52,24 @@ impl SpedParser for RegistroM600 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_tot_cont_nc_per = get_decimal_field(2, "VL_TOT_CONT_NC_PER")?;
-        let vl_tot_cred_desc = get_decimal_field(3, "VL_TOT_CRED_DESC")?;
-        let vl_tot_cred_desc_ant = get_decimal_field(4, "VL_TOT_CRED_DESC_ANT")?;
-        let vl_tot_cont_nc_dev = get_decimal_field(5, "VL_TOT_CONT_NC_DEV")?;
-        let vl_ret_nc = get_decimal_field(6, "VL_RET_NC")?;
-        let vl_out_ded_nc = get_decimal_field(7, "VL_OUT_DED_NC")?;
-        let vl_cont_nc_rec = get_decimal_field(8, "VL_CONT_NC_REC")?;
-        let vl_tot_cont_cum_per = get_decimal_field(9, "VL_TOT_CONT_CUM_PER")?;
-        let vl_ret_cum = get_decimal_field(10, "VL_RET_CUM")?;
-        let vl_out_ded_cum = get_decimal_field(11, "VL_OUT_DED_CUM")?;
-        let vl_cont_cum_rec = get_decimal_field(12, "VL_CONT_CUM_REC")?;
-        let vl_tot_cont_rec = get_decimal_field(13, "VL_TOT_CONT_REC")?;
+        let vl_tot_cont_nc_per = get_decimal(2, "VL_TOT_CONT_NC_PER")?;
+        let vl_tot_cred_desc = get_decimal(3, "VL_TOT_CRED_DESC")?;
+        let vl_tot_cred_desc_ant = get_decimal(4, "VL_TOT_CRED_DESC_ANT")?;
+        let vl_tot_cont_nc_dev = get_decimal(5, "VL_TOT_CONT_NC_DEV")?;
+        let vl_ret_nc = get_decimal(6, "VL_RET_NC")?;
+        let vl_out_ded_nc = get_decimal(7, "VL_OUT_DED_NC")?;
+        let vl_cont_nc_rec = get_decimal(8, "VL_CONT_NC_REC")?;
+        let vl_tot_cont_cum_per = get_decimal(9, "VL_TOT_CONT_CUM_PER")?;
+        let vl_ret_cum = get_decimal(10, "VL_RET_CUM")?;
+        let vl_out_ded_cum = get_decimal(11, "VL_OUT_DED_CUM")?;
+        let vl_cont_cum_rec = get_decimal(12, "VL_CONT_CUM_REC")?;
+        let vl_tot_cont_rec = get_decimal(13, "VL_TOT_CONT_REC")?;
 
         let reg = RegistroM600 {
             nivel: 2,

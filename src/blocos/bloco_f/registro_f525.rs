@@ -49,18 +49,18 @@ impl SpedParser for RegistroF525 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_rec = get_decimal_field(2, "VL_REC")?;
+        let vl_rec = get_decimal(2, "VL_REC")?;
         let ind_rec = fields.get(3).to_arc();
         let cnpj_cpf = fields.get(4).to_arc();
         let num_doc = fields.get(5).to_arc();
         let cod_item = fields.get(6).to_arc();
-        let vl_rec_det = get_decimal_field(7, "VL_REC_DET")?;
+        let vl_rec_det = get_decimal(7, "VL_REC_DET")?;
         let cst_pis = fields.get(8).parse_opt();
         let cst_cofins = fields.get(9).parse_opt();
         let info_compl = fields.get(10).to_arc();

@@ -63,13 +63,13 @@ impl SpedParser for RegistroF200 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -81,18 +81,18 @@ impl SpedParser for RegistroF200 {
         let desc_unid_imob = fields.get(5).to_arc();
         let num_cont = fields.get(6).to_arc();
         let cpf_cnpj_adqu = fields.get(7).to_arc();
-        let dt_oper = get_date_field(8, "DT_OPER")?;
-        let vl_tot_vend = get_decimal_field(9, "VL_TOT_VEND")?;
-        let vl_rec_acum = get_decimal_field(10, "VL_REC_ACUM")?;
-        let vl_tot_rec = get_decimal_field(11, "VL_TOT_REC")?;
+        let dt_oper = get_date(8, "DT_OPER")?;
+        let vl_tot_vend = get_decimal(9, "VL_TOT_VEND")?;
+        let vl_rec_acum = get_decimal(10, "VL_REC_ACUM")?;
+        let vl_tot_rec = get_decimal(11, "VL_TOT_REC")?;
         let cst_pis = fields.get(12).parse_opt();
-        let vl_bc_pis = get_decimal_field(13, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(14, "ALIQ_PIS")?;
-        let vl_pis = get_decimal_field(15, "VL_PIS")?;
+        let vl_bc_pis = get_decimal(13, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(14, "ALIQ_PIS")?;
+        let vl_pis = get_decimal(15, "VL_PIS")?;
         let cst_cofins = fields.get(16).parse_opt();
-        let vl_bc_cofins = get_decimal_field(17, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(18, "ALIQ_COFINS")?;
-        let vl_cofins = get_decimal_field(19, "VL_COFINS")?;
+        let vl_bc_cofins = get_decimal(17, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(18, "ALIQ_COFINS")?;
+        let vl_cofins = get_decimal(19, "VL_COFINS")?;
         let perc_rec_receb = fields.get(20).to_arc();
         let ind_nat_emp = fields.get(21).to_arc();
         let inf_comp = fields.get(22).to_arc();

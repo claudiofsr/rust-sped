@@ -44,7 +44,7 @@ impl SpedParser for RegistroC860 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
@@ -52,7 +52,7 @@ impl SpedParser for RegistroC860 {
 
         let cod_mod = fields.get(2).to_arc();
         let nr_sat = fields.get(3).to_arc();
-        let dt_doc = get_date_field(4, "DT_DOC")?;
+        let dt_doc = get_date(4, "DT_DOC")?;
         let doc_ini = fields.get(5).to_arc();
         let doc_fim = fields.get(6).to_arc();
 

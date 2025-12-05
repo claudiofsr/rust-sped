@@ -49,7 +49,7 @@ impl SpedParser for RegistroM105 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -57,10 +57,10 @@ impl SpedParser for RegistroM105 {
 
         let nat_bc_cred = fields.get(2).to_arc();
         let cst_pis = fields.get(3).parse_opt();
-        let vl_bc_pis_tot = get_decimal_field(4, "VL_BC_PIS_TOT")?;
-        let vl_bc_pis_cum = get_decimal_field(5, "VL_BC_PIS_CUM")?;
-        let vl_bc_pis_nc = get_decimal_field(6, "VL_BC_PIS_NC")?;
-        let vl_bc_pis = get_decimal_field(7, "VL_BC_PIS")?;
+        let vl_bc_pis_tot = get_decimal(4, "VL_BC_PIS_TOT")?;
+        let vl_bc_pis_cum = get_decimal(5, "VL_BC_PIS_CUM")?;
+        let vl_bc_pis_nc = get_decimal(6, "VL_BC_PIS_NC")?;
+        let vl_bc_pis = get_decimal(7, "VL_BC_PIS")?;
         let quant_bc_pis_tot = fields.get(8).to_arc();
         let quant_bc_pis = fields.get(9).to_arc();
         let desc_cred = fields.get(10).to_arc();

@@ -51,22 +51,22 @@ impl SpedParser for RegistroI100 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_rec = get_decimal_field(2, "VL_REC")?;
+        let vl_rec = get_decimal(2, "VL_REC")?;
         let cst_pis_cofins = fields.get(3).parse_opt();
-        let vl_tot_ded_ger = get_decimal_field(4, "VL_TOT_DED_GER")?;
-        let vl_tot_ded_esp = get_decimal_field(5, "VL_TOT_DED_ESP")?;
-        let vl_bc_pis = get_decimal_field(6, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(7, "ALIQ_PIS")?;
-        let vl_pis = get_decimal_field(8, "VL_PIS")?;
-        let vl_bc_cofins = get_decimal_field(9, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(10, "ALIQ_COFINS")?;
-        let vl_cofins = get_decimal_field(11, "VL_COFINS")?;
+        let vl_tot_ded_ger = get_decimal(4, "VL_TOT_DED_GER")?;
+        let vl_tot_ded_esp = get_decimal(5, "VL_TOT_DED_ESP")?;
+        let vl_bc_pis = get_decimal(6, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(7, "ALIQ_PIS")?;
+        let vl_pis = get_decimal(8, "VL_PIS")?;
+        let vl_bc_cofins = get_decimal(9, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(10, "ALIQ_COFINS")?;
+        let vl_cofins = get_decimal(11, "VL_COFINS")?;
         let info_compl = fields.get(12).to_arc();
 
         let reg = RegistroI100 {

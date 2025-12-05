@@ -54,7 +54,7 @@ impl SpedParser for RegistroM100 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -62,18 +62,18 @@ impl SpedParser for RegistroM100 {
 
         let cod_cred = fields.get(2).parse_opt();
         let ind_cred_ori = fields.get(3).to_arc();
-        let vl_bc_pis = get_decimal_field(4, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(5, "ALIQ_PIS")?;
+        let vl_bc_pis = get_decimal(4, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(5, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(6).to_arc();
-        let aliq_pis_quant = get_decimal_field(7, "ALIQ_PIS_QUANT")?;
-        let vl_cred = get_decimal_field(8, "VL_CRED")?;
-        let vl_ajus_acres = get_decimal_field(9, "VL_AJUS_ACRES")?;
-        let vl_ajus_reduc = get_decimal_field(10, "VL_AJUS_REDUC")?;
-        let vl_cred_dif = get_decimal_field(11, "VL_CRED_DIF")?;
-        let vl_cred_disp = get_decimal_field(12, "VL_CRED_DISP")?;
+        let aliq_pis_quant = get_decimal(7, "ALIQ_PIS_QUANT")?;
+        let vl_cred = get_decimal(8, "VL_CRED")?;
+        let vl_ajus_acres = get_decimal(9, "VL_AJUS_ACRES")?;
+        let vl_ajus_reduc = get_decimal(10, "VL_AJUS_REDUC")?;
+        let vl_cred_dif = get_decimal(11, "VL_CRED_DIF")?;
+        let vl_cred_disp = get_decimal(12, "VL_CRED_DISP")?;
         let ind_desc_cred = fields.get(13).to_arc();
-        let vl_cred_desc = get_decimal_field(14, "VL_CRED_DESC")?;
-        let sld_cred = get_decimal_field(15, "SLD_CRED")?;
+        let vl_cred_desc = get_decimal(14, "VL_CRED_DESC")?;
+        let sld_cred = get_decimal(15, "SLD_CRED")?;
 
         let reg = RegistroM100 {
             nivel: 2,

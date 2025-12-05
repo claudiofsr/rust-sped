@@ -46,17 +46,17 @@ impl SpedParser for RegistroP200 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let per_ref = fields.get(2).to_arc();
-        let vl_tot_cont_apu = get_decimal_field(3, "VL_TOT_CONT_APU")?;
-        let vl_tot_aj_reduc = get_decimal_field(4, "VL_TOT_AJ_REDUC")?;
-        let vl_tot_aj_acres = get_decimal_field(5, "VL_TOT_AJ_ACRES")?;
-        let vl_tot_cont_dev = get_decimal_field(6, "VL_TOT_CONT_DEV")?;
+        let vl_tot_cont_apu = get_decimal(3, "VL_TOT_CONT_APU")?;
+        let vl_tot_aj_reduc = get_decimal(4, "VL_TOT_AJ_REDUC")?;
+        let vl_tot_aj_acres = get_decimal(5, "VL_TOT_AJ_ACRES")?;
+        let vl_tot_cont_dev = get_decimal(6, "VL_TOT_CONT_DEV")?;
         let cod_rec = fields.get(7).to_arc();
 
         let reg = RegistroP200 {

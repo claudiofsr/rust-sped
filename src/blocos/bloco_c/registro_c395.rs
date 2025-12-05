@@ -49,13 +49,13 @@ impl SpedParser for RegistroC395 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -66,8 +66,8 @@ impl SpedParser for RegistroC395 {
         let ser = fields.get(4).to_arc();
         let sub_ser = fields.get(5).to_arc();
         let num_doc = fields.get(6).to_arc();
-        let dt_doc = get_date_field(7, "DT_DOC")?;
-        let vl_doc = get_decimal_field(8, "VL_DOC")?;
+        let dt_doc = get_date(7, "DT_DOC")?;
+        let vl_doc = get_decimal(8, "VL_DOC")?;
 
         let reg = RegistroC395 {
             nivel: 3,

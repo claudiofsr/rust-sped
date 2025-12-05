@@ -45,17 +45,17 @@ impl SpedParser for RegistroM350 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_tot_fol = get_decimal_field(2, "VL_TOT_FOL")?;
-        let vl_exc_bc = get_decimal_field(3, "VL_EXC_BC")?;
-        let vl_tot_bc = get_decimal_field(4, "VL_TOT_BC")?;
-        let aliq_pis_fol = get_decimal_field(5, "ALIQ_PIS_FOL")?;
-        let vl_tot_cont_fol = get_decimal_field(6, "VL_TOT_CONT_FOL")?;
+        let vl_tot_fol = get_decimal(2, "VL_TOT_FOL")?;
+        let vl_exc_bc = get_decimal(3, "VL_EXC_BC")?;
+        let vl_tot_bc = get_decimal(4, "VL_TOT_BC")?;
+        let aliq_pis_fol = get_decimal(5, "ALIQ_PIS_FOL")?;
+        let vl_tot_cont_fol = get_decimal(6, "VL_TOT_CONT_FOL")?;
 
         let reg = RegistroM350 {
             nivel: 2,

@@ -40,13 +40,13 @@ impl SpedParser for RegistroC990 {
         }
 
         // --- Closure auxiliar para campos u64 ---
-        let get_integer_field = |idx: usize, field_name: &str| {
+        let get_integer = |idx: usize, field_name: &str| {
             fields
                 .get(idx) // fields.get(idx) retorna Option<&&str>
                 .to_optional_integer(file_path, line_number, field_name)
         };
 
-        let qtd_lin_c = get_integer_field(2, "QTD_LIN_C")?; // O '?' propagará o erro se houver        
+        let qtd_lin_c = get_integer(2, "QTD_LIN_C")?; // O '?' propagará o erro se houver        
 
         let reg = RegistroC990 {
             nivel: 1,

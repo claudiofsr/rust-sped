@@ -52,26 +52,26 @@ impl SpedParser for Registro0900 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let rec_total_bloco_a = get_decimal_field(2, "REC_TOTAL_BLOCO_A")?;
-        let rec_nrb_bloco_a = get_decimal_field(3, "REC_NRB_BLOCO_A")?;
-        let rec_total_bloco_c = get_decimal_field(4, "REC_TOTAL_BLOCO_C")?;
-        let rec_nrb_bloco_c = get_decimal_field(5, "REC_NRB_BLOCO_C")?;
-        let rec_total_bloco_d = get_decimal_field(6, "REC_TOTAL_BLOCO_D")?;
-        let rec_nrb_bloco_d = get_decimal_field(7, "REC_NRB_BLOCO_D")?;
-        let rec_total_bloco_f = get_decimal_field(8, "REC_TOTAL_BLOCO_F")?;
-        let rec_nrb_bloco_f = get_decimal_field(9, "REC_NRB_BLOCO_F")?;
-        let rec_total_bloco_i = get_decimal_field(10, "REC_TOTAL_BLOCO_I")?;
-        let rec_nrb_bloco_i = get_decimal_field(11, "REC_NRB_BLOCO_I")?;
-        let rec_total_bloco_1 = get_decimal_field(12, "REC_TOTAL_BLOCO_1")?;
-        let rec_nrb_bloco_1 = get_decimal_field(13, "REC_NRB_BLOCO_1")?;
-        let rec_total_periodo = get_decimal_field(14, "REC_TOTAL_PERIODO")?;
-        let rec_total_nrb_periodo = get_decimal_field(15, "REC_TOTAL_NRB_PERIODO")?;
+        let rec_total_bloco_a = get_decimal(2, "REC_TOTAL_BLOCO_A")?;
+        let rec_nrb_bloco_a = get_decimal(3, "REC_NRB_BLOCO_A")?;
+        let rec_total_bloco_c = get_decimal(4, "REC_TOTAL_BLOCO_C")?;
+        let rec_nrb_bloco_c = get_decimal(5, "REC_NRB_BLOCO_C")?;
+        let rec_total_bloco_d = get_decimal(6, "REC_TOTAL_BLOCO_D")?;
+        let rec_nrb_bloco_d = get_decimal(7, "REC_NRB_BLOCO_D")?;
+        let rec_total_bloco_f = get_decimal(8, "REC_TOTAL_BLOCO_F")?;
+        let rec_nrb_bloco_f = get_decimal(9, "REC_NRB_BLOCO_F")?;
+        let rec_total_bloco_i = get_decimal(10, "REC_TOTAL_BLOCO_I")?;
+        let rec_nrb_bloco_i = get_decimal(11, "REC_NRB_BLOCO_I")?;
+        let rec_total_bloco_1 = get_decimal(12, "REC_TOTAL_BLOCO_1")?;
+        let rec_nrb_bloco_1 = get_decimal(13, "REC_NRB_BLOCO_1")?;
+        let rec_total_periodo = get_decimal(14, "REC_TOTAL_PERIODO")?;
+        let rec_total_nrb_periodo = get_decimal(15, "REC_TOTAL_NRB_PERIODO")?;
 
         let reg = Registro0900 {
             nivel: 2,

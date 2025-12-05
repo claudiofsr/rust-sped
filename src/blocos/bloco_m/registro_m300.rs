@@ -50,26 +50,26 @@ impl SpedParser for RegistroM300 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cod_cont = fields.get(2).to_arc();
-        let vl_cont_apur_difer = get_decimal_field(3, "VL_CONT_APUR_DIFER")?;
+        let vl_cont_apur_difer = get_decimal(3, "VL_CONT_APUR_DIFER")?;
         let nat_cred_desc = fields.get(4).to_arc();
-        let vl_cred_desc_difer = get_decimal_field(5, "VL_CRED_DESC_DIFER")?;
-        let vl_cont_difer_ant = get_decimal_field(6, "VL_CONT_DIFER_ANT")?;
+        let vl_cred_desc_difer = get_decimal(5, "VL_CRED_DESC_DIFER")?;
+        let vl_cont_difer_ant = get_decimal(6, "VL_CONT_DIFER_ANT")?;
         let per_apur = fields.get(7).to_arc();
-        let dt_receb = get_date_field(8, "DT_RECEB")?;
+        let dt_receb = get_date(8, "DT_RECEB")?;
 
         let reg = RegistroM300 {
             nivel: 2,

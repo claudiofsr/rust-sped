@@ -41,13 +41,13 @@ impl SpedParser for Registro0600 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let dt_alt = get_date_field(2, "DT_ALT")?;
+        let dt_alt = get_date(2, "DT_ALT")?;
         let cod_ccus = fields.get(3).to_arc();
         let ccus = fields.get(4).to_arc();
 

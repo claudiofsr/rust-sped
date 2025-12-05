@@ -43,15 +43,15 @@ impl SpedParser for Registro1102 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_cred_pis_trib_mi = get_decimal_field(2, "VL_CRED_PIS_TRIB_MI")?;
-        let vl_cred_pis_nt_mi = get_decimal_field(3, "VL_CRED_PIS_NT_MI")?;
-        let vl_cred_pis_exp = get_decimal_field(4, "VL_CRED_PIS_EXP")?;
+        let vl_cred_pis_trib_mi = get_decimal(2, "VL_CRED_PIS_TRIB_MI")?;
+        let vl_cred_pis_nt_mi = get_decimal(3, "VL_CRED_PIS_NT_MI")?;
+        let vl_cred_pis_exp = get_decimal(4, "VL_CRED_PIS_EXP")?;
 
         let reg = Registro1102 {
             nivel: 4,

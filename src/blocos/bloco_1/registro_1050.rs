@@ -61,33 +61,33 @@ impl SpedParser for Registro1050 {
         }
 
         // Closures auxiliares
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let dt_ref = get_date_field(2, "DT_REF")?;
+        let dt_ref = get_date(2, "DT_REF")?;
         let ind_aj_bc = fields.get(3).to_arc();
         let cnpj = fields.get(4).to_arc();
-        let vl_aj_tot = get_decimal_field(5, "VL_AJ_TOT")?;
-        let vl_aj_cst01 = get_decimal_field(6, "VL_AJ_CST01")?;
-        let vl_aj_cst02 = get_decimal_field(7, "VL_AJ_CST02")?;
-        let vl_aj_cst03 = get_decimal_field(8, "VL_AJ_CST03")?;
-        let vl_aj_cst04 = get_decimal_field(9, "VL_AJ_CST04")?;
-        let vl_aj_cst05 = get_decimal_field(10, "VL_AJ_CST05")?;
-        let vl_aj_cst06 = get_decimal_field(11, "VL_AJ_CST06")?;
-        let vl_aj_cst07 = get_decimal_field(12, "VL_AJ_CST07")?;
-        let vl_aj_cst08 = get_decimal_field(13, "VL_AJ_CST08")?;
-        let vl_aj_cst09 = get_decimal_field(14, "VL_AJ_CST09")?;
-        let vl_aj_cst49 = get_decimal_field(15, "VL_AJ_CST49")?;
-        let vl_aj_cst99 = get_decimal_field(16, "VL_AJ_CST99")?;
+        let vl_aj_tot = get_decimal(5, "VL_AJ_TOT")?;
+        let vl_aj_cst01 = get_decimal(6, "VL_AJ_CST01")?;
+        let vl_aj_cst02 = get_decimal(7, "VL_AJ_CST02")?;
+        let vl_aj_cst03 = get_decimal(8, "VL_AJ_CST03")?;
+        let vl_aj_cst04 = get_decimal(9, "VL_AJ_CST04")?;
+        let vl_aj_cst05 = get_decimal(10, "VL_AJ_CST05")?;
+        let vl_aj_cst06 = get_decimal(11, "VL_AJ_CST06")?;
+        let vl_aj_cst07 = get_decimal(12, "VL_AJ_CST07")?;
+        let vl_aj_cst08 = get_decimal(13, "VL_AJ_CST08")?;
+        let vl_aj_cst09 = get_decimal(14, "VL_AJ_CST09")?;
+        let vl_aj_cst49 = get_decimal(15, "VL_AJ_CST49")?;
+        let vl_aj_cst99 = get_decimal(16, "VL_AJ_CST99")?;
         let ind_aprop = fields.get(17).to_arc();
         let num_rec = fields.get(18).to_arc();
         let info_compl = fields.get(19).to_arc();

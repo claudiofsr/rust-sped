@@ -51,7 +51,7 @@ impl SpedParser for Registro1900 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -62,7 +62,7 @@ impl SpedParser for Registro1900 {
         let ser = fields.get(4).to_arc();
         let sub_ser = fields.get(5).to_arc();
         let cod_sit = fields.get(6).to_arc();
-        let vl_tot_rec = get_decimal_field(7, "VL_TOT_REC")?;
+        let vl_tot_rec = get_decimal(7, "VL_TOT_REC")?;
         let quant_doc = fields.get(8).to_arc(); // Pode ser String se a quantidade for tratada como tal, ou Decimal
         let cst_pis = fields.get(9).parse_opt();
         let cst_cofins = fields.get(10).parse_opt();

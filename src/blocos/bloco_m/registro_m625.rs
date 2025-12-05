@@ -53,14 +53,14 @@ impl SpedParser for RegistroM625 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
@@ -68,9 +68,9 @@ impl SpedParser for RegistroM625 {
 
         let det_valor_aj = fields.get(2).to_arc();
         let cst_cofins = fields.get(3).parse_opt();
-        let det_bc_cred = get_decimal_field(4, "DET_BC_CRED")?;
-        let det_aliq = get_decimal_field(5, "DET_ALIQ")?;
-        let dt_oper_aj = get_date_field(6, "DT_OPER_AJ")?;
+        let det_bc_cred = get_decimal(4, "DET_BC_CRED")?;
+        let det_aliq = get_decimal(5, "DET_ALIQ")?;
+        let dt_oper_aj = get_date(6, "DT_OPER_AJ")?;
         let desc_aj = fields.get(7).to_arc();
         let cod_cta = fields.get(8).to_arc();
         let info_compl = fields.get(9).to_arc();

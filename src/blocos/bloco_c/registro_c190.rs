@@ -49,25 +49,25 @@ impl SpedParser for RegistroC190 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let cod_mod = fields.get(2).to_arc();
-        let dt_ref_ini = get_date_field(3, "DT_REF_INI")?;
-        let dt_ref_fin = get_date_field(4, "DT_REF_FIN")?;
+        let dt_ref_ini = get_date(3, "DT_REF_INI")?;
+        let dt_ref_fin = get_date(4, "DT_REF_FIN")?;
         let cod_item = fields.get(5).to_arc();
         let cod_ncm = fields.get(6).to_arc();
         let ex_ipi = fields.get(7).to_arc();
-        let vl_tot_item = get_decimal_field(8, "VL_TOT_ITEM")?;
+        let vl_tot_item = get_decimal(8, "VL_TOT_ITEM")?;
 
         let reg = RegistroC190 {
             nivel: 3,

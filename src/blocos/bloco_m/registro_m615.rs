@@ -52,25 +52,25 @@ impl SpedParser for RegistroM615 {
         }
 
         // Closure para campos de data (Option<NaiveDate>)
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let ind_aj_bc = fields.get(2).to_arc();
-        let vl_aj_bc = get_decimal_field(3, "VL_AJ_BC")?;
+        let vl_aj_bc = get_decimal(3, "VL_AJ_BC")?;
         let cod_aj_bc = fields.get(4).to_arc();
         let num_doc = fields.get(5).to_arc();
         let descr_aj_bc = fields.get(6).to_arc();
-        let dt_ref = get_date_field(7, "DT_REF")?;
+        let dt_ref = get_date(7, "DT_REF")?;
         let cod_cta = fields.get(8).to_arc();
         let cnpj = fields.get(9).to_arc();
         let info_compl = fields.get(10).to_arc();

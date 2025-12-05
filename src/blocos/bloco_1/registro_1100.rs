@@ -57,7 +57,7 @@ impl SpedParser for Registro1100 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -67,19 +67,19 @@ impl SpedParser for Registro1100 {
         let orig_cred = fields.get(3).to_arc();
         let cnpj_suc = fields.get(4).to_arc();
         let cod_cred = fields.get(5).parse_opt();
-        let vl_cred_apu = get_decimal_field(6, "VL_CRED_APU")?;
-        let vl_cred_ext_apu = get_decimal_field(7, "VL_CRED_EXT_APU")?;
-        let vl_tot_cred_apu = get_decimal_field(8, "VL_TOT_CRED_APU")?;
-        let vl_cred_desc_pa_ant = get_decimal_field(9, "VL_CRED_DESC_PA_ANT")?;
-        let vl_cred_per_pa_ant = get_decimal_field(10, "VL_CRED_PER_PA_ANT")?;
-        let vl_cred_dcomp_pa_ant = get_decimal_field(11, "VL_CRED_DCOMP_PA_ANT")?;
+        let vl_cred_apu = get_decimal(6, "VL_CRED_APU")?;
+        let vl_cred_ext_apu = get_decimal(7, "VL_CRED_EXT_APU")?;
+        let vl_tot_cred_apu = get_decimal(8, "VL_TOT_CRED_APU")?;
+        let vl_cred_desc_pa_ant = get_decimal(9, "VL_CRED_DESC_PA_ANT")?;
+        let vl_cred_per_pa_ant = get_decimal(10, "VL_CRED_PER_PA_ANT")?;
+        let vl_cred_dcomp_pa_ant = get_decimal(11, "VL_CRED_DCOMP_PA_ANT")?;
         let sd_cred_disp_efd = fields.get(12).to_arc();
-        let vl_cred_desc_efd = get_decimal_field(13, "VL_CRED_DESC_EFD")?;
-        let vl_cred_per_efd = get_decimal_field(14, "VL_CRED_PER_EFD")?;
-        let vl_cred_dcomp_efd = get_decimal_field(15, "VL_CRED_DCOMP_EFD")?;
-        let vl_cred_trans = get_decimal_field(16, "VL_CRED_TRANS")?;
-        let vl_cred_out = get_decimal_field(17, "VL_CRED_OUT")?;
-        let sld_cred_fim = get_decimal_field(18, "SLD_CRED_FIM")?;
+        let vl_cred_desc_efd = get_decimal(13, "VL_CRED_DESC_EFD")?;
+        let vl_cred_per_efd = get_decimal(14, "VL_CRED_PER_EFD")?;
+        let vl_cred_dcomp_efd = get_decimal(15, "VL_CRED_DCOMP_EFD")?;
+        let vl_cred_trans = get_decimal(16, "VL_CRED_TRANS")?;
+        let vl_cred_out = get_decimal(17, "VL_CRED_OUT")?;
+        let sld_cred_fim = get_decimal(18, "SLD_CRED_FIM")?;
 
         let reg = Registro1100 {
             nivel: 2,

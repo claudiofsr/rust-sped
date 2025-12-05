@@ -80,7 +80,7 @@ impl SpedParser for RegistroC170 {
         // --- Closures auxiliares para campos comuns ---
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -89,38 +89,38 @@ impl SpedParser for RegistroC170 {
         let num_item = fields.get(2).parse_opt();
         let cod_item = fields.get(3).to_arc();
         let descr_compl = fields.get(4).to_arc();
-        let qtd = get_decimal_field(5, "QTD")?; // Assumindo QTD como Decimal
+        let qtd = get_decimal(5, "QTD")?; // Assumindo QTD como Decimal
         let unid = fields.get(6).to_arc();
-        let vl_item = get_decimal_field(7, "VL_ITEM")?;
-        let vl_desc = get_decimal_field(8, "VL_DESC")?;
+        let vl_item = get_decimal(7, "VL_ITEM")?;
+        let vl_desc = get_decimal(8, "VL_DESC")?;
         let ind_mov = fields.get(9).parse_opt();
         let cst_icms = fields.get(10).parse_opt();
         let cfop = fields.get(11).parse_opt();
         let cod_nat = fields.get(12).to_arc();
-        let vl_bc_icms = get_decimal_field(13, "VL_BC_ICMS")?;
-        let aliq_icms = get_decimal_field(14, "ALIQ_ICMS")?;
-        let vl_icms = get_decimal_field(15, "VL_ICMS")?;
-        let vl_bc_icms_st = get_decimal_field(16, "VL_BC_ICMS_ST")?;
-        let aliq_st = get_decimal_field(17, "ALIQ_ST")?;
-        let vl_icms_st = get_decimal_field(18, "VL_ICMS_ST")?;
+        let vl_bc_icms = get_decimal(13, "VL_BC_ICMS")?;
+        let aliq_icms = get_decimal(14, "ALIQ_ICMS")?;
+        let vl_icms = get_decimal(15, "VL_ICMS")?;
+        let vl_bc_icms_st = get_decimal(16, "VL_BC_ICMS_ST")?;
+        let aliq_st = get_decimal(17, "ALIQ_ST")?;
+        let vl_icms_st = get_decimal(18, "VL_ICMS_ST")?;
         let ind_apur = fields.get(19).to_arc();
         let cst_ipi = fields.get(20).parse_opt();
         let cod_enq = fields.get(21).to_arc();
-        let vl_bc_ipi = get_decimal_field(22, "VL_BC_IPI")?;
-        let aliq_ipi = get_decimal_field(23, "ALIQ_IPI")?;
-        let vl_ipi = get_decimal_field(24, "VL_IPI")?;
+        let vl_bc_ipi = get_decimal(22, "VL_BC_IPI")?;
+        let aliq_ipi = get_decimal(23, "ALIQ_IPI")?;
+        let vl_ipi = get_decimal(24, "VL_IPI")?;
         let cst_pis = fields.get(25).parse_opt();
-        let vl_bc_pis = get_decimal_field(26, "VL_BC_PIS")?;
-        let aliq_pis = get_decimal_field(27, "ALIQ_PIS")?;
+        let vl_bc_pis = get_decimal(26, "VL_BC_PIS")?;
+        let aliq_pis = get_decimal(27, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(28).to_arc(); // Pode ser String ou Decimal
-        let aliq_pis_quant = get_decimal_field(29, "ALIQ_PIS_QUANT")?;
-        let vl_pis = get_decimal_field(30, "VL_PIS")?;
+        let aliq_pis_quant = get_decimal(29, "ALIQ_PIS_QUANT")?;
+        let vl_pis = get_decimal(30, "VL_PIS")?;
         let cst_cofins = fields.get(31).parse_opt();
-        let vl_bc_cofins = get_decimal_field(32, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(33, "ALIQ_COFINS")?;
+        let vl_bc_cofins = get_decimal(32, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(33, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(34).to_arc(); // Pode ser String ou Decimal
-        let aliq_cofins_quant = get_decimal_field(35, "ALIQ_COFINS_QUANT")?;
-        let vl_cofins = get_decimal_field(36, "VL_COFINS")?;
+        let aliq_cofins_quant = get_decimal(35, "ALIQ_COFINS_QUANT")?;
+        let vl_cofins = get_decimal(36, "VL_COFINS")?;
         let cod_cta = fields.get(37).to_arc();
 
         let reg = RegistroC170 {

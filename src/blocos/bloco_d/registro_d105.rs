@@ -48,19 +48,19 @@ impl SpedParser for RegistroD105 {
         }
 
         // Closure para campos decimais (Option<Decimal>)
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
         let ind_nat_frt = fields.get(2).to_arc();
-        let vl_item = get_decimal_field(3, "VL_ITEM")?;
+        let vl_item = get_decimal(3, "VL_ITEM")?;
         let cst_cofins = fields.get(4).parse_opt();
         let nat_bc_cred = fields.get(5).to_arc();
-        let vl_bc_cofins = get_decimal_field(6, "VL_BC_COFINS")?;
-        let aliq_cofins = get_decimal_field(7, "ALIQ_COFINS")?;
-        let vl_cofins = get_decimal_field(8, "VL_COFINS")?;
+        let vl_bc_cofins = get_decimal(6, "VL_BC_COFINS")?;
+        let aliq_cofins = get_decimal(7, "ALIQ_COFINS")?;
+        let vl_cofins = get_decimal(8, "VL_COFINS")?;
         let cod_cta = fields.get(9).to_arc();
 
         let reg = RegistroD105 {

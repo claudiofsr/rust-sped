@@ -56,29 +56,29 @@ impl SpedParser for RegistroF205 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let vl_cus_inc_acum_ant = get_decimal_field(2, "VL_CUS_INC_ACUM_ANT")?;
-        let vl_cus_inc_per_esc = get_decimal_field(3, "VL_CUS_INC_PER_ESC")?;
-        let vl_cus_inc_acum = get_decimal_field(4, "VL_CUS_INC_ACUM")?;
-        let vl_exc_bc_cus_inc_acum = get_decimal_field(5, "VL_EXC_BC_CUS_INC_ACUM")?;
-        let vl_bc_cus_inc = get_decimal_field(6, "VL_BC_CUS_INC")?;
+        let vl_cus_inc_acum_ant = get_decimal(2, "VL_CUS_INC_ACUM_ANT")?;
+        let vl_cus_inc_per_esc = get_decimal(3, "VL_CUS_INC_PER_ESC")?;
+        let vl_cus_inc_acum = get_decimal(4, "VL_CUS_INC_ACUM")?;
+        let vl_exc_bc_cus_inc_acum = get_decimal(5, "VL_EXC_BC_CUS_INC_ACUM")?;
+        let vl_bc_cus_inc = get_decimal(6, "VL_BC_CUS_INC")?;
         let cst_pis = fields.get(7).parse_opt();
-        let aliq_pis = get_decimal_field(8, "ALIQ_PIS")?;
-        let vl_cred_pis_acum = get_decimal_field(9, "VL_CRED_PIS_ACUM")?;
-        let vl_cred_pis_desc_ant = get_decimal_field(10, "VL_CRED_PIS_DESC_ANT")?;
-        let vl_cred_pis_desc = get_decimal_field(11, "VL_CRED_PIS_DESC")?;
-        let vl_cred_pis_desc_fut = get_decimal_field(12, "VL_CRED_PIS_DESC_FUT")?;
+        let aliq_pis = get_decimal(8, "ALIQ_PIS")?;
+        let vl_cred_pis_acum = get_decimal(9, "VL_CRED_PIS_ACUM")?;
+        let vl_cred_pis_desc_ant = get_decimal(10, "VL_CRED_PIS_DESC_ANT")?;
+        let vl_cred_pis_desc = get_decimal(11, "VL_CRED_PIS_DESC")?;
+        let vl_cred_pis_desc_fut = get_decimal(12, "VL_CRED_PIS_DESC_FUT")?;
         let cst_cofins = fields.get(13).parse_opt();
-        let aliq_cofins = get_decimal_field(14, "ALIQ_COFINS")?;
-        let vl_cred_cofins_acum = get_decimal_field(15, "VL_CRED_COFINS_ACUM")?;
-        let vl_cred_cofins_desc_ant = get_decimal_field(16, "VL_CRED_COFINS_DESC_ANT")?;
-        let vl_cred_cofins_desc = get_decimal_field(17, "VL_CRED_COFINS_DESC")?;
-        let vl_cred_cofins_desc_fut = get_decimal_field(18, "VL_CRED_COFINS_DESC_FUT")?;
+        let aliq_cofins = get_decimal(14, "ALIQ_COFINS")?;
+        let vl_cred_cofins_acum = get_decimal(15, "VL_CRED_COFINS_ACUM")?;
+        let vl_cred_cofins_desc_ant = get_decimal(16, "VL_CRED_COFINS_DESC_ANT")?;
+        let vl_cred_cofins_desc = get_decimal(17, "VL_CRED_COFINS_DESC")?;
+        let vl_cred_cofins_desc_fut = get_decimal(18, "VL_CRED_COFINS_DESC_FUT")?;
 
         let reg = RegistroF205 {
             nivel: 4,

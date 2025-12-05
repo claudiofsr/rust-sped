@@ -49,7 +49,7 @@ impl SpedParser for Registro0200 {
             });
         }
 
-        let get_decimal_field = |idx: usize, field_name: &str| {
+        let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
@@ -65,7 +65,7 @@ impl SpedParser for Registro0200 {
         let ex_ipi = fields.get(9).to_arc();
         let cod_gen = fields.get(10).to_arc();
         let cod_lst = fields.get(11).to_arc();
-        let aliq_icms = get_decimal_field(12, "ALIQ_ICMS")?;
+        let aliq_icms = get_decimal(12, "ALIQ_ICMS")?;
 
         let reg = Registro0200 {
             nivel: 3,

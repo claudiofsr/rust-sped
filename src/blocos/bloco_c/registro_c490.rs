@@ -33,14 +33,14 @@ impl SpedParser for RegistroC490 {
             });
         }
 
-        let get_date_field = |idx: usize, field_name: &str| {
+        let get_date = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let dt_doc_ini = get_date_field(2, "DT_DOC_INI")?;
-        let dt_doc_fin = get_date_field(3, "DT_DOC_FIN")?;
+        let dt_doc_ini = get_date(2, "DT_DOC_INI")?;
+        let dt_doc_fin = get_date(3, "DT_DOC_FIN")?;
         let cod_mod = fields.get(4).to_arc();
 
         let reg = RegistroC490 {
