@@ -322,6 +322,18 @@ impl DocsFiscaisNew {
 
     /// Formatação dos campos.
     /// Como Arc<str> é imutável, criamos novas strings formatadas e reatribuímos.
+    ///
+    /// 44 digits: exemplo NFe: 01234567890123456789012345678901234567890123
+    /// --> 01-2345-67.890.123/4567-89-01-234-567.890.123-456.789.012-3
+    ///
+    /// 14 digits: exemplo CNPJ: 01234567000890
+    /// --> 01.234.567/0008-90
+    ///
+    /// 11 digits: exemplo CPF: 12345678901     
+    /// --> 123.456.789-01
+    ///
+    ///  8 digits: exemplo NCM: 01234567        
+    /// --> 0123.45.67
     pub fn format(&mut self) {
         // Helper para formatar e substituir apenas se necessário
         fn format_if_needed<F>(
@@ -338,13 +350,19 @@ impl DocsFiscaisNew {
             }
         }
 
-        format_if_needed(&mut self.estabelecimento_cnpj, 14, char::is_numeric, |s| {
-            s.format_cnpj()
-        });
-        format_if_needed(&mut self.participante_cnpj, 14, char::is_numeric, |s| {
-            s.format_cnpj()
-        });
-        format_if_needed(&mut self.participante_cpf, 11, char::is_numeric, |s| {
+        format_if_needed(
+            &mut self.estabelecimento_cnpj,
+            14,
+            char::is_alphanumeric,
+            |s| s.format_cnpj(),
+        );
+        format_if_needed(
+            &mut self.participante_cnpj,
+            14,
+            char::is_alphanumeric,
+            |s| s.format_cnpj(),
+        );
+        format_if_needed(&mut self.participante_cpf, 11, char::is_alphanumeric, |s| {
             s.format_cpf()
         });
         format_if_needed(&mut self.cod_ncm, 8, char::is_numeric, |s| s.format_ncm());
