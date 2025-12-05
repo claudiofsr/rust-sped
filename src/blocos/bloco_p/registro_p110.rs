@@ -12,7 +12,7 @@ pub struct RegistroP110 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: String,
+    pub registro: Arc<str>,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
@@ -36,7 +36,7 @@ impl SpedParser for RegistroP110 {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
-                registro: REGISTRO.to_string(),
+                registro: REGISTRO.into(),
                 tamanho_esperado: 7,
                 tamanho_encontrado: len,
             });
@@ -50,7 +50,7 @@ impl SpedParser for RegistroP110 {
         let reg = RegistroP110 {
             nivel: 4,
             bloco: 'P',
-            registro: REGISTRO.to_string(),
+            registro: REGISTRO.into(),
             line_number,
             num_campo,
             cod_det,

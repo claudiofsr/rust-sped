@@ -1,6 +1,6 @@
 use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_sped_record_trait};
 use rust_decimal::Decimal;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 const REGISTRO: &str = "M200";
 
@@ -13,7 +13,7 @@ pub struct RegistroM200 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: String,
+    pub registro: Arc<str>,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
@@ -45,7 +45,7 @@ impl SpedParser for RegistroM200 {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
-                registro: REGISTRO.to_string(),
+                registro: REGISTRO.into(),
                 tamanho_esperado: 15,
                 tamanho_encontrado: len,
             });
@@ -74,7 +74,7 @@ impl SpedParser for RegistroM200 {
         let reg = RegistroM200 {
             nivel: 2,
             bloco: 'M',
-            registro: REGISTRO.to_string(),
+            registro: REGISTRO.into(),
             line_number,
             vl_tot_cont_nc_per,
             vl_tot_cred_desc,

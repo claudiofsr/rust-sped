@@ -8,7 +8,7 @@ const REGISTRO: &str = "C485";
 pub struct RegistroC485 {
     pub nivel: u16,
     pub bloco: char,
-    pub registro: String,
+    pub registro: Arc<str>,
     pub line_number: usize,
     pub cst_cofins: Option<u16>,            // 2
     pub vl_item: Option<Decimal>,           // 3
@@ -33,7 +33,7 @@ impl SpedParser for RegistroC485 {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
-                registro: REGISTRO.to_string(),
+                registro: REGISTRO.into(),
                 tamanho_esperado: 12,
                 tamanho_encontrado: len,
             });
@@ -58,7 +58,7 @@ impl SpedParser for RegistroC485 {
         let reg = RegistroC485 {
             nivel: 5,
             bloco: 'C',
-            registro: REGISTRO.to_string(),
+            registro: REGISTRO.into(),
             line_number,
             cst_cofins,
             vl_item,

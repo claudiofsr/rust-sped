@@ -13,7 +13,7 @@ pub struct RegistroC195 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: String,
+    pub registro: Arc<str>,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
@@ -44,7 +44,7 @@ impl SpedParser for RegistroC195 {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
-                registro: REGISTRO.to_string(),
+                registro: REGISTRO.into(),
                 tamanho_esperado: 14,
                 tamanho_encontrado: len,
             });
@@ -71,7 +71,7 @@ impl SpedParser for RegistroC195 {
         let reg = RegistroC195 {
             nivel: 4,
             bloco: 'C',
-            registro: REGISTRO.to_string(),
+            registro: REGISTRO.into(),
             line_number,
             cnpj_cpf_part,
             cst_cofins,

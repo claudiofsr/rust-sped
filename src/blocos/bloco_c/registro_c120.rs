@@ -9,7 +9,7 @@ const REGISTRO: &str = "C120";
 pub struct RegistroC120 {
     pub nivel: u16,
     pub bloco: char,
-    pub registro: String,
+    pub registro: Arc<str>,
     pub line_number: usize,
     pub cod_doc_imp: Option<Arc<str>>,  // 2
     pub num_doc_imp: Option<Arc<str>>,  // 3
@@ -30,7 +30,7 @@ impl SpedParser for RegistroC120 {
             return Err(EFDError::InvalidFieldCount {
                 arquivo: file_path.to_path_buf(),
                 linha_num: line_number,
-                registro: REGISTRO.to_string(),
+                registro: REGISTRO.into(),
                 tamanho_esperado: 8,
                 tamanho_encontrado: len,
             });
@@ -51,7 +51,7 @@ impl SpedParser for RegistroC120 {
         let reg = RegistroC120 {
             nivel: 4,
             bloco: 'C',
-            registro: REGISTRO.to_string(),
+            registro: REGISTRO.into(),
             line_number,
             cod_doc_imp,
             num_doc_imp,
