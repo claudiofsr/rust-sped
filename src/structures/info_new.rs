@@ -693,7 +693,7 @@ impl<'a> DocsBuilder<'a> {
         ctx: &'a SpedContext,
         registro: &str,
         line_num: usize,
-        current_cnpj: Option<&str>,
+        current_cnpj: Option<Arc<str>>,
     ) -> Self {
         // Zero-copy se CNPJ não mudar
         let estabelecimento_cnpj = ctx.obter_cnpj_do_estabelecimento(current_cnpj);
@@ -729,7 +729,7 @@ impl<'a> DocsBuilder<'a> {
         ctx: &'a SpedContext,
         filho: &F,
         pai: Option<&'a P>,
-        current_cnpj: Option<&str>,
+        current_cnpj: Option<Arc<str>>,
     ) -> Self
     where
         F: RegistroFilho + ?Sized,
@@ -756,7 +756,7 @@ impl<'a> DocsBuilder<'a> {
             .with_values_and_classification(filho) // Aplica valores e CSTs
     }
 
-    fn from_child<F>(ctx: &'a SpedContext, reg: &F, current_cnpj: Option<&str>) -> Self
+    fn from_child<F>(ctx: &'a SpedContext, reg: &F, current_cnpj: Option<Arc<str>>) -> Self
     where
         F: RegistroFilho + ?Sized,
     {
@@ -1116,7 +1116,7 @@ pub fn process_block_lines(bloco: char, file: &SpedFile, ctx: &SpedContext) -> V
 #[derive(Default)]
 struct BlocoA<'a> {
     a100: Option<&'a RegistroA100>,
-    current_cnpj: Option<&'a str>,
+    current_cnpj: Option<Arc<str>>,
 }
 impl<'a> BlocoA<'a> {
     fn process(
@@ -1163,7 +1163,7 @@ struct BlocoC<'a> {
     c860: Option<&'a RegistroC860>,
     correlacao: CorrelationManager,
     c195_idxs: Vec<usize>,
-    current_cnpj: Option<&'a str>,
+    current_cnpj: Option<Arc<str>>,
 }
 impl<'a> BlocoC<'a> {
     fn process(
@@ -1229,7 +1229,7 @@ impl<'a> BlocoC<'a> {
                                 ctx,
                                 filho,
                                 Some(pai),
-                                self.current_cnpj,
+                                self.current_cnpj.clone(),
                             )
                             .resolve_pis_correlation(&self.correlacao, filho)
                             .build(),
@@ -1354,7 +1354,7 @@ struct BlocoD<'a> {
     d500: Option<&'a RegistroD500>,
     d600: Option<&'a RegistroD600>,
     correlacao: CorrelationManager,
-    current_cnpj: Option<&'a str>,
+    current_cnpj: Option<Arc<str>>,
 }
 impl<'a> BlocoD<'a> {
     fn process(
@@ -1440,13 +1440,13 @@ impl<'a> BlocoD<'a> {
 // --- Bloco F (Financeiro / Diversos) ---
 // Utiliza intensivamente RegistroGeral para registros autônomos
 #[derive(Default)]
-struct BlocoF<'a> {
-    current_cnpj: Option<&'a str>,
+struct BlocoF {
+    current_cnpj: Option<Arc<str>>,
 }
-impl<'a> BlocoF<'a> {
+impl BlocoF {
     fn process(
         &mut self,
-        records: &'a [SpedRecord],
+        records: &[SpedRecord],
         ctx: &SpedContext,
         docs: &mut Vec<DocsFiscaisNew>,
     ) {
@@ -1477,14 +1477,14 @@ impl<'a> BlocoF<'a> {
 
 // --- Bloco I (Pessoa Jurídica) ---
 #[derive(Default)]
-struct BlocoI<'a> {
-    current_cnpj: Option<&'a str>,
+struct BlocoI {
+    current_cnpj: Option<Arc<str>>,
 }
 
-impl<'a> BlocoI<'a> {
+impl BlocoI {
     fn process(
         &mut self,
-        records: &'a [SpedRecord],
+        records: &[SpedRecord],
         ctx: &SpedContext,
         docs: &mut Vec<DocsFiscaisNew>,
     ) {
@@ -1589,14 +1589,14 @@ impl<'a> BlocoM<'a> {
 
 // --- Bloco 1 (Controle) ---
 #[derive(Default)]
-struct Bloco1<'a> {
-    current_cnpj: Option<&'a str>,
+struct Bloco1 {
+    current_cnpj: Option<Arc<str>>,
 }
 
-impl<'a> Bloco1<'a> {
+impl Bloco1 {
     fn process(
         &mut self,
-        records: &'a [SpedRecord],
+        records: &[SpedRecord],
         ctx: &SpedContext,
         docs: &mut Vec<DocsFiscaisNew>,
     ) {

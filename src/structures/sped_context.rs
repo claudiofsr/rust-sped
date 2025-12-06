@@ -282,11 +282,9 @@ impl SpedContext {
     }
 
     /// Obter CNPJ do estabelecimento. Prioridade: Filiais -> Matriz
-    pub fn obter_cnpj_do_estabelecimento(&self, current_cnpj: Option<&str>) -> Arc<str> {
+    pub fn obter_cnpj_do_estabelecimento(&self, current_cnpj: Option<Arc<str>>) -> Arc<str> {
         // Zero-copy se CNPJ não mudar
-        current_cnpj
-            .map(Arc::from)
-            .unwrap_or_else(|| self.matriz_estabelecimento_cnpj.clone())
+        current_cnpj.unwrap_or_else(|| self.matriz_estabelecimento_cnpj.clone())
     }
 
     /// Obter nome do estabelecimento. Prioridade: Filiais -> Matriz

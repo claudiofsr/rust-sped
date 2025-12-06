@@ -261,7 +261,7 @@ macro_rules! impl_filho {
 macro_rules! capture_cnpj {
     ($target:expr, $rec:expr, $ty:ty) => {
         if let Ok(reg) = $rec.downcast_ref::<$ty>() {
-            $target = reg.cnpj.as_deref();
+            $target = reg.cnpj.clone();
         }
     };
 }
@@ -271,7 +271,7 @@ macro_rules! capture_cnpj {
 macro_rules! process_only_child {
     ($docs:expr, $ctx:expr, $cnpj:expr, $rec:expr, $ty:ty) => {
         if let Ok(filho) = $rec.downcast_ref::<$ty>() {
-            $docs.push(DocsBuilder::from_child($ctx, filho, $cnpj).build());
+            $docs.push(DocsBuilder::from_child($ctx, filho, $cnpj.clone()).build());
         }
     };
 }
@@ -281,7 +281,9 @@ macro_rules! process_only_child {
 macro_rules! process_child_and_parent {
     ($docs:expr, $ctx:expr, $cnpj:expr, $rec:expr, $ty:ty, $pai:expr) => {
         if let (Ok(filho), Some(p)) = ($rec.downcast_ref::<$ty>(), $pai) {
-            $docs.push(DocsBuilder::from_child_and_parent($ctx, filho, Some(p), $cnpj).build());
+            $docs.push(
+                DocsBuilder::from_child_and_parent($ctx, filho, Some(p), $cnpj.clone()).build(),
+            );
         }
     };
 }
@@ -292,7 +294,7 @@ macro_rules! process_correlations {
     ($docs:expr, $ctx:expr, $cnpj:expr, $mgr:expr, $rec:expr, $ty:ty, $pai:expr) => {
         if let (Ok(filho), Some(p)) = ($rec.downcast_ref::<$ty>(), $pai) {
             $docs.push(
-                DocsBuilder::from_child_and_parent($ctx, filho, Some(p), $cnpj)
+                DocsBuilder::from_child_and_parent($ctx, filho, Some(p), $cnpj.clone())
                     .resolve_pis_correlation($mgr, filho)
                     .build(),
             );
