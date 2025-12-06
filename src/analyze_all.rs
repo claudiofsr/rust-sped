@@ -4,10 +4,20 @@ use rayon::prelude::*;
 use std::{fs, io::Write, path::PathBuf, thread};
 
 use crate::{
-    DELIMITER_CHAR, DocsFiscais, EFDError, EFDResult, Informacoes, OUTPUT_DIRECTORY,
-    OUTPUT_FILENAME, TipoOperacao, analyze_one_file, analyze_one_file_new,
+    DELIMITER_CHAR,
+    DocsFiscais,
+    EFDError,
+    EFDResult,
+    Informacoes,
+    OUTPUT_DIRECTORY,
+    OUTPUT_FILENAME,
+    TipoOperacao,
+    // analyze_one_file,
+    analyze_one_file_new,
     args::Arguments,
-    create_xlsx, make_dispatch_table, sped_efd,
+    create_xlsx,
+    // make_dispatch_table,
+    // sped_efd,
     structures::{analise_dos_creditos, consolidacao_cst},
 };
 
