@@ -315,3 +315,52 @@ macro_rules! store_pis {
         }
     };
 }
+
+/**
+Implementação da conversão: DocsFiscaisNew --> DocsFiscais
+
+impl From<DocsFiscaisNew> for DocsFiscais {
+    fn from(source: DocsFiscaisNew) -> Self {
+        DocsFiscais {
+            linhas: source.linhas,
+            arquivo_efd: source.arquivo_efd,
+            num_linha_efd: source.num_linha_efd,
+            ...
+        }
+    }
+}
+*/
+#[macro_export]
+macro_rules! impl_from_struct {
+    (
+        from $src:ident to $dst:ident,
+        // Campos que são idênticos (copia direta)
+        simple: [ $($f_simple:ident),* $(,)? ],
+        // Campos de texto (converte Arc<str> para String)
+        strings: [ $($f_string:ident),* $(,)? ],
+        // Campos que precisam de conversão lógica específica (ex: Option<u16> -> Option<u32>)
+        // Sintaxe: campo: |valor| lógica
+        custom: {
+            $($f_custom:ident : $logic:expr),* $(,)?
+        }
+    ) => {
+        impl From<$src> for $dst {
+            fn from(source: $src) -> Self {
+                $dst {
+                    // Cópia simples
+                    $(
+                        $f_simple: source.$f_simple,
+                    )*
+                    // Conversão para String (.to_string())
+                    $(
+                        $f_string: source.$f_string.to_string(),
+                    )*
+                    // Lógica customizada (executa a closure)
+                    $(
+                        $f_custom: ($logic)(source.$f_custom),
+                    )*
+                }
+            }
+        }
+    };
+}

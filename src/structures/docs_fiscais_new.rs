@@ -11,8 +11,8 @@ use std::sync::Arc;
 use struct_iterable::Iterable;
 
 use crate::{
-    FloatExt, IndicadorOrigem, InfoExtension, MesesDoAno, TipoDeCredito, TipoDeRateio,
-    TipoOperacao, serialize_natureza,
+    DocsFiscais, FloatExt, IndicadorOrigem, InfoExtension, MesesDoAno, TipoDeCredito, TipoDeRateio,
+    TipoOperacao, impl_from_struct, serialize_natureza,
 };
 
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Iterable)]
@@ -396,6 +396,67 @@ impl DocsFiscaisNew {
     }
 }
 
+impl_from_struct!(
+    from DocsFiscaisNew to DocsFiscais,
+
+    // Tipos compatíveis (numéricos iguais, datas, enums, usizes)
+    simple: [
+        linhas,
+        num_linha_efd,
+        periodo_de_apuracao,
+        ano,
+        trimestre,
+        mes,
+        tipo_de_operacao,
+        indicador_de_origem,
+        cod_credito,
+        tipo_de_credito,
+        cst,
+        cfop,
+        natureza_bc,
+        num_doc,
+        data_emissao,
+        data_entrada,
+        valor_item,
+        valor_bc,
+        aliq_pis,
+        aliq_cofins,
+        valor_pis,
+        valor_cofins,
+        valor_iss,
+        valor_bc_icms,
+        aliq_icms,
+        valor_icms
+    ],
+
+    // Converte de Arc<str> para String automaticamente aqui
+    strings: [
+        arquivo_efd,
+        estabelecimento_cnpj,
+        estabelecimento_nome,
+        registro,
+        participante_cnpj,
+        participante_cpf,
+        participante_nome,
+        chave_doc,
+        modelo_doc_fiscal,
+        tipo_item,
+        descr_item,
+        cod_ncm,
+        nat_operacao,
+        complementar,
+        nome_da_conta
+    ],
+
+    // Resolve o erro do Option<u16> para Option<u32>
+    custom: {
+        num_item: |v: Option<u16>| v.map(u32::from),
+        // Se houver outros campos numéricos que mudaram de tamanho dentro de Option, adicione aqui.
+        // Exemplo hipotético:
+        // num_doc: |v: Option<u32>| v.map(|x| x as usize),
+    }
+);
+
 //----------------------------------------------------------------------------//
 //                                   Tests                                    //
 //----------------------------------------------------------------------------//
@@ -446,5 +507,24 @@ mod docs_fiscais_new_tests {
             "01-2345-67.890.123/4567-89-01-234-567.890.123-456.789.012-3"
         );
         // assert_eq!(colunas.verificacao_chave.as_ref(), "Válida");
+    }
+
+    /// cargo test -- --show-output test_conversao_new_para_old
+    #[test]
+    fn test_conversao_new_para_old() {
+        let doc_fiscais_new = DocsFiscaisNew {
+            linhas: 10,
+            estabelecimento_nome: "Empresa Teste".into(),
+            ..Default::default()
+        };
+        println!("doc_fiscais_new: {doc_fiscais_new:?}\n");
+
+        // Opção 1: Usando .into() (padrão do Rust)
+        let doc_fiscais: DocsFiscais = doc_fiscais_new.into();
+
+        println!("doc_fiscais: {doc_fiscais:?}\n");
+
+        assert_eq!(doc_fiscais.linhas, 10);
+        assert_eq!(doc_fiscais.estabelecimento_nome, "Empresa Teste");
     }
 }
