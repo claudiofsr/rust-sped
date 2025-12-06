@@ -28,9 +28,15 @@ pub struct SpedContext {
 
     // --- Metadados Globais (Registro 0000 e afins) ---
     // Registro0000
+    pub matriz_estabelecimento_cnpj: Arc<str>,
+    pub matriz_estabelecimento_nome: Arc<str>,
+
+    // Estabelecimento das Filiais
     pub estabelecimento_cnpj: Arc<str>,
-    pub estabelecimento_cnpj_base: Arc<str>,
     pub estabelecimento_nome: Arc<str>,
+
+    // Matriz e filiais devem possuir o mesmo CNPJ Base
+    pub estabelecimento_cnpj_base: Arc<str>,
 
     pub periodo_de_apuracao: Option<NaiveDate>, // Período de Apuração
     pub dt_ini: NaiveDate,
@@ -105,9 +111,9 @@ impl SpedContext {
     /// Registro 0000: Abertura do Arquivo Digital e Identificação da Pessoa Jurídica
     fn handle_0000(&mut self, sped_record: &SpedRecord) {
         if let Ok(r) = sped_record.downcast_ref::<Registro0000>() {
-            self.estabelecimento_cnpj = r.cnpj.clone();
+            self.matriz_estabelecimento_cnpj = r.cnpj.clone();
+            self.matriz_estabelecimento_nome = r.get_nome();
             self.estabelecimento_cnpj_base = r.get_cnpj_base();
-            self.estabelecimento_nome = r.get_nome();
             self.periodo_de_apuracao = Some(r.dt_ini);
             self.dt_ini = r.dt_ini;
             self.dt_fin = r.dt_fin;
@@ -275,6 +281,24 @@ impl SpedContext {
         }
     }
 
+    /// Obter CNPJ do estabelecimento. Prioridade: Filiais -> Matriz
+    pub fn obter_cnpj_do_estabelecimento(&self, current_cnpj: Option<&str>) -> Arc<str> {
+        // Zero-copy se CNPJ não mudar
+        current_cnpj
+            .map(Arc::from)
+            .unwrap_or_else(|| self.matriz_estabelecimento_cnpj.clone())
+    }
+
+    /// Obter nome do estabelecimento. Prioridade: Filiais -> Matriz
+    pub fn obter_nome_do_estabelecimento(&self, estabelecimento_cnpj: &Arc<str>) -> Arc<str> {
+        self.estabelecimentos
+            .get(estabelecimento_cnpj)
+            // Clona o Arc<str> (apenas incrementa contador, nanosegundos)
+            .cloned()
+            // Se não achar, usa o fallback (também Arc clone barato)
+            .unwrap_or_else(|| self.matriz_estabelecimento_nome.clone())
+    }
+
     /// Obtém o nome do participante baseado no CNPJ/CPF se não encontrado pelo código.
     /// Retorna um `Arc<str>` (ponteiro barato) para evitar alocações.
     pub fn obter_nome_participante(&self, cnpj: Option<&str>, cpf: Option<&str>) -> Arc<str> {
@@ -293,7 +317,8 @@ impl SpedContext {
     ///
     /// Esta função utiliza uma abordagem funcional eficiente (`fold` + `entry`),
     /// mantendo a contagem e preservando o `Arc<str>` original para economizar memória.
-    pub fn obter_nome_mais_frequente(&self) -> HashMap<String, Arc<str>> {
+    #[allow(clippy::type_complexity)]
+    pub fn obter_lista_de_nomes_mais_frequente(&self) -> HashMap<Arc<str>, Arc<str>> {
         self.nome_do_cnpj
             .iter()
             // 1. Filtra nomes vazios
@@ -302,14 +327,14 @@ impl SpedContext {
             .fold(
                 // Acumulador: Map<CNPJBase, Map<NomeLowerCase, (Contagem, NomeOriginalArc)>>
                 HashMap::new(),
-                |mut acc: HashMap<String, HashMap<String, (u32, Arc<str>)>>, (cnpj, name)| {
+                |mut acc: HashMap<Arc<str>, HashMap<Arc<str>, (u32, Arc<str>)>>, (cnpj, name)| {
                     // Garante que temos ao menos 8 dígitos para a base
                     if cnpj.len() >= 8 {
-                        let cnpj_base = cnpj[0..8].to_string();
+                        let cnpj_base = cnpj[0..8].to_string().into();
 
                         acc.entry(cnpj_base)
                             .or_default()
-                            .entry(name.to_lowercase()) // Chave normalizada para contagem agnóstica de case
+                            .entry(name.to_lowercase().into()) // Chave normalizada para contagem agnóstica de case
                             .and_modify(|(count, _)| *count += 1)
                             .or_insert_with(|| (1, name.clone())); // Clona o Arc (barato), não a string
                     }
@@ -328,5 +353,12 @@ impl SpedContext {
                     .map(|(_, original_arc_name)| (cnpj_base, original_arc_name))
             })
             .collect()
+    }
+
+    pub fn obter_nome_mais_frequente(&self) -> Arc<str> {
+        self.obter_lista_de_nomes_mais_frequente()
+            .get(&self.estabelecimento_cnpj_base)
+            .cloned()
+            .unwrap_or_else(|| self.matriz_estabelecimento_nome.clone())
     }
 }

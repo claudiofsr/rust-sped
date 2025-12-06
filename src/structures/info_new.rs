@@ -696,18 +696,8 @@ impl<'a> DocsBuilder<'a> {
         current_cnpj: Option<&str>,
     ) -> Self {
         // Zero-copy se CNPJ não mudar
-        let estabelecimento_cnpj = current_cnpj
-            .map(Arc::from)
-            .unwrap_or_else(|| ctx.estabelecimento_cnpj.clone());
-
-        let estabelecimento_nome = ctx
-            .estabelecimentos
-            // Transforma Arc<str> em &str sem alocar
-            .get(estabelecimento_cnpj.as_ref())
-            // Clona o Arc<str> (apenas incrementa contador, nanosegundos)
-            .cloned()
-            // Se não achar, usa o fallback (também Arc clone barato)
-            .unwrap_or_else(|| ctx.estabelecimento_nome.clone());
+        let estabelecimento_cnpj = ctx.obter_cnpj_do_estabelecimento(current_cnpj);
+        let estabelecimento_nome = ctx.obter_nome_do_estabelecimento(&estabelecimento_cnpj);
 
         let doc = DocsFiscaisNew {
             linhas: 1,
@@ -1575,6 +1565,10 @@ impl<'a> BlocoM<'a> {
                         };
 
                         let mut b = DocsBuilder::from_child(ctx, r, None);
+
+                        b.doc.estabelecimento_cnpj = ctx.matriz_estabelecimento_cnpj.clone();
+                        b.doc.estabelecimento_nome = ctx.matriz_estabelecimento_nome.clone();
+
                         b.doc.data_emissao = ctx.periodo_de_apuracao;
                         b.doc.cod_credito = p.cod_cred;
                         b.doc.aliq_cofins = p.aliq_cofins.to_f64_opt();
@@ -1656,16 +1650,19 @@ mod mappers {
     use super::*;
 
     pub fn build_m100(reg: &RegistroM100, ctx: &SpedContext) -> Vec<DocsFiscaisNew> {
-        let b = DocsBuilder::new(ctx, "M100", reg.line_number, None); // Builder base imutável
+        let mut b = DocsBuilder::new(ctx, "M100", reg.line_number, None); // Builder base imutável
+
+        b.doc.estabelecimento_cnpj = ctx.matriz_estabelecimento_cnpj.clone();
+        b.doc.estabelecimento_nome = ctx.matriz_estabelecimento_nome.clone();
 
         // Configuração base (com clone barato pois usa Arc e Option<Copy>)
         let make_base = || {
-            let mut doc = b.clone();
-            doc.doc.data_emissao = ctx.periodo_de_apuracao;
-            doc.doc.aliq_pis = reg.aliq_pis.to_f64_opt();
-            doc.doc.valor_bc = reg.vl_bc_pis.to_f64_opt();
-            doc.doc.cod_credito = reg.cod_cred;
-            doc
+            let mut builder = b.clone();
+            builder.doc.data_emissao = ctx.periodo_de_apuracao;
+            builder.doc.aliq_pis = reg.aliq_pis.to_f64_opt();
+            builder.doc.valor_bc = reg.vl_bc_pis.to_f64_opt();
+            builder.doc.cod_credito = reg.cod_cred;
+            builder
         };
 
         // Gera os ajustes funcionalmente
@@ -1678,15 +1675,18 @@ mod mappers {
     }
 
     pub fn build_m500(reg: &RegistroM500, ctx: &SpedContext) -> Vec<DocsFiscaisNew> {
-        let b = DocsBuilder::new(ctx, "M500", reg.line_number, None);
+        let mut b = DocsBuilder::new(ctx, "M500", reg.line_number, None);
+
+        b.doc.estabelecimento_cnpj = ctx.matriz_estabelecimento_cnpj.clone();
+        b.doc.estabelecimento_nome = ctx.matriz_estabelecimento_nome.clone();
 
         let make_base = || {
-            let mut doc = b.clone();
-            doc.doc.data_emissao = ctx.periodo_de_apuracao;
-            doc.doc.aliq_cofins = reg.aliq_cofins.to_f64_opt();
-            doc.doc.valor_bc = reg.vl_bc_cofins.to_f64_opt();
-            doc.doc.cod_credito = reg.cod_cred;
-            doc
+            let mut builder = b.clone();
+            builder.doc.data_emissao = ctx.periodo_de_apuracao;
+            builder.doc.aliq_cofins = reg.aliq_cofins.to_f64_opt();
+            builder.doc.valor_bc = reg.vl_bc_cofins.to_f64_opt();
+            builder.doc.cod_credito = reg.cod_cred;
+            builder
         };
 
         generate_adjustments(
@@ -1715,11 +1715,11 @@ mod mappers {
             .into_iter()
             .filter_map(|(val_opt, op, signal)| {
                 val_opt.filter(|v| v.eh_maior_que_zero()).map(|v| {
-                    let mut b = base_builder.clone();
+                    let mut builder = base_builder.clone();
                     // Aqui finalizamos o build
-                    b.doc.valor_item = Some(v.abs().to_f64().unwrap_or_default() * signal);
-                    b.doc.tipo_de_operacao = Some(op);
-                    b.build() // Chama o build final aqui
+                    builder.doc.valor_item = Some(v.abs().to_f64().unwrap_or_default() * signal);
+                    builder.doc.tipo_de_operacao = Some(op);
+                    builder.build() // Chama o build final aqui
                 })
             })
             .collect()
@@ -1742,6 +1742,9 @@ mod mappers {
         b.doc.valor_item = Some(-val);
         b.doc.tipo_de_operacao = Some(TipoOperacao::DescontoPosterior);
         b.doc.cod_credito = cod_cred;
+
+        b.doc.estabelecimento_cnpj = ctx.matriz_estabelecimento_cnpj.clone();
+        b.doc.estabelecimento_nome = ctx.matriz_estabelecimento_nome.clone();
 
         if let (Some(orig), Some(curr)) = (per_apu, ctx.periodo_de_apuracao)
             && orig != curr
