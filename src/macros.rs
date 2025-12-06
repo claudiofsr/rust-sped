@@ -198,6 +198,7 @@ macro_rules! impl_filho {
     // Datas de Emissão e Entrada
     (@map get_dt_emissao, $v:ident) => { fn get_dt_emissao(&self) -> Option<NaiveDate> { self.$v } };
     (@map get_dt_entrada, $v:ident) => { fn get_dt_entrada(&self) -> Option<NaiveDate> { self.$v } };
+    (@map get_per_apu_cred, $v:ident) => { fn get_per_apu_cred(&self) -> Option<NaiveDate> { self.$v } };
 
     // Identificação por Código
     (@map get_cod_cta, $v:ident) => { fn get_cod_cta(&self) -> Option<&str> { self.$v.as_deref() } };

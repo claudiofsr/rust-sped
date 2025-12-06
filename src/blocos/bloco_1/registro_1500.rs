@@ -1,4 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_sped_record_trait};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_sped_record_trait,
+};
+use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use std::{path::Path, sync::Arc};
 
@@ -18,7 +21,7 @@ pub struct Registro1500 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_apu_cred: Option<Arc<str>>,        // 2
+    pub per_apu_cred: Option<NaiveDate>,       // 2
     pub orig_cred: Option<Arc<str>>,           // 3
     pub cnpj_suc: Option<Arc<str>>,            // 4
     pub cod_cred: Option<u16>,                 // 5
@@ -56,13 +59,19 @@ impl SpedParser for Registro1500 {
             });
         }
 
+        let get_date = |idx: usize, field_name: &str| {
+            fields
+                .get(idx)
+                .to_optional_date(file_path, line_number, field_name)
+        };
+
         let get_decimal = |idx: usize, field_name: &str| {
             fields
                 .get(idx)
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_apu_cred = fields.get(2).to_arc();
+        let per_apu_cred = get_date(2, "PER_APU_CRED")?; // Will error if empty or invalid date
         let orig_cred = fields.get(3).to_arc();
         let cnpj_suc = fields.get(4).to_arc();
         let cod_cred = fields.get(5).parse_opt();

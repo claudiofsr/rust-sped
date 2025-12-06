@@ -46,7 +46,7 @@ impl SpedParser for Registro0140 {
         }
 
         let cod_est = fields.get(2).to_arc();
-        let nome = fields.get(3).to_arc();
+        let nome = fields.get(3).to_upper_arc(); // Normaliza nome para Uppercase
         let cnpj = fields.get(4).to_arc();
         let uf = fields.get(5).to_arc();
         let ie = fields.get(6).to_arc();

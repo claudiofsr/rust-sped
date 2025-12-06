@@ -108,7 +108,9 @@ impl SpedParser for Registro0000 {
         let dt_ini = get_required_date(6, "DT_INI")?; // Will error if empty or invalid date
         let dt_fin = get_required_date(7, "DT_FIN")?;
 
+        //let nome = fields.get(8).map(|n| Arc::from(n.to_uppercase()));
         let nome = fields.get(8).to_upper_arc(); // Normaliza nome para Uppercase
+
         let cnpj = get_cnpj(9, "CNPJ")?.into();
         let uf = fields.get(10).to_upper_arc(); // UF sempre Uppercase
         let cod_mun = fields.get(11).to_arc();

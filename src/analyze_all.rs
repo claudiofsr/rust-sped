@@ -5,7 +5,7 @@ use std::{fs, io::Write, path::PathBuf, thread};
 
 use crate::{
     DELIMITER_CHAR, DocsFiscais, EFDError, EFDResult, Informacoes, OUTPUT_DIRECTORY,
-    OUTPUT_FILENAME, TipoOperacao, analyze_one_file,
+    OUTPUT_FILENAME, TipoOperacao, analyze_one_file, analyze_one_file_new,
     args::Arguments,
     create_xlsx, make_dispatch_table, sped_efd,
     structures::{analise_dos_creditos, consolidacao_cst},
@@ -85,8 +85,8 @@ fn analyze_all_files(
     let arquivos_efd: &[PathBuf] = &args.all_files;
     print_arquivos_selecionados(arquivos_efd, &mut write)?;
 
-    let registros_efd = sped_efd::registros(); // tabela de registros
-    let dispatch_table = make_dispatch_table()?;
+    //let registros_efd = sped_efd::registros(); // tabela de registros
+    //let dispatch_table = make_dispatch_table()?;
 
     // indicatif ProgressBar + rayon
     let total: usize = arquivos_efd.len();
@@ -97,9 +97,9 @@ fn analyze_all_files(
         .enumerate()
         .filter_map(|(index, arquivo)| {
             // Executamos a análise
-            match analyze_one_file(
-                &registros_efd,
-                &dispatch_table,
+            match analyze_one_file_new(
+                //&registros_efd,
+                //&dispatch_table,
                 &multiprogressbar,
                 arquivo,
                 index,
@@ -118,6 +118,7 @@ fn analyze_all_files(
                 })),
             }
         })
+        .map(|result_info| result_info.map(|info_new| info_new.into()))
         .collect::<EFDResult<Vec<Informacoes>>>()?;
 
     // Ordenar all_info em função de cnpj_base e pa (periodo_de_apuracao)

@@ -91,6 +91,9 @@ pub trait RegistroFilho: SpedRecordTrait {
     fn get_dt_entrada(&self) -> Option<NaiveDate> {
         None
     }
+    fn get_per_apu_cred(&self) -> Option<NaiveDate> {
+        None
+    }
 
     // Identificação por Código
     fn get_cod_cta(&self) -> Option<&str> {
@@ -422,7 +425,7 @@ impl_filho!(RegistroF100, {
     get_valor_cofins: vl_cofins,
 
     get_nat_bc_cred: nat_bc_cred, get_ind_orig_cred: ind_orig_cred,
-    get_cod_cta: cod_cta, get_descr_item: desc_doc_oper,
+    get_cod_cta: cod_cta, get_descr_compl: desc_doc_oper,
 });
 
 impl_filho!(RegistroF120, {
@@ -520,8 +523,8 @@ impl_filho!(RegistroM505, {
 });
 
 // Bloco 1
-impl_filho!(Registro1100, { get_cod_cred: cod_cred });
-impl_filho!(Registro1500, { get_cod_cred: cod_cred });
+impl_filho!(Registro1100, { get_cod_cred: cod_cred, get_per_apu_cred: per_apu_cred });
+impl_filho!(Registro1500, { get_cod_cred: cod_cred, get_per_apu_cred: per_apu_cred });
 
 // ============================================================================
 // SEÇÃO 5: CORRELATION MANAGER
@@ -803,7 +806,7 @@ impl<'a> DocsBuilder<'a> {
         F: RegistroFilho + ?Sized,
     {
         // 1. Resolve Itens e Produto
-        let cod_item = self.header.cod_item.or_else(|| filho.get_cod_item());
+        let cod_item = filho.get_cod_item().or(self.header.cod_item);
         self.apply_itens_info(cod_item);
 
         // 2. Resolve Participante (Lógica de precedência clara)
@@ -871,7 +874,7 @@ impl<'a> DocsBuilder<'a> {
     {
         // Se houver descrição complementar, ela tem precedência e deve ser uppercase
         if let Some(compl) = filho.get_descr_compl().to_upper_arc() {
-            self.doc.descr_item = compl;
+            self.doc.complementar = compl;
         }
 
         // 1. Identificadores e Classificação
@@ -1617,7 +1620,7 @@ impl<'a> Bloco1<'a> {
                             "1100",
                             r.vl_cred_desc_efd,
                             r.get_cod_cred(),
-                            r.per_apu_cred.as_deref(),
+                            r.get_per_apu_cred(),
                             ctx,
                         )
                     {
@@ -1631,7 +1634,7 @@ impl<'a> Bloco1<'a> {
                             "1500",
                             r.vl_cred_desc_efd,
                             r.get_cod_cred(),
-                            r.per_apu_cred.as_deref(),
+                            r.get_per_apu_cred(),
                             ctx,
                         )
                     {
@@ -1727,7 +1730,7 @@ mod mappers {
         reg_name: &str,
         vl_desc: Option<Decimal>,
         cod_cred: Option<u16>,
-        per_apu: Option<&str>,
+        per_apu: Option<NaiveDate>,
         ctx: &SpedContext,
     ) -> Option<DocsFiscaisNew> {
         let val = vl_desc.abs_f64();
@@ -1740,16 +1743,14 @@ mod mappers {
         b.doc.tipo_de_operacao = Some(TipoOperacao::DescontoPosterior);
         b.doc.cod_credito = cod_cred;
 
-        if let (Some(orig_str), Some(curr)) = (per_apu, ctx.periodo_de_apuracao)
-            && orig_str.len() == 6
+        if let (Some(orig), Some(curr)) = (per_apu, ctx.periodo_de_apuracao)
+            && orig != curr
         {
-            let m = orig_str[0..2].parse::<u32>().unwrap_or_default();
-            let y = orig_str[2..6].parse::<i32>().unwrap_or_default();
-            if let Some(orig) = NaiveDate::from_ymd_opt(y, m, 1)
-                && orig != curr
-            {
-                b.doc.complementar = format!("ORIGEM DIFERENTE: {}", orig_str).into();
-            }
+            b.doc.periodo_de_apuracao = Some(orig);
+            b.doc.mes = MesesDoAno::try_from(orig.month()).ok();
+            b.doc.ano = Some(orig.year());
+            b.doc.trimestre = Some(orig.quarter());
+            b.doc.data_emissao = ctx.periodo_de_apuracao;
         }
         Some(b.build())
     }
