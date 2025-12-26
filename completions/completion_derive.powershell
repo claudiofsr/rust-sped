@@ -1,0 +1,52 @@
+
+using namespace System.Management.Automation
+using namespace System.Management.Automation.Language
+
+Register-ArgumentCompleter -Native -CommandName 'efd_contribuicoes' -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+
+    $commandElements = $commandAst.CommandElements
+    $command = @(
+        'efd_contribuicoes'
+        for ($i = 1; $i -lt $commandElements.Count; $i++) {
+            $element = $commandElements[$i]
+            if ($element -isnot [StringConstantExpressionAst] -or
+                $element.StringConstantType -ne [StringConstantType]::BareWord -or
+                $element.Value.StartsWith('-') -or
+                $element.Value -eq $wordToComplete) {
+                break
+        }
+        $element.Value
+    }) -join ';'
+
+    $completions = @(switch ($command) {
+        'efd_contribuicoes' {
+            [CompletionResult]::new('-a', '-a', [CompletionResultType]::ParameterName, 'a')
+            [CompletionResult]::new('--all-files', '--all-files', [CompletionResultType]::ParameterName, 'all-files')
+            [CompletionResult]::new('-g', '-g', [CompletionResultType]::ParameterName, 'If provided, outputs the completion file for given shell')
+            [CompletionResult]::new('--generate', '--generate', [CompletionResultType]::ParameterName, 'If provided, outputs the completion file for given shell')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'Select SPED EFD files to analyze by specifying the range.')
+            [CompletionResult]::new('--range', '--range', [CompletionResultType]::ParameterName, 'Select SPED EFD files to analyze by specifying the range.')
+            [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Clear the terminal screen before presenting the analysis of EFD files')
+            [CompletionResult]::new('--clear_terminal', '--clear_terminal', [CompletionResultType]::ParameterName, 'Clear the terminal screen before presenting the analysis of EFD files')
+            [CompletionResult]::new('-e', '-e', [CompletionResultType]::ParameterName, 'Delete output operations items from Excel and CSV files.')
+            [CompletionResult]::new('--excluir-saidas', '--excluir-saidas', [CompletionResultType]::ParameterName, 'Delete output operations items from Excel and CSV files.')
+            [CompletionResult]::new('-t', '-t', [CompletionResultType]::ParameterName, 'Excluir CST 49 do Rateio da Receita Bruta.')
+            [CompletionResult]::new('--excluir-cst-49', '--excluir-cst-49', [CompletionResultType]::ParameterName, 'Excluir CST 49 do Rateio da Receita Bruta.')
+            [CompletionResult]::new('-f', '-f', [CompletionResultType]::ParameterName, 'Find SPED EFD files')
+            [CompletionResult]::new('--find', '--find', [CompletionResultType]::ParameterName, 'Find SPED EFD files')
+            [CompletionResult]::new('-o', '-o', [CompletionResultType]::ParameterName, 'Retain only credit entries (50 <= CST <= 66)')
+            [CompletionResult]::new('--operacoes-de-creditos', '--operacoes-de-creditos', [CompletionResultType]::ParameterName, 'Retain only credit entries (50 <= CST <= 66)')
+            [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'Print CSV (Comma Separated Values) file.')
+            [CompletionResult]::new('--print-csv', '--print-csv', [CompletionResultType]::ParameterName, 'Print CSV (Comma Separated Values) file.')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
+            [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
+            break
+        }
+    })
+
+    $completions.Where{ $_.CompletionText -like "$wordToComplete*" } |
+        Sort-Object -Property ListItemText
+}
