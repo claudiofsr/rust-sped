@@ -237,7 +237,7 @@ where
     let num_cols = headers.len();
     let num_lines = lines.len();
 
-    // Otimização: Pre-cache dos grupos de formato para evitar lookup no loop
+    // Otimização: Pre-cache dos grupos de formatação para evitar lookup no loop
     let col_configs: Vec<(u16, &FormatGroup)> = headers
         .par_iter()
         .enumerate()
