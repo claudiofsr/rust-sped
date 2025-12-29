@@ -609,32 +609,22 @@ pub struct CorrelationValue {
 /// O Decimal é normalizado para garantir consistência (10.00 == 10.0).
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct CorrelationKey {
-    pub cst: u16,
+    pub cst: Option<u16>,
     pub vl_item: Decimal,
 }
 
 impl CorrelationKey {
     /// Construtor que garante a normalização dos dados.
-    /// Retorna None se faltar dados obrigatórios (CST e Valor do Item).
+    /// CST é dado opcional podendo ser None!
+    /// Valor do Item é dado obrigatório!
     pub fn new(cst: Option<u16>, vl_item: Option<Decimal>) -> Option<Self> {
-        /*
-        // retorna None imediatamente se cst e vl_item forem None.
-        if cst.is_none() && vl_item.is_none() {
-            return None;
-        }
-
-        let c = cst.unwrap_or_default();
-        let mut v = vl_item.unwrap_or_default();
-        */
-
-        let c = cst?;
-        let mut v = vl_item?;
+        let mut val = vl_item?;
 
         // CRUCIAL: Normaliza o decimal (remove zeros à direita) para garantir hash único
         // Ex: 10.00 -> 10. Para que o hash de 10.00 seja igual ao de 10.0
-        v.normalize_assign();
+        val.normalize_assign();
 
-        Some(Self { cst: c, vl_item: v })
+        Some(Self { cst, vl_item: val })
     }
 }
 

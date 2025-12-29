@@ -129,7 +129,7 @@ impl RegistroFilho for RegMockFilho {
 fn test_correlation_manager_storage_and_retrieval() {
     let mut mgr = CorrelationManager::default();
 
-    let cst = 50;
+    let cst = Some(50);
     let vl_item = dec!(1000.00);
     let cfop = Some(1102);
     let nat_bc_cred = Some(8);
@@ -179,7 +179,7 @@ fn test_correlation_manager_partial_strong_key() {
     let mut mgr = CorrelationManager::default();
 
     let key = CorrelationKey {
-        cst: 1,
+        cst: Some(1),
         vl_item: dec!(100.0),
     };
 

@@ -175,7 +175,12 @@ fn test_analyze_one_sped_file() -> EFDResult<()> {
         Some(crate::TipoDeCredito::AliquotasDiferenciadas)
     );
 
-    assert!(all_docs[2].aliq_pis.is_none());
+    assert_eq!(
+        all_docs[2].aliq_pis,
+        Some(dec!(1.30)),
+        "Valor da alíquota incorreto!"
+    );
+
     assert!(all_docs[3].aliq_pis.is_none());
     assert!(all_docs[4].aliq_pis.is_none());
 
