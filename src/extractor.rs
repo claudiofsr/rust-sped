@@ -698,24 +698,21 @@ impl CorrelationEntry {
     /// O resultado é que a regra com mais matches específicos terá o maior score.
     #[inline(always)]
     fn calculate_score(&self, ctx: CorrelationCriteria) -> u8 {
-        // Closure auxiliar para verificar Option<u16>
-        let match_u16 =
-            |rule: Option<u16>, query: Option<u16>| (rule.is_some() && rule == query) as u8;
+        // Solução: Função interna genérica.
+        // T: PartialEq permite usar '=='
+        // T: Copy permite passar os valores sem 'move' ou referências desnecessárias
+        fn check_match<T: PartialEq + Copy>(rule: Option<T>, query: Option<T>) -> u8 {
+            // Regra: Só pontua se a regra (cache) não for genérica (is_some)
+            // E se for igual ao valor consultado.
+            // cast 'bool as u8' converte true -> 1, false -> 0
+            (rule.is_some() && rule == query) as u8
+        }
 
-        let match_dec =
-            |rule: Option<Decimal>, query: Option<Decimal>| (rule.is_some() && rule == query) as u8;
-
-        // Closure para Strings (Arc<str> vs &str)
-        // Usa as_deref() para comparar o conteúdo sem alocação
-        let match_str = |rule: &Option<Arc<str>>, query: Option<&str>| {
-            (rule.is_some() && rule.as_deref() == query) as u8
-        };
-
-        match_u16(self.cfop, ctx.cfop) * WEIGHT_CFOP
-            + match_u16(self.nat_bc_cred, ctx.nat_bc_cred) * WEIGHT_NAT_BC
-            + match_str(&self.part, ctx.part) * WEIGHT_PART
-            + match_str(&self.cod_cta, ctx.cod_cta) * WEIGHT_CTA
-            + match_dec(self.vl_bc, ctx.vl_bc) * WEIGHT_VL_BC
+        check_match(self.cfop, ctx.cfop) * WEIGHT_CFOP
+            + check_match(self.nat_bc_cred, ctx.nat_bc_cred) * WEIGHT_NAT_BC
+            + check_match(self.part.as_deref(), ctx.part) * WEIGHT_PART
+            + check_match(self.cod_cta.as_deref(), ctx.cod_cta) * WEIGHT_CTA
+            + check_match(self.vl_bc, ctx.vl_bc) * WEIGHT_VL_BC
     }
 }
 
