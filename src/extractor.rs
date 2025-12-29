@@ -1894,7 +1894,7 @@ impl CreditEntry {
 #[derive(Default, Debug)]
 pub struct CreditCorrelationManager {
     /// Chave Primária: Código do Crédito (M100.COD_CRED).
-    cache: HashMap<u16, Vec<CreditEntry>>,
+    cache: HashMap<Option<u16>, Vec<CreditEntry>>,
 }
 
 impl CreditCorrelationManager {
@@ -1909,12 +1909,11 @@ impl CreditCorrelationManager {
         criteria: CreditCriteria,
         aliq_pis: Option<Decimal>,
     ) {
-        let Some(key) = cod_cred else { return };
         let new_entry = CreditEntry::new(criteria, aliq_pis);
 
         // Sempre adiciona uma nova entrada (push), criando slots disponíveis.
         // O campo 'aliq_cofins' inicia como None, indicando que o slot está livre.
-        self.cache.entry(key).or_default().push(new_entry);
+        self.cache.entry(cod_cred).or_default().push(new_entry);
     }
 
     /// Resolve (M505) - Prioriza slots vazios
@@ -1924,8 +1923,7 @@ impl CreditCorrelationManager {
         query: CreditCriteria,
         aliq_cofins: Option<Decimal>,
     ) -> Option<Decimal> {
-        let key = cod_cred?;
-        let bucket = self.cache.get_mut(&key)?;
+        let bucket = self.cache.get_mut(&cod_cred)?;
 
         // Encontra a entrada com maior pontuação (Best Fit)
         // Se encontrada, atualiza o campo aliq_cofins e retorna a aliq_pis.
@@ -1970,13 +1968,17 @@ impl CreditCorrelationManager {
             let current_header = (cod, entry.aliq_cofins);
 
             if last_header != Some(current_header) {
+                let s_cod = cod
+                    .map(|v| v.to_string())
+                    .unwrap_or_else(|| "NÃO INFORMADO".to_string());
+
                 let s_cof = entry
                     .aliq_cofins
                     .map(|v| format!("{v}%"))
                     .unwrap_or_else(|| "N/D".to_string());
 
                 println!("-------------------------------------------------------------");
-                println!("COD_CRED: {cod}  | ALIQ_COFINS: {s_cof}");
+                println!("COD_CRED: {s_cod}  | ALIQ_COFINS: {s_cof}");
                 last_header = Some(current_header);
             }
 
