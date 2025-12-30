@@ -1830,8 +1830,8 @@ assemelha ao registro COFINS, mesmo que algum campo não essencial esteja difere
 desde que seja o "vencedor" na pontuação.
 */
 
-const PESO_CST: u8 = 4;
-const PESO_NAT_BC: u8 = 2;
+const PESO_NAT_BC: u8 = 4;
+const PESO_CST: u8 = 2;
 const PESO_VL_BC: u8 = 1;
 
 /// Critérios usados tanto para armazenar (PIS) quanto para buscar (COFINS).
@@ -1841,6 +1841,21 @@ pub struct CreditCriteria {
     pub cst: Option<u16>,
     pub nat_bc: Option<u16>,
     pub vl_bc: Option<Decimal>,
+}
+
+impl CreditCriteria {
+    /// Construtor único: garante que o Decimal esteja normalizado desde o nascimento.
+    pub fn new(cst: Option<u16>, nat_bc: Option<u16>, vl_bc: Option<Decimal>) -> Self {
+        Self {
+            cst,
+            nat_bc,
+            // Uso de .map funcional para normalizar o valor se ele existir
+            vl_bc: vl_bc.map(|mut v| {
+                v.normalize_assign();
+                v
+            }),
+        }
+    }
 }
 
 /// Entrada armazenada no cache.
@@ -1899,13 +1914,7 @@ impl CreditCorrelationManager {
         criteria: CreditCriteria,
         aliq_pis: Option<Decimal>,
     ) {
-        let mut query = criteria;
-        // Normalização para garantir que 30522.6300 seja igual a 30522.63
-        if let Some(v) = query.vl_bc.as_mut() {
-            v.normalize_assign();
-        }
-
-        let new_entry = CreditEntry::new(query, aliq_pis);
+        let new_entry = CreditEntry::new(criteria, aliq_pis);
 
         // Sempre adiciona uma nova entrada (push), criando slots disponíveis.
         // O campo 'aliq_cofins' inicia como None, indicando que o slot está livre.
@@ -1913,17 +1922,12 @@ impl CreditCorrelationManager {
     }
 
     /// Resolve (M505) - Prioriza slots vazios
-    pub fn resolve(
+    pub fn resolve_old(
         &mut self,
         cod_cred: Option<u16>,
         criteria: CreditCriteria,
         aliq_cofins: Option<Decimal>,
     ) -> Option<Decimal> {
-        let mut query = criteria;
-        if let Some(v) = query.vl_bc.as_mut() {
-            v.normalize_assign();
-        }
-
         let bucket = self.cache.get_mut(&cod_cred)?;
 
         // Encontra a entrada com maior pontuação (Best Fit)
@@ -1931,7 +1935,7 @@ impl CreditCorrelationManager {
         bucket
             .iter_mut()
             .filter(|entry| entry.aliq_cofins.is_none())
-            .max_by_key(|entry| entry.calculate_score(query))
+            .max_by_key(|entry| entry.calculate_score(criteria))
             .and_then(|entry| {
                 entry.aliq_cofins = aliq_cofins;
                 entry.aliq_pis
@@ -1942,58 +1946,39 @@ impl CreditCorrelationManager {
     /// Estratégia:
     /// 1. Tenta encontrar no bucket exato do cod_cred.
     /// 2. Se não encontrar, realiza uma busca global em todos os buckets (Fuzzy Match).
-    pub fn resolve_new(
+    pub fn resolve(
         &mut self,
         cod_cred: Option<u16>,
         criteria: CreditCriteria,
         aliq_cofins: Option<Decimal>,
     ) -> Option<Decimal> {
-        let mut query = criteria;
-        if let Some(v) = query.vl_bc.as_mut() {
-            v.normalize_assign();
-        }
-
-        // TENTATIVA 1: Busca na "gaveta" do cod_cred informado (Caminho Rápido)
-        if let Some(entries) = self.cache.get_mut(&cod_cred) {
-            let found = entries
+        // 1. TENTATIVA: Busca no bucket específico (O(1) lookup)
+        // Usamos .and_then para encadear a busca dentro do Option do HashMap
+        let local_match = self.cache.get_mut(&cod_cred).and_then(|entries| {
+            entries
                 .iter_mut()
-                .filter(|entry| entry.aliq_cofins.is_none())
-                .max_by_key(|entry| entry.calculate_score(query));
+                .filter(|e| e.aliq_cofins.is_none())
+                .max_by_key(|e| e.calculate_score(criteria))
+        });
 
-            if let Some(entry) = found {
-                // Se o score for alto o suficiente, usamos
-                if entry.calculate_score(query) >= (PESO_NAT_BC + PESO_VL_BC) {
-                    entry.aliq_cofins = aliq_cofins;
-                    return entry.aliq_pis;
-                }
-            }
+        if let Some(entry) = local_match {
+            entry.aliq_cofins = aliq_cofins;
+            return entry.aliq_pis;
         }
 
-        // TENTATIVA 2: Busca Global (Fallback para erros de cod_cred como 102 vs 101)
-        // Se não achou na gaveta certa, vasculha todas as outras
-        let mut best_global_entry: Option<&mut CreditEntry> = None;
-        let mut highest_score = 0u8;
+        // 2. TENTATIVA: Busca Global (Fallback)
+        // Vascula todos os buckets em busca do melhor score disponível
+        let global_match = self
+            .cache
+            .values_mut()
+            .flat_map(|bucket| bucket.iter_mut())
+            .filter(|e| e.aliq_cofins.is_none())
+            .max_by_key(|e| e.calculate_score(criteria));
 
-        for entries in self.cache.values_mut() {
-            for entry in entries.iter_mut().filter(|e| e.aliq_cofins.is_none()) {
-                let score = entry.calculate_score(query);
-
-                // Para aceitar um match de outra "gaveta", exigimos que
-                // pelo menos a Natureza da BC e o Valor da BC sejam idênticos.
-                if score >= (PESO_NAT_BC + PESO_VL_BC) && score > highest_score {
-                    highest_score = score;
-                    best_global_entry = Some(entry);
-                }
-            }
-        }
-
-        if let Some(entry) = best_global_entry {
+        if let Some(entry) = global_match {
             warn!(
-                "Correlação realizada via busca global: COFINS informou cod_cred {:?}, \
-                  mas vinculou ao PIS com NatBC {} e Valor {}",
-                cod_cred,
-                query.nat_bc.unwrap_or(0),
-                query.vl_bc.unwrap_or_default()
+                "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?} Valor {:?}",
+                cod_cred, criteria.nat_bc, criteria.vl_bc
             );
             entry.aliq_cofins = aliq_cofins;
             return entry.aliq_pis;
@@ -2097,11 +2082,11 @@ impl<'a> BlocoM<'a> {
         // Tenta encontrar um M105 correspondente a este M505.
 
         // 1. Tenta Cache Dinâmico
-        let criteria = CreditCriteria {
-            cst: filho.cst_cofins, // Tenta casar CST de COFINS com o CST de PIS armazenado
-            nat_bc: filho.nat_bc_cred,
-            vl_bc: filho.vl_bc_cofins,
-        };
+        let criteria = CreditCriteria::new(
+            filho.cst_cofins, // Tenta casar CST de COFINS com o CST de PIS armazenado
+            filho.nat_bc_cred,
+            filho.vl_bc_cofins,
+        );
 
         // Resultado da correlação entre as alíquotas de PIS e COFINS
         let resultado_pis = self
@@ -2149,12 +2134,9 @@ impl<'a> BlocoM<'a> {
                     if let (Ok(filho), Some(pai)) =
                         (record.downcast_ref::<RegistroM105>(), self.m100)
                     {
-                        // Armazena dados do PIS
-                        let criteria = CreditCriteria {
-                            cst: filho.cst_pis,
-                            nat_bc: filho.nat_bc_cred,
-                            vl_bc: filho.vl_bc_pis,
-                        };
+                        // Cria dados normalizados do PIS
+                        let criteria =
+                            CreditCriteria::new(filho.cst_pis, filho.nat_bc_cred, filho.vl_bc_pis);
 
                         // Armazena dados do PIS
                         self.correlacao.store(pai.cod_cred, criteria, pai.aliq_pis);
