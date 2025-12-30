@@ -1,5 +1,5 @@
 use chrono::{Datelike, NaiveDate};
-use log::{Level, log_enabled, warn};
+use log::{Level, log_enabled};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::{collections::HashMap, str::FromStr, sync::Arc};
@@ -1365,9 +1365,9 @@ pub fn process_block_lines(
         'M' => {
             // Instancia, processa, e só depois imprime
             let mut bloco_m = BlocoM::default();
-            bloco_m.process(records, ctx, &mut docs);
+            bloco_m.process(records, ctx, &mut docs, &mut messages);
 
-            // Imprime o relatório final apenas se o nível de debug estiver ativo
+            // Imprime o relatório final se o nível de debug estiver ativo
             if log_enabled!(Level::Debug) {
                 bloco_m.correlacao.print();
             }
@@ -1930,6 +1930,7 @@ impl CreditCorrelationManager {
         cod_cred: Option<u16>,
         criteria: CreditCriteria,
         aliq_cofins: Option<Decimal>,
+        messages: &mut Vec<String>,
     ) -> Option<Decimal> {
         // 1. TENTATIVA LOCAL
         // Tentamos o bucket. Se encontrarmos o bucket E uma entrada válida,
@@ -1954,10 +1955,11 @@ impl CreditCorrelationManager {
             .filter(|e| e.aliq_cofins.is_none())
             .max_by_key(|e| e.calculate_score(criteria))
             .and_then(|entry| {
-                warn!(
-                    "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?} Valor {:?}",
+                let msg = format!(
+                    "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?} Valor {:?}\n\n",
                     cod_cred, criteria.nat_bc, criteria.vl_bc
                 );
+                messages.push(msg);
                 entry.aliq_cofins = aliq_cofins;
                 entry.aliq_pis
             })
@@ -2053,6 +2055,7 @@ impl<'a> BlocoM<'a> {
         aliq_cofins: Option<Decimal>,
         filho: &RegistroM505,
         pai: &RegistroM500,
+        messages: &mut Vec<String>,
     ) -> Option<Decimal> {
         // 1. Prioridade: Cache Dinâmico (Realidade do Arquivo)
         // Tenta encontrar um M105 correspondente a este M505.
@@ -2067,7 +2070,7 @@ impl<'a> BlocoM<'a> {
         // Resultado da correlação entre as alíquotas de PIS e COFINS
         let resultado_pis = self
             .correlacao
-            .resolve(pai.cod_cred, criteria, aliq_cofins)
+            .resolve(pai.cod_cred, criteria, aliq_cofins, messages)
             // 2. Fallback: Tabela Estática (Legislação Padrão)
             .or_else(|| obter_pis_da_tabela_estatica(aliq_cofins, pai, filho));
 
@@ -2077,11 +2080,12 @@ impl<'a> BlocoM<'a> {
                 .map(|v| v.to_string())
                 .unwrap_or_else(|| "N/A".to_string());
 
-            warn!(
+            let msg = format!(
                 "M505: Falha na correlação PIS/COFINS (Nenhuma alíquota encontrada).\n\
                  \tDetalhes: CodCred: {:?} | CST: {:?} | NatBC: {:?} | ValorBC: {:?} | AliqCOFINS: {}",
                 pai.cod_cred, filho.cst_cofins, filho.nat_bc_cred, filho.vl_bc_cofins, cof_str
             );
+            messages.push(msg);
         }
 
         resultado_pis
@@ -2092,6 +2096,7 @@ impl<'a> BlocoM<'a> {
         records: &'a [SpedRecord],
         ctx: &SpedContext,
         docs: &mut Vec<DocsFiscais>,
+        messages: &mut Vec<String>,
     ) {
         for record in records {
             let SpedRecord::Generic(g) = record else {
@@ -2126,7 +2131,7 @@ impl<'a> BlocoM<'a> {
                 }
                 "M505" => {
                     if let (Ok(f), Some(pai)) = (record.downcast_ref::<RegistroM505>(), self.m500) {
-                        let aliq_pis = self.resolve_pis_aliq(pai.aliq_cofins, f, pai);
+                        let aliq_pis = self.resolve_pis_aliq(pai.aliq_cofins, f, pai, messages);
 
                         // Construção do Documento
                         let mut b = DocsBuilder::from_child(ctx, f, None);
