@@ -1921,27 +1921,6 @@ impl CreditCorrelationManager {
         self.cache.entry(cod_cred).or_default().push(new_entry);
     }
 
-    /// Resolve (M505) - Prioriza slots vazios
-    pub fn resolve_old(
-        &mut self,
-        cod_cred: Option<u16>,
-        criteria: CreditCriteria,
-        aliq_cofins: Option<Decimal>,
-    ) -> Option<Decimal> {
-        let bucket = self.cache.get_mut(&cod_cred)?;
-
-        // Encontra a entrada com maior pontuação (Best Fit)
-        // Se encontrada, atualiza o campo aliq_cofins e retorna a aliq_pis.
-        bucket
-            .iter_mut()
-            .filter(|entry| entry.aliq_cofins.is_none())
-            .max_by_key(|entry| entry.calculate_score(criteria))
-            .and_then(|entry| {
-                entry.aliq_cofins = aliq_cofins;
-                entry.aliq_pis
-            })
-    }
-
     /// Resolve a alíquota de PIS para um registro de COFINS.
     /// Estratégia:
     /// 1. Tenta encontrar no bucket exato do cod_cred.
@@ -1952,39 +1931,36 @@ impl CreditCorrelationManager {
         criteria: CreditCriteria,
         aliq_cofins: Option<Decimal>,
     ) -> Option<Decimal> {
-        // 1. TENTATIVA: Busca no bucket específico (O(1) lookup)
-        // Usamos .and_then para encadear a busca dentro do Option do HashMap
-        let local_match = self.cache.get_mut(&cod_cred).and_then(|entries| {
+        // 1. TENTATIVA LOCAL
+        // Tentamos o bucket. Se encontrarmos o bucket E uma entrada válida,
+        // entramos no bloco 'if let' para atualizar e RETORNAR.
+        if let Some(entry) = self.cache.get_mut(&cod_cred).and_then(|entries| {
             entries
                 .iter_mut()
                 .filter(|e| e.aliq_cofins.is_none())
                 .max_by_key(|e| e.calculate_score(criteria))
-        });
-
-        if let Some(entry) = local_match {
+        }) {
             entry.aliq_cofins = aliq_cofins;
-            return entry.aliq_pis;
+            return entry.aliq_pis; // Retorno antecipado libera o self.cache
         }
 
-        // 2. TENTATIVA: Busca Global (Fallback)
-        // Vascula todos os buckets em busca do melhor score disponível
-        let global_match = self
-            .cache
+        // 2. TENTATIVA GLOBAL
+        // Só chegamos aqui se:
+        // a) cod_cred não estava no cache (o .get_mut retornou None)
+        // b) Ou o bucket estava vazio/sem matches (o .max_by_key retornou None)
+        self.cache
             .values_mut()
-            .flat_map(|bucket| bucket.iter_mut())
+            .flat_map(|entries| entries.iter_mut())
             .filter(|e| e.aliq_cofins.is_none())
-            .max_by_key(|e| e.calculate_score(criteria));
-
-        if let Some(entry) = global_match {
-            warn!(
-                "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?} Valor {:?}",
-                cod_cred, criteria.nat_bc, criteria.vl_bc
-            );
-            entry.aliq_cofins = aliq_cofins;
-            return entry.aliq_pis;
-        }
-
-        None
+            .max_by_key(|e| e.calculate_score(criteria))
+            .and_then(|entry| {
+                warn!(
+                    "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?} Valor {:?}",
+                    cod_cred, criteria.nat_bc, criteria.vl_bc
+                );
+                entry.aliq_cofins = aliq_cofins;
+                entry.aliq_pis
+            })
     }
 
     /// Imprimir relatório das correlações em ordem crescente da chave Cod_Cred.
