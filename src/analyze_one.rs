@@ -38,8 +38,12 @@ pub fn analyze_one_file(
     // O processamento paralelo de leitura pode embaralhar as linhas dentro dos blocos.
     sped_file.sort_records_by_line_number();
 
-    let registro_0111 = sped_file.obter_registro::<Registro0111>("0111")?;
-    let relatorio_0111 = format!("{}\n", registro_0111.generate_report());
+    // 1. Extração funcional do Registro 0111
+    // Transformamos o Result em Option e mapeamos para a string do relatório
+    let relatorio_0111 = sped_file
+        .obter_registro::<Registro0111>("0111")
+        .map(|reg| reg.generate_report())
+        .ok(); 
 
     // Encapsula em Arc para compartilhamento barato entre threads
     let sped_file_arc = Arc::new(sped_file);
@@ -65,11 +69,8 @@ pub fn analyze_one_file(
                 let (new_docs, new_msgs) = process_block_lines(bloco, &sped_file_arc, &context);
 
                 acc_docs.extend(new_docs);
+                acc_msgs.extend(new_msgs); 
 
-                // Concatena as mensagens do bloco na String local da thread
-                for msg in new_msgs {
-                    acc_msgs.push_str(&msg);
-                }
                 (acc_docs, acc_msgs)
             },
         )
@@ -88,7 +89,12 @@ pub fn analyze_one_file(
     // Enumerar todas as linhas
     // all_docs.par_iter_mut().enumerate().for_each(|(index, docs)| {docs.linhas = index + 2;});
 
-    all_messages.push_str(&relatorio_0111);
+    // 3. Agregação final das mensagens
+    // Se o relatório existir, adicionamos ao final das mensagens acumuladas
+    if let Some(report) = relatorio_0111 {
+        all_messages.push_str(&report);
+        all_messages.push('\n');
+    }    
 
     let cnpj_base = context
         .estabelecimento_cnpj_base

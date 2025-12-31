@@ -30,8 +30,6 @@ pub struct Registro0111 {
 impl Registro0111 {
     /// Gera o relatório formatado como uma String.
     pub fn generate_report(&self) -> String {
-        let num_char = self.rec_bru_total.to_formatted_string(DECIMAL_VALOR).len();
-
         // 1. Mapeamos os campos e suas descrições em um array
         let campos = [
             (
@@ -50,24 +48,24 @@ impl Registro0111 {
             (self.rec_bru_total, "Receita Bruta Total"),
         ];
 
-        // 2. Usamos iteradores para construir a string de forma funcional
-        // 1024 é um valor seguro e pequeno para a memória moderna,
-        // garantindo zero realocações (reallocs) durante a execução.
-        campos
-            .iter()
-            .fold(String::with_capacity(1024), |mut acc, (valor, desc)| {
-                let formatado = valor
+        // Mapeia para strings formatadas primeiro
+        let formatados: Vec<(String, &str)> = campos
+            .into_iter()
+            .map(|(v, desc)| {
+                let s = v
                     .map(|v| v.to_formatted_string(DECIMAL_VALOR))
                     .unwrap_or_else(|| "?".to_string());
+                (s, desc)
+            })
+            .collect();
 
-                // Usamos o REGISTRO constante para evitar hardcoding de "0111"
-                writeln!(
-                    acc,
-                    "Registo {}: {:>num_char$} ({})",
-                    REGISTRO, formatado, desc
-                )
-                .ok();
+        // Pega o comprimento real das strings (incluindo pontos e vírgulas)
+        let num_char = formatados.iter().map(|(s, _)| s.len()).max().unwrap_or(0);
 
+        formatados
+            .iter()
+            .fold(String::with_capacity(1024), |mut acc, (s, desc)| {
+                writeln!(acc, "Registo {}: {:>num_char$} ({})", REGISTRO, s, desc).ok();
                 acc
             })
     }
