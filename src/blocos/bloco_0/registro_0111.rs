@@ -30,7 +30,7 @@ pub struct Registro0111 {
 impl Registro0111 {
     /// Gera o relatório formatado como uma String.
     pub fn generate_report(&self) -> String {
-        let num_char = 15;
+        let num_char = 16;
 
         // 1. Mapeamos os campos e suas descrições em um array
         let campos = [
