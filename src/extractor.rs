@@ -1368,7 +1368,7 @@ pub fn process_block_lines(
             bloco_m.process(records, ctx, &mut docs, &mut messages);
 
             // Se houve correlação global, geramos o relatório.
-            if bloco_m.correlacao.has_global_matches {
+            if bloco_m.correlacao.has_global_matches || log_enabled!(Level::Debug) {
                 // Gera o relatório uma única vez
                 let relatorio = bloco_m.correlacao.generate_report();
 
@@ -1376,7 +1376,7 @@ pub fn process_block_lines(
                     print!("{}", relatorio);
                 }
 
-                if !relatorio.is_empty() {
+                if bloco_m.correlacao.has_global_matches {
                     messages.push(relatorio);
                 }
             }
@@ -2313,25 +2313,23 @@ mod mappers {
         // 3: Ajuste de Acréscimo (+)
         // 4: Ajuste de Redução (-)
         // 5: Desconto da Contribuição (-)
-        let adjustments = [
+        [
             (desc, TipoDeOperacao::DescontoNoPeriodo, dec!(-1.0)),
             (reduc, TipoDeOperacao::AjusteReducao, dec!(-1.0)),
             (acres, TipoDeOperacao::AjusteAcrescimo, dec!(1.0)),
-        ];
-
-        adjustments
-            .into_iter()
-            .filter_map(|(val_opt, op, signal)| {
-                // Filtra valores > 0.0 (ignorando nulos ou zero)
-                val_opt.filter(|v| v.eh_maior_que_zero()).map(|v| {
-                    let mut builder = base_builder.clone();
-                    // Aplica valor com o sinal correto (abs * signal)
-                    builder.doc.valor_item = Some(v.abs() * signal);
-                    builder.doc.tipo_de_operacao = Some(op);
-                    builder.build() // Chama o build final aqui
-                })
+        ]
+        .into_iter()
+        .filter_map(|(val_opt, op, signal)| {
+            // Filtra valores > 0.0 (ignorando nulos ou zero)
+            val_opt.filter(|v| v.eh_maior_que_zero()).map(|v| {
+                let mut builder = base_builder.clone();
+                // Aplica valor com o sinal correto (abs * signal)
+                builder.doc.valor_item = Some(v.abs() * signal);
+                builder.doc.tipo_de_operacao = Some(op);
+                builder.build() // Chama o build final aqui
             })
-            .collect()
+        })
+        .collect()
     }
 
     /// Constrói o documento de Controle de Crédito (1100/1500).
