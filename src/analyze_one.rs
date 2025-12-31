@@ -56,7 +56,7 @@ pub fn analyze_one_file(
 
     // 4. Processamento dos Blocos em Paralelo
     // Definimos a ordem de blocos. Bloco 0 já foi processado no contexto.
-    let blocks_to_process = vec!['A', 'C', 'D', 'F', 'I', 'M', '1'];
+    let blocks_to_process = ['A', 'C', 'D', 'F', 'I', 'M', '1'];
 
     let (all_docs, mut all_messages): (Vec<DocsFiscais>, String) = blocks_to_process
         .into_par_iter()
