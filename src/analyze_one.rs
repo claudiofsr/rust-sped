@@ -1,6 +1,6 @@
 use crate::{
-    DocsFiscais, EFDError, EFDResult, Informacoes, NEWLINE_BYTE, Registro0000, SpedContext,
-    SpedFile, SpedRecord, extractor::process_block_lines, parser::parse_sped_fields,
+    DocsFiscais, EFDError, EFDResult, Informacoes, NEWLINE_BYTE, Registro0000, Registro0111,
+    SpedContext, SpedFile, SpedRecord, extractor::process_block_lines, parser::parse_sped_fields,
 };
 
 use chrono::Datelike;
@@ -38,6 +38,9 @@ pub fn analyze_one_file(
     // O processamento paralelo de leitura pode embaralhar as linhas dentro dos blocos.
     sped_file.sort_records_by_line_number();
 
+    let registro_0111 = sped_file.obter_registro::<Registro0111>("0111")?;
+    let relatorio_0111 = format!("{}\n", registro_0111.generate_report());
+
     // Encapsula em Arc para compartilhamento barato entre threads
     let sped_file_arc = Arc::new(sped_file);
 
@@ -51,7 +54,7 @@ pub fn analyze_one_file(
     // Definimos a ordem de blocos. Bloco 0 já foi processado no contexto.
     let blocks_to_process = vec!['A', 'C', 'D', 'F', 'I', 'M', '1'];
 
-    let (all_docs, all_messages): (Vec<DocsFiscais>, String) = blocks_to_process
+    let (all_docs, mut all_messages): (Vec<DocsFiscais>, String) = blocks_to_process
         .into_par_iter()
         // 1. FOLD: Acumula resultados dentro de cada thread local
         .fold(
@@ -84,6 +87,8 @@ pub fn analyze_one_file(
 
     // Enumerar todas as linhas
     // all_docs.par_iter_mut().enumerate().for_each(|(index, docs)| {docs.linhas = index + 2;});
+
+    all_messages.push_str(&relatorio_0111);
 
     let cnpj_base = context
         .estabelecimento_cnpj_base

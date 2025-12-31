@@ -1,6 +1,8 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_sped_record_trait};
+use crate::{
+    DECIMAL_VALOR, DecimalExt, EFDError, EFDResult, SpedParser, ToDecimal, impl_sped_record_trait,
+};
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::{fmt::Write, path::Path, sync::Arc};
 
 const REGISTRO: &str = "0111";
 
@@ -23,6 +25,52 @@ pub struct Registro0111 {
     pub rec_bru_ncum_exp: Option<Decimal>,     // 4
     pub rec_bru_cum: Option<Decimal>,          // 5
     pub rec_bru_total: Option<Decimal>,        // 6
+}
+
+impl Registro0111 {
+    /// Gera o relatório formatado como uma String.
+    pub fn generate_report(&self) -> String {
+        let num_char = 15;
+
+        // 1. Mapeamos os campos e suas descrições em um array
+        let campos = [
+            (
+                self.rec_bru_ncum_trib_mi,
+                "Receita Bruta Não-Cumulativa - Tributada no Mercado Interno",
+            ),
+            (
+                self.rec_bru_ncum_nt_mi,
+                "Receita Bruta Não-Cumulativa - Não Tributada no Mercado Interno",
+            ),
+            (
+                self.rec_bru_ncum_exp,
+                "Receita Bruta Não-Cumulativa - Exportação",
+            ),
+            (self.rec_bru_cum, "Receita Bruta Cumulativa"),
+            (self.rec_bru_total, "Receita Bruta Total"),
+        ];
+
+        // 2. Usamos iteradores para construir a string de forma funcional
+        // 1024 é um valor seguro e pequeno para a memória moderna,
+        // garantindo zero realocações (reallocs) durante a execução.
+        campos
+            .iter()
+            .fold(String::with_capacity(1024), |mut acc, (valor, desc)| {
+                let formatado = valor
+                    .map(|v| v.to_formatted_string(DECIMAL_VALOR))
+                    .unwrap_or_else(|| "?".to_string());
+
+                // Usamos o REGISTRO constante para evitar hardcoding de "0111"
+                writeln!(
+                    acc,
+                    "Rateio de Créditos conforme Registo {}: {:>num_char$} ({})",
+                    REGISTRO, formatado, desc
+                )
+                .ok();
+
+                acc
+            })
+    }
 }
 
 impl_sped_record_trait!(Registro0111);
