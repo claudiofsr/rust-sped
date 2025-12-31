@@ -63,7 +63,7 @@ impl Registro0111 {
                 // Usamos o REGISTRO constante para evitar hardcoding de "0111"
                 writeln!(
                     acc,
-                    "Rateio de Créditos conforme Registo {}: {:>num_char$} ({})",
+                    "Registo {}: {:>num_char$} ({})",
                     REGISTRO, formatado, desc
                 )
                 .ok();
