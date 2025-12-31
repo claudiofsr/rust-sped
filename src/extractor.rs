@@ -2,7 +2,7 @@ use chrono::{Datelike, NaiveDate};
 use log::{Level, log_enabled};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, fmt::Write, str::FromStr, sync::Arc};
 
 use crate::{
     ALIQ_BASICA_COF, ALIQ_BASICA_PIS, CodigoSituacaoTributaria, DECIMAL_VALOR, DecimalExt,
@@ -1367,9 +1367,18 @@ pub fn process_block_lines(
             let mut bloco_m = BlocoM::default();
             bloco_m.process(records, ctx, &mut docs, &mut messages);
 
-            // Imprime o relatório final se o nível de debug estiver ativo
-            if log_enabled!(Level::Debug) {
-                bloco_m.correlacao.print();
+            // Se houve correlação global, geramos o relatório.
+            if bloco_m.correlacao.has_global_matches {
+                // Gera o relatório uma única vez
+                let relatorio = bloco_m.correlacao.generate_report();
+
+                if log_enabled!(Level::Debug) {
+                    print!("{}", relatorio);
+                }
+
+                if !relatorio.is_empty() {
+                    messages.push(relatorio);
+                }
             }
         }
         '1' => Bloco1::default().process(records, ctx, &mut docs, &mut messages),
@@ -1900,6 +1909,7 @@ impl CreditEntry {
 pub struct CreditCorrelationManager {
     /// Chave Primária: Código do Crédito (M100.COD_CRED).
     cache: HashMap<Option<u16>, Vec<CreditEntry>>,
+    pub has_global_matches: bool,
 }
 
 impl CreditCorrelationManager {
@@ -1955,8 +1965,9 @@ impl CreditCorrelationManager {
             .filter(|e| e.aliq_cofins.is_none())
             .max_by_key(|e| e.calculate_score(criteria))
             .and_then(|entry| {
+                self.has_global_matches = true; // Seta a flag aqui!
                 let msg = format!(
-                    "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?} Valor {:?}\n\n",
+                    "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?}, ValorBC {:?}\n\n",
                     cod_cred, criteria.nat_bc, criteria.vl_bc
                 );
                 messages.push(msg);
@@ -1965,18 +1976,18 @@ impl CreditCorrelationManager {
             })
     }
 
-    /// Imprimir relatório das correlações em ordem crescente da chave Cod_Cred.
-    pub fn print(&self) {
-        // 1. Flatten: Coleta apenas (Código, Referência ao Entry)
+    /// Gera o relatório formatado como uma String.
+    pub fn generate_report(&self) -> String {
+        let mut report = String::new();
+
+        // 1. Flatten e Coleta
         let mut list: Vec<_> = self
             .cache
             .iter()
             .flat_map(|(cod, entries)| entries.iter().map(move |e| (*cod, e)))
             .collect();
 
-        // 2. Sort Idiomático:
-        // O Rust ordena tuplas (A, B) verificando A primeiro, depois B.
-        // Como 'entry.aliq_cofins' é Option<Decimal> e Decimal implementa Ord, isso funciona nativamente.
+        // 2. Sort Idiomático
         list.sort_unstable_by_key(|(cod, entry)| {
             (
                 *cod,
@@ -1987,9 +1998,12 @@ impl CreditCorrelationManager {
             )
         });
 
-        println!("\n    === Relatório de Correlação PIS/COFINS (Bloco M) ===");
+        writeln!(
+            report,
+            "\n    === Relatório de Correlação PIS/COFINS (Bloco M) ==="
+        )
+        .unwrap();
 
-        // Controle de quebra de grupo
         let mut last_header = None;
 
         for (cod, entry) in list {
@@ -2005,38 +2019,51 @@ impl CreditCorrelationManager {
                     .map(|v| format!("{v}%"))
                     .unwrap_or_else(|| "N/D".to_string());
 
-                println!("-------------------------------------------------------------");
-                println!("COD_CRED: {s_cod}  | ALIQ_COFINS: {s_cof}");
+                writeln!(
+                    report,
+                    "-------------------------------------------------------------"
+                )
+                .unwrap();
+                writeln!(report, "COD_CRED: {s_cod}  | ALIQ_COFINS: {s_cof}").unwrap();
                 last_header = Some(current_header);
             }
 
-            // Impressão formatada e limpa
-            // unwrap_or("?".to_string()) lida com o caso (raro) do PIS ser None
-            println!(
+            // Formatação funcional dos campos individuais
+            let pis_str = entry
+                .aliq_pis
+                .map(|v| format!("{v}%"))
+                .unwrap_or_else(|| "?".to_string());
+            let cst_str = entry
+                .criteria
+                .cst
+                .map(|v| format!("{v:02}"))
+                .unwrap_or_else(|| "?".to_string());
+            let nat_str = entry
+                .criteria
+                .nat_bc
+                .map(|v| format!("{v:>2}"))
+                .unwrap_or_else(|| "?".to_string());
+            let vbc_str = entry
+                .criteria
+                .vl_bc
+                .map(|v| v.to_formatted_string(DECIMAL_VALOR))
+                .unwrap_or_else(|| "?".to_string());
+
+            writeln!(
+                report,
                 "   PIS: {:>6} | CST: {} | NatBC: {} | ValorBC: {:>13}",
-                entry
-                    .aliq_pis
-                    .map(|v| format!("{v}%"))
-                    .unwrap_or_else(|| "?".to_string()),
-                entry
-                    .criteria
-                    .cst
-                    .map(|v| format!("{v:02}"))
-                    .unwrap_or_else(|| "?".to_string()),
-                entry
-                    .criteria
-                    .nat_bc
-                    .map(|v| format!("{v:>2}"))
-                    .unwrap_or_else(|| "?".to_string()),
-                entry
-                    .criteria
-                    .vl_bc
-                    //.map(|v| format!("{v:.0$}", DECIMAL_VALOR))
-                    .map(|v| v.to_formatted_string(DECIMAL_VALOR))
-                    .unwrap_or_else(|| "?".to_string()),
-            );
+                pis_str, cst_str, nat_str, vbc_str
+            )
+            .unwrap();
         }
-        println!("-------------------------------------------------------------\n");
+
+        writeln!(
+            report,
+            "-------------------------------------------------------------\n"
+        )
+        .unwrap();
+
+        report
     }
 }
 
