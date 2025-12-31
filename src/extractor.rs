@@ -2002,7 +2002,7 @@ impl CreditCorrelationManager {
             report,
             "\n    === Relatório de Correlação PIS/COFINS (Bloco M) ==="
         )
-        .unwrap();
+        .ok();
 
         let mut last_header = None;
 
@@ -2023,8 +2023,8 @@ impl CreditCorrelationManager {
                     report,
                     "-------------------------------------------------------------"
                 )
-                .unwrap();
-                writeln!(report, "COD_CRED: {s_cod}  | ALIQ_COFINS: {s_cof}").unwrap();
+                .ok();
+                writeln!(report, "COD_CRED: {s_cod}  | ALIQ_COFINS: {s_cof}").ok();
                 last_header = Some(current_header);
             }
 
@@ -2054,14 +2054,14 @@ impl CreditCorrelationManager {
                 "   PIS: {:>6} | CST: {} | NatBC: {} | ValorBC: {:>13}",
                 pis_str, cst_str, nat_str, vbc_str
             )
-            .unwrap();
+            .ok();
         }
 
         writeln!(
             report,
             "-------------------------------------------------------------\n"
         )
-        .unwrap();
+        .ok();
 
         report
     }
