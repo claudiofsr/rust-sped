@@ -6,11 +6,11 @@ use std::{collections::HashMap, fmt::Write, str::FromStr, sync::Arc};
 
 use crate::{
     ALIQ_BASICA_COF, ALIQ_BASICA_PIS, CodigoSituacaoTributaria, DECIMAL_VALOR, DecimalExt,
-    DocsFiscais, IndicadorDeOrigem, MesesDoAno, ModeloDocFiscal, SpedContext, SpedFile, SpedRecord,
-    SpedRecordTrait, StringParser, TipoDeCredito, TipoDeOperacao, TipoDeRateio, TipoDoItem,
-    blocos::*, capture_cnpj, cred_presumido, impl_dopai, impl_filho, obter_cod_da_natureza_da_bc,
-    obter_pis_da_tabela_estatica, process_child_and_parent, process_correlations,
-    process_only_child, store_pis,
+    DocsFiscais, IndicadorDeOrigem, MesesDoAno, ModeloDocFiscal, NaturezaBaseCalculo, SpedContext,
+    SpedFile, SpedRecord, SpedRecordTrait, StringParser, TipoDeCredito, TipoDeOperacao,
+    TipoDeRateio, TipoDoItem, blocos::*, capture_cnpj, cred_presumido, impl_dopai, impl_filho,
+    obter_natureza_da_bc, obter_pis_da_tabela_estatica, process_child_and_parent,
+    process_correlations, process_only_child, store_pis,
 };
 
 /*
@@ -1073,7 +1073,10 @@ impl<'a> DocsBuilder<'a> {
             .get_cst_cofins()
             .and_then(CodigoSituacaoTributaria::from_u16);
 
-        self.doc.natureza_bc = filho.get_nat_bc_cred();
+        self.doc.natureza_bc = filho
+            .get_nat_bc_cred()
+            .and_then(NaturezaBaseCalculo::from_u16);
+
         self.doc.indicador_de_origem = filho.get_ind_orig_cred().parse_opt();
 
         // 2. Valores Base
@@ -1182,8 +1185,10 @@ impl<'a> DocsBuilder<'a> {
     }
 
     fn resolve_natureza_bc(mut self) -> Self {
+        // Se a natureza já existe, não fazemos nada.
+        // Caso contrário, tentamos resolver via CFOP/CST.
         if self.doc.natureza_bc.is_none() {
-            self.doc.natureza_bc = obter_cod_da_natureza_da_bc(&self.doc.cfop, self.doc.cst);
+            self.doc.natureza_bc = obter_natureza_da_bc(self.doc.cfop, self.doc.cst);
         }
         self
     }
@@ -2169,7 +2174,7 @@ impl<'a> BlocoM<'a> {
 
                         b.doc.data_emissao = ctx.periodo_de_apuracao;
                         b.doc.cod_credito = pai.cod_cred;
-                        b.doc.natureza_bc = f.nat_bc_cred;
+                        b.doc.natureza_bc = f.nat_bc_cred.and_then(NaturezaBaseCalculo::from_u16);
                         b.doc.tipo_de_operacao = Some(TipoDeOperacao::Detalhamento);
 
                         b.doc.aliq_pis = aliq_pis;

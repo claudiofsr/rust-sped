@@ -15,8 +15,8 @@ use std::sync::{
 use struct_iterable::Iterable;
 
 use crate::{
-    CodigoSituacaoTributaria, EFDResult, FORMAT_REGEX_SET, IndicadorDeOrigem, TipoDeCredito,
-    TipoDeOperacao, TipoDoItem, display_cst, display_natureza,
+    CodigoSituacaoTributaria, EFDResult, FORMAT_REGEX_SET, IndicadorDeOrigem, NaturezaBaseCalculo,
+    TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst,
 };
 
 // --- Macros ---
@@ -334,12 +334,9 @@ where
         .collect();
 
     lines.par_iter().for_each(|line| {
-        line.iter().enumerate().for_each(|(i, (name, val))| {
+        line.iter().enumerate().for_each(|(i, (_name, val))| {
             if let Some(atomic) = widths.get(i) {
-                atomic.fetch_max(
-                    calculate_value_len(name, headers.len(), val),
-                    Ordering::Relaxed,
-                );
+                atomic.fetch_max(calculate_value_len(headers.len(), val), Ordering::Relaxed);
             }
         });
     });
@@ -358,11 +355,7 @@ fn decimal_len(d: &Decimal) -> usize {
 }
 
 /// Calcula o comprimento visual de qualquer valor suportado para ajuste automático de coluna.
-fn calculate_value_len(
-    field_name: &str,
-    num_cols: usize,
-    field_value: &dyn std::any::Any,
-) -> usize {
+fn calculate_value_len(num_cols: usize, field_value: &dyn std::any::Any) -> usize {
     let len = match_cast!(field_value {
         // Tratamento do CST
         val as Option<CodigoSituacaoTributaria> => {
@@ -379,16 +372,14 @@ fn calculate_value_len(
             })
         },
 
-        // Tipos Inteiros u16
-
-        // Natureza da BC como número puro u16
-        val as Option<u16> => if field_name == "natureza_bc" {
-            display_natureza(val).len() * 74 / 100
-        } else {
-            val.map_or(0, |v| digit_count(v as usize))
+        val as Option<NaturezaBaseCalculo> => {
+            val.as_ref().map_or(0, |n| {
+                n.descricao_com_codigo().len() * 74 / 100
+            })
         },
 
         // Inteiros e Decimais
+        val as Option<u16> => val.map_or(0, |v| digit_count(v as usize)),
         val as Option<u32> => val.map_or(0, |v| digit_count(v as usize)),
         val as Option<usize> => val.map_or(0, digit_count),
         val as Decimal => decimal_len(val),

@@ -1,8 +1,5 @@
 use chrono::NaiveDate;
-use claudiofsr_lib::{
-    CFOP_VENDA_DE_IMOBILIZADO, CODIGO_DA_NATUREZA_BC, OUTRAS_RECEITAS_REGEX, StrExtension,
-    match_cast,
-};
+use claudiofsr_lib::{CFOP_VENDA_DE_IMOBILIZADO, OUTRAS_RECEITAS_REGEX, StrExtension, match_cast};
 use compact_str::CompactString;
 use csv::StringRecord;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
@@ -15,7 +12,7 @@ use struct_iterable::Iterable;
 
 use crate::{
     CodigoSituacaoTributaria, ExcelCustomFormatter, FloatExt, IndicadorDeOrigem, InfoExtension,
-    MesesDoAno, TipoDeCredito, TipoDeOperacao, TipoDeRateio, TipoDoItem, serialize_natureza,
+    MesesDoAno, NaturezaBaseCalculo, TipoDeCredito, TipoDeOperacao, TipoDeRateio, TipoDoItem,
 };
 
 #[derive(Debug, Clone)]
@@ -102,9 +99,9 @@ pub struct DocsFiscais {
 
     #[serde(
         rename = "Natureza da Base de Cálculo dos Créditos",
-        serialize_with = "serialize_natureza"
+        serialize_with = "serialize_natureza_opt"
     )]
-    pub natureza_bc: Option<u16>,
+    pub natureza_bc: Option<NaturezaBaseCalculo>,
 
     #[serde(rename = "CNPJ do Participante")]
     pub participante_cnpj: Arc<str>,
@@ -256,6 +253,18 @@ where
     }
 }
 
+pub fn serialize_natureza_opt<S>(
+    nat_opt: &Option<NaturezaBaseCalculo>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    nat_opt
+        .map(|nat| nat.descricao_com_codigo()) // Transforma em String formatada
+        .serialize(serializer) // Serializa o Option resultante (Some ou None)
+}
+
 pub fn serialize_cst_opt<S>(
     cst_opt: &Option<CodigoSituacaoTributaria>,
     serializer: S,
@@ -326,6 +335,7 @@ impl DocsFiscais {
                     val as Option<TipoDeCredito> => { val.as_ref().map(|&tipo| (tipo as u8).to_string()) },
                     val as Option<TipoDoItem> => { val.as_ref().map(|&tipo| tipo.descricao_com_codigo()) },
                     val as Option<MesesDoAno> => { val.as_ref().map(|&mes| (mes as u8).to_string()) },
+                    val as Option<NaturezaBaseCalculo> => { val.as_ref().map(|&nat| (nat as u16).to_string()) },
                     val as Option<TipoDeRateio> => { val.as_ref().map(|&tipo| (tipo as u8).to_string()) },
                     val as usize => { Some(val.to_string()) },
                     val as Arc<str> => { Some(val.to_string()) },
@@ -369,8 +379,7 @@ impl DocsFiscais {
     }
 
     pub fn natureza_da_base_de_calculo(&self) -> bool {
-        self.natureza_bc
-            .is_some_and(|value| CODIGO_DA_NATUREZA_BC.binary_search(&value).is_ok())
+        self.natureza_bc.is_some_and(|n| n.eh_geradora_de_credito())
     }
 
     pub fn aliquota_de_receita_financeira(&self) -> bool {

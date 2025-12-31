@@ -25,14 +25,15 @@ use tabled::{
 
 use crate::{
     Arguments, CSTOption, CodigoSituacaoTributaria, DECIMAL_ALIQ, DecimalExt, Despise, DocsFiscais,
-    EFDResult, ExcelCustomFormatter, InfoExtension, MesesDoAno, RowStyle, TipoDeCredito,
-    TipoDeOperacao, TipoDeRateio, Tributo, apurar_receita_bruta, consolidar_registros, display_cst,
-    display_decimal, display_mes, display_value, obter_descricao_da_natureza_da_bc_dos_creditos,
-    realizar_somas_trimestrais, serialize_cst, serialize_decimal, serialize_option_decimal,
+    EFDResult, ExcelCustomFormatter, InfoExtension, MesesDoAno, NaturezaBaseCalculo, RowStyle,
+    TipoDeCredito, TipoDeOperacao, TipoDeRateio, Tributo, apurar_receita_bruta,
+    consolidar_registros, display_cst, display_decimal, display_mes, display_value,
+    obter_descricao_da_natureza_da_bc_dos_creditos, realizar_somas_trimestrais, serialize_cst,
+    serialize_decimal, serialize_natureza_opt, serialize_option_decimal,
     verificar_periodo_multiplo,
 };
 
-use claudiofsr_lib::{BASE_CALC_SOMA, CFOP_DE_EXPORTACAO};
+use claudiofsr_lib::CFOP_DE_EXPORTACAO;
 
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Serialize, Deserialize)]
 pub struct Chaves {
@@ -48,7 +49,7 @@ pub struct Chaves {
     pub cfop: Option<u16>,
     pub aliq_pis: Option<Decimal>,
     pub aliq_cofins: Option<Decimal>,
-    pub natureza_bc: Option<u16>,
+    pub natureza_bc: Option<NaturezaBaseCalculo>,
 }
 
 impl Chaves {
@@ -272,13 +273,13 @@ pub struct AnaliseDosCreditos {
 
     #[serde(
         rename = "Natureza da Base de Cálculo dos Créditos",
-        serialize_with = "serialize_natureza"
+        serialize_with = "serialize_natureza_opt"
     )]
     #[tabled(
         rename = "Natureza da Base de Cálculo dos Créditos",
         display = "display_natureza"
     )]
-    pub natureza_bc: Option<u16>,
+    pub natureza_bc: Option<NaturezaBaseCalculo>,
 
     #[serde(rename = "Base de Cálculo", serialize_with = "serialize_decimal")]
     #[tabled(rename = "Base de Cálculo", display = "display_decimal")]
@@ -317,8 +318,8 @@ impl InfoExtension for AnaliseDosCreditos {}
 
 impl ExcelCustomFormatter for AnaliseDosCreditos {
     fn row_style(&self) -> RowStyle {
-        match self.natureza_bc {
-            // "Soma" - Intervalo 101 a 199
+        match self.natureza_bc.map(|n| n.code()) {
+            // "Soma" - Intervalo 101 a 199 ou 300
             Some(101..200 | 300) => RowStyle::Soma,
 
             // "Crédito Disponível após Descontos"
@@ -371,8 +372,10 @@ where
     serializer.serialize_str(&string)
 }
 
-pub fn display_natureza(cod_natureza: &Option<u16>) -> String {
-    obter_descricao_da_natureza_da_bc_dos_creditos(*cod_natureza)
+pub fn display_natureza(nat_opt: &Option<NaturezaBaseCalculo>) -> String {
+    nat_opt
+        .map(|n| n.descricao_com_codigo())
+        .unwrap_or_default()
 }
 
 pub fn display_aliquota(valor: &Option<Decimal>) -> String {
@@ -580,8 +583,8 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
 
             // 2. Calcula a natureza_bc
             let natureza_bc = linha.tipo_de_operacao.and_then(|tipo| match tipo {
-                TipoDeOperacao::AjusteAcrescimo => Some(30 + offset),
-                TipoDeOperacao::AjusteReducao => Some(40 + offset),
+                TipoDeOperacao::AjusteAcrescimo => NaturezaBaseCalculo::from_u16(30 + offset),
+                TipoDeOperacao::AjusteReducao => NaturezaBaseCalculo::from_u16(40 + offset),
                 _ => None,
             });
 
@@ -632,8 +635,8 @@ fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valo
 
             // 2. Calcula a natureza_bc
             let natureza_bc = linha.tipo_de_operacao.and_then(|tipo| match tipo {
-                TipoDeOperacao::DescontoNoPeriodo => Some(50 + offset),
-                TipoDeOperacao::DescontoPosterior => Some(60 + offset),
+                TipoDeOperacao::DescontoNoPeriodo => NaturezaBaseCalculo::from_u16(50 + offset),
+                TipoDeOperacao::DescontoPosterior => NaturezaBaseCalculo::from_u16(60 + offset),
                 _ => None,
             });
 
@@ -670,7 +673,7 @@ fn somar_base_de_calculo_valor_parcial(
 
             let mut chaves_bc = chaves.clone();
             chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst910);
-            chaves_bc.natureza_bc = Some(100 + (tipo_credito as u16));
+            chaves_bc.natureza_bc = NaturezaBaseCalculo::from_u16(100 + tipo_credito.code());
 
             let rbnc = valores.rec_bruta_nao_cumulativa();
 
@@ -695,7 +698,7 @@ fn apurar_credito_das_contribuicoes(
             // Filtrar 'Base de Cálculo dos Créditos', valores entre 101 e 199.
             chaves
                 .natureza_bc
-                .is_some_and(|n| BASE_CALC_SOMA.binary_search(&n).is_ok())
+                .is_some_and(|n| (101..=199).contains(&n.code()))
         })
         .flat_map(|(chaves, &valores)| {
             // Configuração das regras para cada tributo (Tributo, Alíquota, NatBC, CST)
@@ -722,7 +725,7 @@ fn apurar_credito_das_contribuicoes(
 
                     // Lógica de construção da nova chave
                     let mut nova_chave = chaves.clone();
-                    nova_chave.natureza_bc = Some(nova_nat);
+                    nova_chave.natureza_bc = NaturezaBaseCalculo::from_u16(nova_nat);
                     nova_chave.cst = Some(novo_cst);
 
                     match tributo {
@@ -749,16 +752,16 @@ fn calcular_credito_apos_ajustes(
     base_creditos
         .iter()
         .filter_map(|(chaves, &valores)| {
-            let natureza = chaves.natureza_bc;
+            let natureza = chaves.natureza_bc.map(|n| n.code())?;
 
             // Filtrar 'Crédito Apurado no Período':
-            let credito_apurado_pis: bool = natureza == Some(201);
-            let credito_apurado_cof: bool = natureza == Some(205);
+            let credito_apurado_pis: bool = natureza == 201;
+            let credito_apurado_cof: bool = natureza == 205;
             let credito_apurado: bool = credito_apurado_pis || credito_apurado_cof;
 
             // Filtrar 'Ajustes': Ajustes de Acréscimo e de Redução.
-            let ajustes_pis: bool = matches!(natureza, Some(31 | 41));
-            let ajustes_cof: bool = matches!(natureza, Some(35 | 45));
+            let ajustes_pis: bool = matches!(natureza, 31 | 41);
+            let ajustes_cof: bool = matches!(natureza, 35 | 45);
             let ajustes: bool = ajustes_pis || ajustes_cof;
 
             if !(credito_apurado || ajustes) {
@@ -773,11 +776,11 @@ fn calcular_credito_apos_ajustes(
 
             if credito_apurado_pis || ajustes_pis {
                 chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst920);
-                chaves_bc.natureza_bc = Some(211);
+                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposAjustesPis);
             }
             if credito_apurado_cof || ajustes_cof {
                 chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst930);
-                chaves_bc.natureza_bc = Some(215);
+                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposAjustesCofins);
             }
 
             Some((chaves_bc, valores))
@@ -794,16 +797,16 @@ fn calcular_credito_apos_descontos(
     base_creditos
         .iter()
         .filter_map(|(chaves, &valores)| {
-            let natureza = chaves.natureza_bc;
+            let natureza = chaves.natureza_bc.map(|n| n.code())?;
 
             // Filtrar 'Crédito Disponível após Ajustes':
-            let cred_apos_ajustes_pis: bool = natureza == Some(211);
-            let cred_apos_ajustes_cof: bool = natureza == Some(215);
+            let cred_apos_ajustes_pis: bool = natureza == 211;
+            let cred_apos_ajustes_cof: bool = natureza == 215;
             let cred_apos_ajustes: bool = cred_apos_ajustes_pis || cred_apos_ajustes_cof;
 
             // Filtrar 'Descontos':
-            let descontos_pis: bool = matches!(natureza, Some(51 | 61));
-            let descontos_cof: bool = matches!(natureza, Some(55 | 65));
+            let descontos_pis: bool = matches!(natureza, 51 | 61);
+            let descontos_cof: bool = matches!(natureza, 55 | 65);
             let descontos: bool = descontos_pis || descontos_cof;
 
             if !(cred_apos_ajustes || descontos) {
@@ -819,11 +822,11 @@ fn calcular_credito_apos_descontos(
 
             if cred_apos_ajustes_pis || descontos_pis {
                 chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst920);
-                chaves_bc.natureza_bc = Some(221);
+                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposDescontosPis);
             }
             if cred_apos_ajustes_cof || descontos_cof {
                 chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst930);
-                chaves_bc.natureza_bc = Some(225);
+                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposDescontosCofins);
             }
 
             Some((chaves_bc, valores))
@@ -839,14 +842,18 @@ fn somar_base_de_calculo_valor_total(
 ) -> HashMap<Chaves, Valores> {
     base_creditos
         .iter()
-        .filter(|(chaves, _)| chaves.natureza_bc >= Some(101) && chaves.natureza_bc <= Some(199))
+        .filter(|(chaves, _)| {
+            chaves
+                .natureza_bc
+                .is_some_and(|n| (101..=199).contains(&n.code()))
+        })
         .map(|(chaves, &valores)| {
             let mut chaves_bc = chaves.clone();
             chaves_bc.tipo_de_operacao = None;
             chaves_bc.tipo_de_credito = Some(TipoDeCredito::Vazio);
             chaves_bc.aliq_pis = None;
             chaves_bc.aliq_cofins = None;
-            chaves_bc.natureza_bc = Some(300);
+            chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::BaseSomaValorTotal);
 
             (chaves_bc, valores)
         })
@@ -861,24 +868,26 @@ fn calcular_saldo_de_credito_passivel_de_ressarcimento(
 ) -> HashMap<Chaves, Valores> {
     base_creditos
         .iter()
-        .filter_map(|(chaves, &valores)| {
-            // Filtrar 'Crédito Disponível após Descontos':
-            let descontos_pis: bool = chaves.natureza_bc == Some(221);
-            let descontos_cof: bool = chaves.natureza_bc == Some(225);
-            let descontos: bool = descontos_pis || descontos_cof;
-
-            if !descontos {
-                return None;
+        .filter_map(|(chaves, &valores)| match chaves.natureza_bc {
+            Some(NaturezaBaseCalculo::CreditoAposDescontosPis) => {
+                let mut k = chaves.clone();
+                k.tipo_de_operacao = None;
+                k.tipo_de_credito = Some(TipoDeCredito::Vazio);
+                k.aliq_pis = None;
+                k.aliq_cofins = None;
+                k.natureza_bc = Some(NaturezaBaseCalculo::SaldoDisponivelPis);
+                Some((k, valores))
             }
-
-            let mut chaves_bc = chaves.clone();
-            chaves_bc.tipo_de_operacao = None;
-            chaves_bc.tipo_de_credito = Some(TipoDeCredito::Vazio);
-            chaves_bc.aliq_pis = None;
-            chaves_bc.aliq_cofins = None;
-            chaves_bc.natureza_bc = if descontos_pis { Some(301) } else { Some(305) };
-
-            Some((chaves_bc, valores))
+            Some(NaturezaBaseCalculo::CreditoAposDescontosCofins) => {
+                let mut k = chaves.clone();
+                k.tipo_de_operacao = None;
+                k.tipo_de_credito = Some(TipoDeCredito::Vazio);
+                k.aliq_pis = None;
+                k.aliq_cofins = None;
+                k.natureza_bc = Some(NaturezaBaseCalculo::SaldoDisponivelCofins);
+                Some((k, valores))
+            }
+            _ => None,
         })
         .fold(HashMap::new(), |mut acc, (k, v)| {
             *acc.entry(k).or_default() += v;

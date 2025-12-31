@@ -113,7 +113,7 @@ fn hashmap_sum_values_by_key() {
     docs_fiscais1.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
     docs_fiscais1.cfop = Some(1234);
     docs_fiscais1.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
-    docs_fiscais1.natureza_bc = Some(7);
+    docs_fiscais1.natureza_bc = NaturezaBaseCalculo::from_u16(7);
     docs_fiscais1.valor_item = Some(dec!(15.000));
     docs_fiscais1.valor_bc = Some(dec!(10.000));
 
@@ -125,7 +125,7 @@ fn hashmap_sum_values_by_key() {
     docs_fiscais2.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
     docs_fiscais2.cfop = Some(2345);
     docs_fiscais2.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
-    docs_fiscais2.natureza_bc = Some(12);
+    docs_fiscais2.natureza_bc = NaturezaBaseCalculo::from_u16(12);
     docs_fiscais2.valor_item = Some(dec!(22.000));
     docs_fiscais2.valor_bc = Some(dec!(8.000));
 
@@ -137,7 +137,7 @@ fn hashmap_sum_values_by_key() {
     docs_fiscais3.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
     docs_fiscais3.cfop = Some(3456);
     docs_fiscais3.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
-    docs_fiscais3.natureza_bc = Some(12);
+    docs_fiscais3.natureza_bc = NaturezaBaseCalculo::from_u16(12);
     docs_fiscais3.valor_item = Some(dec!(8.000));
     docs_fiscais3.valor_bc = Some(dec!(2.000));
 
@@ -149,7 +149,7 @@ fn hashmap_sum_values_by_key() {
     docs_fiscais4.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
     docs_fiscais4.cfop = Some(4567);
     docs_fiscais4.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
-    docs_fiscais4.natureza_bc = Some(7);
+    docs_fiscais4.natureza_bc = NaturezaBaseCalculo::from_u16(7);
     docs_fiscais4.valor_item = Some(dec!(25.000));
     docs_fiscais4.valor_bc = Some(dec!(18.000));
 
@@ -161,7 +161,7 @@ fn hashmap_sum_values_by_key() {
     docs_fiscais5.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
     docs_fiscais5.cfop = Some(5678);
     docs_fiscais5.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
-    docs_fiscais5.natureza_bc = Some(7);
+    docs_fiscais5.natureza_bc = NaturezaBaseCalculo::from_u16(7);
     docs_fiscais5.valor_item = Some(dec!(10.000));
     docs_fiscais5.valor_bc = Some(dec!(12.000));
 
@@ -186,7 +186,7 @@ fn hashmap_sum_values_by_key() {
         tipo_de_operacao: Some(TipoDeOperacao::Entrada),
         tipo_de_credito: Some(TipoDeCredito::AliquotaBasica),
         cst: Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI),
-        natureza_bc: Some(7),
+        natureza_bc: NaturezaBaseCalculo::from_u16(7),
         ..Default::default()
     };
 
@@ -197,7 +197,7 @@ fn hashmap_sum_values_by_key() {
         tipo_de_operacao: Some(TipoDeOperacao::Entrada),
         tipo_de_credito: Some(TipoDeCredito::AliquotaBasica),
         cst: Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI),
-        natureza_bc: Some(12),
+        natureza_bc: NaturezaBaseCalculo::from_u16(12),
         ..Default::default()
     };
 

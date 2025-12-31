@@ -891,51 +891,54 @@ impl fmt::Display for ModeloDocFiscal {
 // Código da Natureza da Base de Cálculo dos Créditos
 // ============================================================================
 
-static CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, u16>> =
-    LazyLock::new(|| {
-        // Natureza da BC dos Créditos em função do CFOP
-        let mut info: HashMap<Option<u16>, u16> = HashMap::new();
+static CFOP_PARA_NATUREZA_BC: LazyLock<HashMap<u16, NaturezaBaseCalculo>> = LazyLock::new(|| {
+    let mut info = HashMap::new();
 
-        let cfops_de_natureza01: [u16; 21] = [
-            1102, 1113, 1117, 1118, 1121, 1159, 1251, 1403, 1652, 2102, 2113, 2117, 2118, 2121,
-            2159, 2251, 2403, 2652, 3102, 3251, 3652,
-        ];
+    // Natureza 01 - Aquisição de Bens para Revenda
+    let n01 = [
+        1102, 1113, 1117, 1118, 1121, 1159, 1251, 1403, 1652, 2102, 2113, 2117, 2118, 2121, 2159,
+        2251, 2403, 2652, 3102, 3251, 3652,
+    ];
 
-        let cfops_de_natureza02: [u16; 36] = [
-            1101, 1111, 1116, 1120, 1122, 1126, 1128, 1401, 1407, 1556, 1651, 1653, 2101, 2111,
-            2116, 2120, 2122, 2126, 2128, 2401, 2407, 2556, 2651, 2653, 3101, 3126, 3128, 3556,
-            3651, 3653, 1135, 2135, 1132, 2132, 1456, 2456,
-        ];
+    // Natureza 02 - Aquisição de Bens Utilizados como Insumo
+    let n02 = [
+        1101, 1111, 1116, 1120, 1122, 1126, 1128, 1401, 1407, 1556, 1651, 1653, 2101, 2111, 2116,
+        2120, 2122, 2126, 2128, 2401, 2407, 2556, 2651, 2653, 3101, 3126, 3128, 3556, 3651, 3653,
+        1135, 2135, 1132, 2132, 1456, 2456,
+    ];
 
-        let cfops_de_natureza03: [u16; 6] = [1124, 1125, 1933, 2124, 2125, 2933];
+    // Natureza 03 - Aquisição de Serviços Utilizados como Insumo
+    let n03 = [1124, 1125, 1933, 2124, 2125, 2933];
 
-        let cfops_de_natureza12: [u16; 24] = [
-            1201, 1202, 1203, 1204, 1410, 1411, 1660, 1661, 1662, 2201, 2202, 2410, 2411, 2660,
-            2661, 2662, 1206, 2206, 1207, 2207, 1215, 1216, 2215, 2216,
-        ];
+    // Natureza 12 - Devolução de Vendas Sujeitas à Incidência Não-Cumulativa
+    let n12 = [
+        1201, 1202, 1203, 1204, 1410, 1411, 1660, 1661, 1662, 2201, 2202, 2410, 2411, 2660, 2661,
+        2662, 1206, 2206, 1207, 2207, 1215, 1216, 2215, 2216,
+    ];
 
-        let cfops_de_natureza13: [u16; 2] = [1922, 2922];
+    // Natureza 13 - Outras Operações com Direito a Crédito
+    let n13 = [1922, 2922];
 
-        for cfop in cfops_de_natureza01 {
-            info.insert(Some(cfop), 1);
-        }
-        for cfop in cfops_de_natureza02 {
-            info.insert(Some(cfop), 2);
-        }
-        for cfop in cfops_de_natureza03 {
-            info.insert(Some(cfop), 3);
-        }
-        for cfop in cfops_de_natureza12 {
-            info.insert(Some(cfop), 12);
-        }
-        for cfop in cfops_de_natureza13 {
-            info.insert(Some(cfop), 13);
-        }
+    for cfop in n01 {
+        info.insert(cfop, NaturezaBaseCalculo::AquisicaoBensRevenda);
+    }
+    for cfop in n02 {
+        info.insert(cfop, NaturezaBaseCalculo::AquisicaoBensInsumo);
+    }
+    for cfop in n03 {
+        info.insert(cfop, NaturezaBaseCalculo::AquisicaoServicosInsumo);
+    }
+    for cfop in n12 {
+        info.insert(cfop, NaturezaBaseCalculo::DevolucaoVendasNaoCumulativa);
+    }
+    for cfop in n13 {
+        info.insert(cfop, NaturezaBaseCalculo::OutrasOperacoesComDireitoCredito);
+    }
 
-        info
-    });
+    info
+});
 
-/// Obter código da Natureza da Base de Cálculo
+/// Obtém a Natureza da BC baseada no CFOP e CST.
 ///
 /// desde que:
 ///
@@ -946,162 +949,274 @@ static CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS: LazyLock<HashMap<Option<u16>, u16>
 /// CFOP seja um código de Operações com direito a créditos,
 ///
 /// conforme Tabela “CFOP – Operações Geradoras de Créditos”.
-pub fn obter_cod_da_natureza_da_bc(
-    opt_cfop: &Option<u16>,
-    opt_cst: Option<CodigoSituacaoTributaria>,
-) -> Option<u16> {
-    match (
-        CODIGO_DA_NATUREZA_DA_BC_DOS_CREDITOS.get(opt_cfop),
-        opt_cst.map(|c| c as u16),
-    ) {
-        // if 50 <= cst <= 56 || 60 <= cst <= 66
-        (Some(&cod_nat), Some(50..=56 | 60..=66)) => Some(cod_nat),
-        _ => None,
+pub fn obter_natureza_da_bc(
+    cfop_opt: Option<u16>,
+    cst_opt: Option<CodigoSituacaoTributaria>,
+) -> Option<NaturezaBaseCalculo> {
+    // 1. Verifica se o CST é de crédito (50..56 ou 60..66)
+    if !cst_opt.is_some_and(|cst| cst.eh_base_de_credito()) {
+        return None;
     }
+
+    // 2. Busca a natureza no mapa através do CFOP
+    cfop_opt.and_then(|cfop| CFOP_PARA_NATUREZA_BC.get(&cfop).copied())
 }
 
 // ============================================================================
 // Natureza da Base de Cálculo dos Créditos
 // ============================================================================
 
-pub static NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS: LazyLock<HashMap<u16, &'static str>> =
-    LazyLock::new(|| {
-        [
-            (1, "Aquisição de Bens para Revenda"),
-            (2, "Aquisição de Bens Utilizados como Insumo"),
-            (3, "Aquisição de Serviços Utilizados como Insumo"),
-            (
-                4,
-                "Energia Elétrica e Térmica, Inclusive sob a Forma de Vapor",
-            ),
-            (5, "Aluguéis de Prédios"),
-            (6, "Aluguéis de Máquinas e Equipamentos"),
-            (7, "Armazenagem de Mercadoria e Frete na Operação de Venda"),
-            (8, "Contraprestações de Arrendamento Mercantil"),
-            (
-                9,
-                "Máquinas, Equipamentos ... (Crédito sobre Encargos de Depreciação)",
-            ),
-            (
-                10,
-                "Máquinas, Equipamentos ... (Crédito com Base no Valor de Aquisição)",
-            ),
-            (
-                11,
-                "Amortizacao e Depreciação de Edificações e Benfeitorias em Imóveis",
-            ),
-            (
-                12,
-                "Devolução de Vendas Sujeitas à Incidência Não-Cumulativa",
-            ),
-            (13, "Outras Operações com Direito a Crédito"),
-            (14, "Atividade de Transporte de Cargas - Subcontratação"),
-            (
-                15,
-                "Atividade Imobiliária - Custo Incorrido de Unidade Imobiliária",
-            ),
-            (
-                16,
-                "Atividade Imobiliária - Custo Orçado de Unidade não Concluída",
-            ),
-            (
-                17,
-                "Atividade de Prestação de Serviços de Limpeza, Conservação e Manutenção",
-            ),
-            (18, "Estoque de Abertura de Bens"),
-            // Ajustes
-            (31, "Ajuste de Acréscimo (PIS/PASEP)"),
-            (35, "Ajuste de Acréscimo (COFINS)"),
-            (41, "Ajuste de Redução (PIS/PASEP)"),
-            (45, "Ajuste de Redução (COFINS)"),
-            // Descontos
-            (
-                51,
-                "Desconto da Contribuição Apurada no Próprio Período (PIS/PASEP)",
-            ),
-            (
-                55,
-                "Desconto da Contribuição Apurada no Próprio Período (COFINS)",
-            ),
-            (61, "Desconto Efetuado em Período Posterior (PIS/PASEP)"),
-            (65, "Desconto Efetuado em Período Posterior (COFINS)"),
-            // Base de Cálculo dos Créditos
-            (101, "Base de Cálculo dos Créditos - Alíquota Básica (Soma)"),
-            (
-                102,
-                "Base de Cálculo dos Créditos - Alíquotas Diferenciadas (Soma)",
-            ),
-            (
-                103,
-                "Base de Cálculo dos Créditos - Alíquota por Unidade de Produto (Soma)",
-            ),
-            (
-                104,
-                "Base de Cálculo dos Créditos - Estoque de Abertura (Soma)",
-            ),
-            (
-                105,
-                "Base de Cálculo dos Créditos - Aquisição Embalagens para Revenda (Soma)",
-            ),
-            (
-                106,
-                "Base de Cálculo dos Créditos - Presumido da Agroindústria (Soma)",
-            ),
-            (
-                107,
-                "Base de Cálculo dos Créditos - Outros Créditos Presumidos (Soma)",
-            ),
-            (108, "Base de Cálculo dos Créditos - Importação (Soma)"),
-            (
-                109,
-                "Base de Cálculo dos Créditos - Atividade Imobiliária (Soma)",
-            ),
-            (199, "Base de Cálculo dos Créditos - Outros (Soma)"),
-            // Valor Total do Crédito Apurado no Período
-            (201, "Crédito Apurado no Período (PIS/PASEP)"),
-            (205, "Crédito Apurado no Período (COFINS)"),
-            // Crédito Disponível após Ajustes
-            (211, "Crédito Disponível após Ajustes (PIS/PASEP)"),
-            (215, "Crédito Disponível após Ajustes (COFINS)"),
-            // Crédito Disponível após Descontos
-            (221, "Crédito Disponível após Descontos (PIS/PASEP)"),
-            (225, "Crédito Disponível após Descontos (COFINS)"),
-            // Saldo de Crédito Passível de Desconto ou Ressarcimento
-            (300, "Base de Cálculo dos Créditos - Valor Total (Soma)"),
-            (
-                301,
-                "Saldo de Crédito Passível de Desconto ou Ressarcimento (PIS/PASEP)",
-            ),
-            (
-                305,
-                "Saldo de Crédito Passível de Desconto ou Ressarcimento (COFINS)",
-            ),
-        ]
-        .into_iter()
-        .collect()
-    });
+// ============================================================================
+// Natureza da Base de Cálculo dos Créditos
+// ============================================================================
 
+#[repr(u16)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub enum NaturezaBaseCalculo {
+    #[serde(rename = "Aquisição de Bens para Revenda")]
+    AquisicaoBensRevenda = 1,
+
+    #[serde(rename = "Aquisição de Bens Utilizados como Insumo")]
+    AquisicaoBensInsumo = 2,
+
+    #[serde(rename = "Aquisição de Serviços Utilizados como Insumo")]
+    AquisicaoServicosInsumo = 3,
+
+    #[serde(rename = "Energia Elétrica e Térmica, Inclusive sob a Forma de Vapor")]
+    EnergiaEletricaTermica = 4,
+
+    #[serde(rename = "Aluguéis de Prédios")]
+    AlugueisPredios = 5,
+
+    #[serde(rename = "Aluguéis de Máquinas e Equipamentos")]
+    AlugueisMaquinasEquipamentos = 6,
+
+    #[serde(rename = "Armazenagem de Mercadoria e Frete na Operação de Venda")]
+    ArmazenagemFreteVenda = 7,
+
+    #[serde(rename = "Contraprestações de Arrendamento Mercantil")]
+    ArrendamentoMercantil = 8,
+
+    #[serde(rename = "Máquinas, Equipamentos ... (Crédito sobre Encargos de Depreciação)")]
+    MaquinasEquipamentosDepreciacao = 9,
+
+    #[serde(rename = "Máquinas, Equipamentos ... (Crédito com Base no Valor de Aquisição)")]
+    MaquinasEquipamentosAquisicao = 10,
+
+    #[serde(rename = "Amortizacao e Depreciação de Edificações e Benfeitorias em Imóveis")]
+    AmortizacaoDepreciacaoEdificacoes = 11,
+
+    #[serde(rename = "Devolução de Vendas Sujeitas à Incidência Não-Cumulativa")]
+    DevolucaoVendasNaoCumulativa = 12,
+
+    #[serde(rename = "Outras Operações com Direito a Crédito")]
+    OutrasOperacoesComDireitoCredito = 13,
+
+    #[serde(rename = "Atividade de Transporte de Cargas - Subcontratação")]
+    TransporteCargasSubcontratacao = 14,
+
+    #[serde(rename = "Atividade Imobiliária - Custo Incorrido de Unidade Imobiliária")]
+    AtividadeImobiliariaCustoIncorrido = 15,
+
+    #[serde(rename = "Atividade Imobiliária - Custo Orçado de Unidade não Concluída")]
+    AtividadeImobiliariaCustoOrcado = 16,
+
+    #[serde(rename = "Atividade de Prestação de Serviços de Limpeza, Conservação e Manutenção")]
+    ServicosLimpezaConservacao = 17,
+
+    #[serde(rename = "Estoque de Abertura de Bens")]
+    EstoqueAberturaBens = 18,
+
+    // Ajustes
+    #[serde(rename = "Ajuste de Acréscimo (PIS/PASEP)")]
+    AjusteAcrescimoPis = 31,
+
+    #[serde(rename = "Ajuste de Acréscimo (COFINS)")]
+    AjusteAcrescimoCofins = 35,
+
+    #[serde(rename = "Ajuste de Redução (PIS/PASEP)")]
+    AjusteReducaoPis = 41,
+
+    #[serde(rename = "Ajuste de Redução (COFINS)")]
+    AjusteReducaoCofins = 45,
+
+    // Descontos
+    #[serde(rename = "Desconto da Contribuição Apurada no Próprio Período (PIS/PASEP)")]
+    DescontoProprioPeriodoPis = 51,
+
+    #[serde(rename = "Desconto da Contribuição Apurada no Próprio Período (COFINS)")]
+    DescontoProprioPeriodoCofins = 55,
+
+    #[serde(rename = "Desconto Efetuado em Período Posterior (PIS/PASEP)")]
+    DescontoPeriodoPosteriorPis = 61,
+
+    #[serde(rename = "Desconto Efetuado em Período Posterior (COFINS)")]
+    DescontoPeriodoPosteriorCofins = 65,
+
+    // Agrupadores / Soma
+    // Base de Cálculo dos Créditos
+    #[serde(rename = "Base de Cálculo dos Créditos - Alíquota Básica (Soma)")]
+    BaseSomaAliquotaBasica = 101,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Alíquotas Diferenciadas (Soma)")]
+    BaseSomaAliquotasDiferenciadas = 102,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Alíquota por Unidade de Produto (Soma)")]
+    BaseSomaAliquotaUnidade = 103,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Estoque de Abertura (Soma)")]
+    BaseSomaEstoqueAbertura = 104,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Aquisição Embalagens para Revenda (Soma)")]
+    BaseSomaAquisicaoEmbalagens = 105,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Presumido da Agroindústria (Soma)")]
+    BaseSomaPresumidoAgroindustria = 106,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Outros Créditos Presumidos (Soma)")]
+    BaseSomaOutrosCreditosPresumidos = 107,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Importação (Soma)")]
+    BaseSomaImportacao = 108,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Atividade Imobiliária (Soma)")]
+    BaseSomaAtividadeImobiliaria = 109,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Outros (Soma)")]
+    BaseSomaOutros = 199,
+
+    #[serde(rename = "Crédito Apurado no Período (PIS/PASEP)")]
+    CreditoApuradoPis = 201,
+
+    #[serde(rename = "Crédito Apurado no Período (COFINS)")]
+    CreditoApuradoCofins = 205,
+
+    #[serde(rename = "Crédito Disponível após Ajustes (PIS/PASEP)")]
+    CreditoAposAjustesPis = 211,
+
+    #[serde(rename = "Crédito Disponível após Ajustes (COFINS)")]
+    CreditoAposAjustesCofins = 215,
+
+    #[serde(rename = "Crédito Disponível após Descontos (PIS/PASEP)")]
+    CreditoAposDescontosPis = 221,
+
+    #[serde(rename = "Crédito Disponível após Descontos (COFINS)")]
+    CreditoAposDescontosCofins = 225,
+
+    #[serde(rename = "Base de Cálculo dos Créditos - Valor Total (Soma)")]
+    BaseSomaValorTotal = 300,
+
+    #[serde(rename = "Saldo de Crédito Passível de Desconto ou Ressarcimento (PIS/PASEP)")]
+    SaldoDisponivelPis = 301,
+
+    #[serde(rename = "Saldo de Crédito Passível de Desconto ou Ressarcimento (COFINS)")]
+    SaldoDisponivelCofins = 305,
+}
+
+impl NaturezaBaseCalculo {
+    /// Converte u16 para o NaturezaBaseCalculo de forma segura.
+    pub const fn from_u16(cod: u16) -> Option<Self> {
+        match cod {
+            1 => Some(Self::AquisicaoBensRevenda),
+            2 => Some(Self::AquisicaoBensInsumo),
+            3 => Some(Self::AquisicaoServicosInsumo),
+            4 => Some(Self::EnergiaEletricaTermica),
+            5 => Some(Self::AlugueisPredios),
+            6 => Some(Self::AlugueisMaquinasEquipamentos),
+            7 => Some(Self::ArmazenagemFreteVenda),
+            8 => Some(Self::ArrendamentoMercantil),
+            9 => Some(Self::MaquinasEquipamentosDepreciacao),
+            10 => Some(Self::MaquinasEquipamentosAquisicao),
+            11 => Some(Self::AmortizacaoDepreciacaoEdificacoes),
+            12 => Some(Self::DevolucaoVendasNaoCumulativa),
+            13 => Some(Self::OutrasOperacoesComDireitoCredito),
+            14 => Some(Self::TransporteCargasSubcontratacao),
+            15 => Some(Self::AtividadeImobiliariaCustoIncorrido),
+            16 => Some(Self::AtividadeImobiliariaCustoOrcado),
+            17 => Some(Self::ServicosLimpezaConservacao),
+            18 => Some(Self::EstoqueAberturaBens),
+            31 => Some(Self::AjusteAcrescimoPis),
+            35 => Some(Self::AjusteAcrescimoCofins),
+            41 => Some(Self::AjusteReducaoPis),
+            45 => Some(Self::AjusteReducaoCofins),
+            51 => Some(Self::DescontoProprioPeriodoPis),
+            55 => Some(Self::DescontoProprioPeriodoCofins),
+            61 => Some(Self::DescontoPeriodoPosteriorPis),
+            65 => Some(Self::DescontoPeriodoPosteriorCofins),
+            101 => Some(Self::BaseSomaAliquotaBasica),
+            102 => Some(Self::BaseSomaAliquotasDiferenciadas),
+            103 => Some(Self::BaseSomaAliquotaUnidade),
+            104 => Some(Self::BaseSomaEstoqueAbertura),
+            105 => Some(Self::BaseSomaAquisicaoEmbalagens),
+            106 => Some(Self::BaseSomaPresumidoAgroindustria),
+            107 => Some(Self::BaseSomaOutrosCreditosPresumidos),
+            108 => Some(Self::BaseSomaImportacao),
+            109 => Some(Self::BaseSomaAtividadeImobiliaria),
+            199 => Some(Self::BaseSomaOutros),
+            201 => Some(Self::CreditoApuradoPis),
+            205 => Some(Self::CreditoApuradoCofins),
+            211 => Some(Self::CreditoAposAjustesPis),
+            215 => Some(Self::CreditoAposAjustesCofins),
+            221 => Some(Self::CreditoAposDescontosPis),
+            225 => Some(Self::CreditoAposDescontosCofins),
+            300 => Some(Self::BaseSomaValorTotal),
+            301 => Some(Self::SaldoDisponivelPis),
+            305 => Some(Self::SaldoDisponivelCofins),
+            _ => None,
+        }
+    }
+
+    /// Retorna o valor numérico (u16)
+    pub const fn code(self) -> u16 {
+        self as u16
+    }
+
+    /// Verifica se o código está entre 01 e 18 (Operações geradoras de crédito)
+    pub const fn eh_geradora_de_credito(&self) -> bool {
+        // matches! com range é extremamente rápido (compila para uma ou duas instruções assembly)
+        matches!(self.code(), 1..=18)
+    }
+
+    /// Retorna a descrição formatada.
+    /// Mantém a lógica original: códigos <= 18 usam padding "02", outros usam a string pura.
+    pub fn descricao_com_codigo(&self) -> String {
+        let c = self.code();
+        if c <= 18 {
+            format!("{:02} - {}", c, self)
+        } else {
+            self.to_string()
+        }
+    }
+}
+
+impl fmt::Display for NaturezaBaseCalculo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.serialize(f)
+    }
+}
+
+impl FromStr for NaturezaBaseCalculo {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let val = s
+            .trim()
+            .parse::<u16>()
+            .map_err(|_| format!("Código inválido: {}", s))?;
+        Self::from_u16(val).ok_or_else(|| format!("Natureza da BC não encontrada: {}", val))
+    }
+}
+
+/// Função de compatibilidade que utiliza o novo Enum
 pub fn obter_descricao_da_natureza_da_bc_dos_creditos<C>(codigo: C) -> String
 where
     C: Into<Option<u16>>,
 {
-    // Converte automaticamente u16 ou Option<u16> para Option<u16>
-    let codigo_opt: Option<u16> = codigo.into();
-
-    codigo_opt
-        .and_then(|c| {
-            // Tenta buscar o valor. Se achar, aplica a formatação.
-            NATUREZA_DA_BASE_DE_CALCULO_DOS_CREDITOS
-                .get(&c)
-                .map(|&descricao| {
-                    if c <= 18 {
-                        format!("{:02} - {}", c, descricao)
-                    } else {
-                        descricao.to_string()
-                    }
-                })
-        })
-        .unwrap_or_default() // Se qualquer passo for None, retorna ""
+    codigo
+        .into()
+        .and_then(NaturezaBaseCalculo::from_u16)
+        .map(|n| n.descricao_com_codigo())
+        .unwrap_or_default()
 }
 
 // ============================================================================
