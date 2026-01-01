@@ -966,10 +966,6 @@ pub fn obter_natureza_da_bc(
 // Natureza da Base de Cálculo dos Créditos
 // ============================================================================
 
-// ============================================================================
-// Natureza da Base de Cálculo dos Créditos
-// ============================================================================
-
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum NaturezaBaseCalculo {
