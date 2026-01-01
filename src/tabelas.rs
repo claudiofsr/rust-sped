@@ -1207,18 +1207,6 @@ impl FromStr for NaturezaBaseCalculo {
     }
 }
 
-/// Função de compatibilidade que utiliza o novo Enum
-pub fn obter_descricao_da_natureza_da_bc_dos_creditos<C>(codigo: C) -> String
-where
-    C: Into<Option<u16>>,
-{
-    codigo
-        .into()
-        .and_then(NaturezaBaseCalculo::from_u16)
-        .map(|n| n.descricao_com_codigo())
-        .unwrap_or_default()
-}
-
 // ============================================================================
 // Crédito Presumido
 // ============================================================================

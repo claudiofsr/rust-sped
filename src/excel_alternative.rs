@@ -19,7 +19,7 @@ use rust_xlsxwriter::{
 use crate::{
     AnaliseDosCreditos, CSTOption, ConsolidacaoCST, DECIMAL_VALOR, DocsFiscais, EFDError,
     EFDResult, MesesDoAno, OUTPUT_DIRECTORY, OUTPUT_FILENAME, display_aliquota, display_cst,
-    obter_descricao_da_natureza_da_bc_dos_creditos, obter_descricao_do_cfop,
+    obter_descricao_do_cfop,
 };
 
 const FONT_SIZE: f64 = 12.0;
@@ -405,7 +405,7 @@ fn add_row_efd(
         .cell(&col.registro, f("default")?)?
         .cell(col.cst.descricao(), f("default")?)?
         .cell(obter_descricao_do_cfop(col.cfop), f("default")?)?
-        .cell(obter_descricao_da_natureza_da_bc_dos_creditos(col.natureza_bc), f("default")?)?
+        .cell(col.natureza_bc.map(|n| n.descricao_com_codigo()), f("default")?)?
         .cell(&col.participante_cnpj, f("center")?)?
         .cell(&col.participante_cpf, f("center")?)?
         .cell(&col.participante_nome, f("default")?)?
@@ -486,7 +486,7 @@ fn add_row_nat(
     fmt: &HashMap<String, Format>,
     width_map: &mut BTreeMap<u16, usize>,
 ) -> EFDResult<()> {
-    let suffix = match col.natureza_bc {
+    let suffix = match col.natureza_bc.map(|n| n.code()) {
         Some(101..=199 | 300) => "_bcsoma",
         Some(221 | 225) => "_descon",
         Some(301 | 305) => "_saldoc",
@@ -508,7 +508,7 @@ fn add_row_nat(
         .cell(col.cst.code(), f("integer")?)?
         .cell(display_aliquota(&col.aliq_pis), f("center")?)?
         .cell(display_aliquota(&col.aliq_cofins), f("center")?)?
-        .cell(obter_descricao_da_natureza_da_bc_dos_creditos(col.natureza_bc), f("default")?)?
+        .cell(col.natureza_bc.map(|n| n.descricao_com_codigo()), f("default")?)?
         .decimal(col.valor_bc, f("number")?)?
         .decimal(col.valor_rbnc_trib, f("number")?)?
         .decimal(col.valor_rbnc_ntrib, f("number")?)?

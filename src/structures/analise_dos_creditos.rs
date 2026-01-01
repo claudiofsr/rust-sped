@@ -28,9 +28,8 @@ use crate::{
     EFDResult, ExcelCustomFormatter, InfoExtension, MesesDoAno, NaturezaBaseCalculo, RowStyle,
     TipoDeCredito, TipoDeOperacao, TipoDeRateio, Tributo, apurar_receita_bruta,
     consolidar_registros, display_cst, display_decimal, display_mes, display_value,
-    obter_descricao_da_natureza_da_bc_dos_creditos, realizar_somas_trimestrais, serialize_cst,
-    serialize_decimal, serialize_natureza_opt, serialize_option_decimal,
-    verificar_periodo_multiplo,
+    realizar_somas_trimestrais, serialize_cst, serialize_decimal, serialize_natureza_opt,
+    serialize_option_decimal, verificar_periodo_multiplo,
 };
 
 use claudiofsr_lib::CFOP_DE_EXPORTACAO;
@@ -362,14 +361,6 @@ where
         //.map(|tipo| tipo.descricao_com_codigo()) // Transforma em String formatada
         //.map(|tipo| format!("{:02}", tipo.code())) // Transforma em String formatada
         .serialize(serializer) // Serializa o Option resultante (Some ou None)
-}
-
-pub fn serialize_natureza<S>(cod_natureza: &Option<u16>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let string = obter_descricao_da_natureza_da_bc_dos_creditos(*cod_natureza);
-    serializer.serialize_str(&string)
 }
 
 pub fn display_natureza(nat_opt: &Option<NaturezaBaseCalculo>) -> String {
