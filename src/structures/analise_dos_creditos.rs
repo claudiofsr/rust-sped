@@ -828,7 +828,7 @@ fn somar_base_de_calculo_valor_total(
                 .is_some_and(|n| (101..=199).contains(&n.code()))
         })
         .map(|(chaves, &valores)| {
-            let chaves_bc_soma = Chaves {
+            let bc_soma = Chaves {
                 tipo_de_operacao: None,
                 tipo_de_credito: Some(TipoDeCredito::Vazio),
                 aliq_pis: None,
@@ -837,7 +837,7 @@ fn somar_base_de_calculo_valor_total(
                 ..chaves.clone()
             };
 
-            (chaves_bc_soma, valores)
+            (bc_soma, valores)
         })
         .fold(HashMap::new(), |mut acc, (k, v)| {
             *acc.entry(k).or_default() += v;
@@ -852,21 +852,25 @@ fn calcular_saldo_de_credito_passivel_de_ressarcimento(
         .iter()
         .filter_map(|(chaves, &valores)| match chaves.natureza_bc {
             Some(NaturezaBaseCalculo::CreditoAposDescontosPis) => {
-                let mut k = chaves.clone();
-                k.tipo_de_operacao = None;
-                k.tipo_de_credito = Some(TipoDeCredito::Vazio);
-                k.aliq_pis = None;
-                k.aliq_cofins = None;
-                k.natureza_bc = Some(NaturezaBaseCalculo::SaldoDisponivelPis);
+                let k = Chaves {
+                    tipo_de_operacao: None,
+                    tipo_de_credito: Some(TipoDeCredito::Vazio),
+                    aliq_pis: None,
+                    aliq_cofins: None,
+                    natureza_bc: Some(NaturezaBaseCalculo::SaldoDisponivelPis),
+                    ..chaves.clone()
+                };
                 Some((k, valores))
             }
             Some(NaturezaBaseCalculo::CreditoAposDescontosCofins) => {
-                let mut k = chaves.clone();
-                k.tipo_de_operacao = None;
-                k.tipo_de_credito = Some(TipoDeCredito::Vazio);
-                k.aliq_pis = None;
-                k.aliq_cofins = None;
-                k.natureza_bc = Some(NaturezaBaseCalculo::SaldoDisponivelCofins);
+                let k = Chaves {
+                    tipo_de_operacao: None,
+                    tipo_de_credito: Some(TipoDeCredito::Vazio),
+                    aliq_pis: None,
+                    aliq_cofins: None,
+                    natureza_bc: Some(NaturezaBaseCalculo::SaldoDisponivelCofins),
+                    ..chaves.clone()
+                };
                 Some((k, valores))
             }
             _ => None,
