@@ -617,11 +617,31 @@ fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valo
         linhas,
         |linha| linha.tipo_de_operacao.is_some_and(|t| t.is_desconto()),
         |linha| {
+            /*
             // 1. Tenta obter a natureza correta. Se o registro for inválido,
             // a linha será ignorada na consolidação (via filter_map implícito ou tratamento de Option).
             let natureza_bc = linha
                 .tipo_de_operacao
                 .and_then(|tipo| NaturezaBaseCalculo::from_tipo_de_operacao(tipo, &linha.registro));
+            */
+
+            let registro = linha.registro.clone();
+
+            // 1. Determina o offset
+            let offset = match registro.as_ref() {
+                "M100" | "1100" => 1,
+                "M500" | "1500" => 5,
+                _ => panic!("Erro: Registro {registro} não suportado em descontos!"),
+            };
+
+            // Tipo de Operação, 5: "Desconto no Período", 6: "Desconto em Período Posterior"
+
+            // 2. Calcula a natureza_bc
+            let natureza_bc = linha.tipo_de_operacao.and_then(|tipo| match tipo {
+                TipoDeOperacao::DescontoNoPeriodo => NaturezaBaseCalculo::from_u16(50 + offset),
+                TipoDeOperacao::DescontoPosterior => NaturezaBaseCalculo::from_u16(60 + offset),
+                _ => None,
+            });
 
             let chaves = Chaves {
                 //path: linha.arquivo_efd.to_compact_string(),
