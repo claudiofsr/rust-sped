@@ -828,14 +828,16 @@ fn somar_base_de_calculo_valor_total(
                 .is_some_and(|n| (101..=199).contains(&n.code()))
         })
         .map(|(chaves, &valores)| {
-            let mut chaves_bc = chaves.clone();
-            chaves_bc.tipo_de_operacao = None;
-            chaves_bc.tipo_de_credito = Some(TipoDeCredito::Vazio);
-            chaves_bc.aliq_pis = None;
-            chaves_bc.aliq_cofins = None;
-            chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::BaseSomaValorTotal);
+            let chaves_bc_soma = Chaves {
+                tipo_de_operacao: None,
+                tipo_de_credito: Some(TipoDeCredito::Vazio),
+                aliq_pis: None,
+                aliq_cofins: None,
+                natureza_bc: Some(NaturezaBaseCalculo::BaseSomaValorTotal),
+                ..chaves.clone()
+            };
 
-            (chaves_bc, valores)
+            (chaves_bc_soma, valores)
         })
         .fold(HashMap::new(), |mut acc, (k, v)| {
             *acc.entry(k).or_default() += v;
