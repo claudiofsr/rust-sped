@@ -1955,7 +1955,7 @@ impl CreditCorrelationManager {
                 .iter_mut()
                 .filter(|e| e.aliq_cofins.is_none())
                 .map(|e| (e.calculate_score(criteria), e))
-                .filter(|(score, _e)| *score >= PESO_NAT_BC) // Condição de determinismo
+                .filter(|(score, _e)| *score >= (PESO_NAT_BC + PESO_CST))
                 .max_by_key(|(score, _e)| *score)
         });
 
@@ -1972,7 +1972,7 @@ impl CreditCorrelationManager {
             .flat_map(|entries| entries.iter_mut())
             .filter(|e| e.aliq_cofins.is_none())
             .map(|e| (e.calculate_score(criteria), e))
-            .filter(|(score, _)| *score >= (PESO_NAT_BC + PESO_CST)) // Exige alta similaridade para busca global
+            .filter(|(score, _)| *score >= (PESO_NAT_BC + PESO_CST))
             .max_by_key(|(score, _)| *score);
 
         global_match.and_then(|(score, entry)| {
