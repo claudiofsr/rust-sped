@@ -320,17 +320,18 @@ impl InfoExtension for AnaliseDosCreditos {}
 
 impl ExcelCustomFormatter for AnaliseDosCreditos {
     fn row_style(&self) -> RowStyle {
-        match self.natureza_bc.code() {
+        match self.natureza_bc {
             // "Soma" - Intervalo 101 a 199 ou 300
-            Some(101..200 | 300) => RowStyle::Soma,
+            // Utiliza o método auxiliar para o range 101..=199 e verifica o 300 explicitamente
+            Some(n) if (n.eh_soma_de_bc() || n == BaseSomaValorTotal) => RowStyle::Soma,
 
-            // "Crédito Disponível após Descontos"
-            Some(221 | 225) => RowStyle::Desconto,
+            // "Crédito Disponível após Descontos" (221 | 225)
+            Some(CreditoAposDescontosPis | CreditoAposDescontosCofins) => RowStyle::Desconto,
 
-            // "Saldo de Crédito Passível de Desconto ou Ressarcimento"
-            Some(301 | 305) => RowStyle::Saldo,
+            // "Saldo de Crédito Passível de Desconto ou Ressarcimento" (301 | 305)
+            Some(SaldoDisponivelPis | SaldoDisponivelCofins) => RowStyle::Saldo,
 
-            // Caso padrão
+            // Caso padrão (Naturezas de operação 01..18, ajustes, outros ou None)
             _ => RowStyle::Normal,
         }
     }
