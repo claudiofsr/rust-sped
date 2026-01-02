@@ -563,8 +563,7 @@ fn distribuir_creditos_rateados(
     }
 }
 
-// Transmitir cod_credito (crédito com informação de rateio) para base_creditos.
-// Distribuir valores de Ajustes rateados nas colunas correspondentes: Trib, NTrib e Exportação.
+/// Distribuir valores de Ajustes rateados nas colunas correspondentes: Trib, NTrib e Exportação.
 fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
     consolidar_registros(
         linhas,
@@ -572,15 +571,17 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
         |linha| {
             // Tipo de Operação, 3: "Ajuste de Acréscimo", 4: "Ajuste de Redução"
 
-            // 1. Define o offset externamente (1 para PIS, 5 para COFINS)
-            let offset = if linha.aliq_pis.is_some() { 1 } else { 5 };
+            // 1. Define o tributo
+            let tributo = if linha.aliq_pis.is_some() {
+                Tributo::Pis
+            } else {
+                Tributo::Cofins
+            };
 
-            // 2. Calcula a natureza_bc
-            let natureza_bc = linha.tipo_de_operacao.and_then(|tipo| match tipo {
-                TipoDeOperacao::AjusteAcrescimo => NaturezaBaseCalculo::from_u16(30 + offset),
-                TipoDeOperacao::AjusteReducao => NaturezaBaseCalculo::from_u16(40 + offset),
-                _ => None,
-            });
+            // Obtém a NaturezaBaseCalculo
+            let natureza_bc = linha
+                .tipo_de_operacao
+                .and_then(|tipo| NaturezaBaseCalculo::from_ajustes(tipo, tributo));
 
             let chaves = Chaves {
                 //path: linha.arquivo_efd.to_compact_string(),
@@ -605,13 +606,13 @@ fn distribuir_ajustes_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valore
     )
 }
 
+/// Distribuir valores de Descontos rateados nas colunas correspondentes: Trib, NTrib e Exportação.
+/// Transmitir cod_credito (crédito com informação de rateio) para base_creditos.
+///
+/// 5: "Desconto da Contribuição Apurada no Próprio Período"
+///
+/// 6: "Desconto Efetuado em Período Posterior"
 fn distribuir_descontos_rateados(linhas: &[DocsFiscais]) -> HashMap<Chaves, Valores> {
-    // Transmitir cod_credito (crédito com informação de rateio) para base_creditos.
-    // Distribuir valores de Descontos rateados nas colunas correspondentes: Trib, NTrib e Exportação.
-
-    // 5: "Desconto da Contribuição Apurada no Próprio Período"
-    // 6: "Desconto Efetuado em Período Posterior"
-
     consolidar_registros(
         linhas,
         |linha| linha.tipo_de_operacao.is_some_and(|t| t.is_desconto()),
@@ -663,16 +664,15 @@ fn somar_base_de_calculo_valor_parcial(
     base_creditos
         .iter()
         .filter_map(|(chaves, &valores)| {
-            let tipo_credito = chaves.tipo_de_credito?;
+            // Mapeamento direto via método do Enum
+            let natureza_soma = chaves.tipo_de_credito?.para_natureza_soma()?;
 
             let mut chaves_bc = chaves.clone();
-            chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst910);
-            chaves_bc.natureza_bc = NaturezaBaseCalculo::from_u16(100 + tipo_credito.code());
-
-            let rbnc = valores.rec_bruta_nao_cumulativa();
+            chaves_bc.cst = Some(SomaParcialDaBaseCalculo);
+            chaves_bc.natureza_bc = Some(natureza_soma);
 
             let mut valores_soma = valores;
-            valores_soma.valor_bc = rbnc;
+            valores_soma.valor_bc = valores.rec_bruta_nao_cumulativa();
 
             Some((chaves_bc, valores_soma))
         })
@@ -888,11 +888,13 @@ fn ordenar(hmap: HashMap<Chaves, Valores>) -> Vec<(Chaves, Valores)> {
             chaves.mes,
             chaves.tipo_de_credito,
             chaves.tipo_de_operacao,
+            // Prioriza a ordem lógica (Saídas -> Total Saídas -> Créditos -> Total Créditos)
+            // chaves.cst.map(|c| c.get_ordem()),
             chaves.cst,
-            chaves.natureza_bc,
             //(chaves.cst.is_none(), 100),
             //(chaves.cst.is_some(), Reverse(chaves.cst)),
             //(Reverse(chaves.cst), chaves.natureza_bc <= Some(18)),
+            chaves.natureza_bc,
             chaves.aliq_pis,
             chaves.aliq_cofins,
         )
@@ -900,9 +902,11 @@ fn ordenar(hmap: HashMap<Chaves, Valores>) -> Vec<(Chaves, Valores)> {
 
     // Remove CSTs fictícios (usando o Enum e Ord)
     vec_from_hash.par_iter_mut().for_each(|(chaves, _valores)| {
-        // Remover valores temporários de CST.
-        // Estes valores foram adicionados com a finalidade de ordenação.
-        if chaves.cst >= Some(CodigoSituacaoTributaria::Cst900) {
+        // Estes CSTs fictícios foram adicionados com a finalidade de ordenação.
+        // Ao final, remover valores temporários de CST.
+        if let Some(cst) = chaves.cst
+            && cst.deve_limpar_cst()
+        {
             chaves.cst = None;
         }
     });

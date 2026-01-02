@@ -400,6 +400,29 @@ impl TipoDeCredito {
         }
     }
 
+    /// Mapeia o Tipo de Crédito para sua respectiva Natureza de Soma (Base de Cálculo)
+    pub fn para_natureza_soma(&self) -> Option<NaturezaBaseCalculo> {
+        match self {
+            Self::AliquotaBasica => Some(NaturezaBaseCalculo::BaseSomaAliquotaBasica),
+            Self::AliquotasDiferenciadas => {
+                Some(NaturezaBaseCalculo::BaseSomaAliquotasDiferenciadas)
+            }
+            Self::AliquotaPorUnidadeProduto => Some(NaturezaBaseCalculo::BaseSomaAliquotaUnidade),
+            Self::EstoqueAbertura => Some(NaturezaBaseCalculo::BaseSomaEstoqueAbertura),
+            Self::AquisicaoEmbalagens => Some(NaturezaBaseCalculo::BaseSomaAquisicaoEmbalagens),
+            Self::PresumidoAgroindustria => {
+                Some(NaturezaBaseCalculo::BaseSomaPresumidoAgroindustria)
+            }
+            Self::OutrosCreditosPresumidos => {
+                Some(NaturezaBaseCalculo::BaseSomaOutrosCreditosPresumidos)
+            }
+            Self::Importacao => Some(NaturezaBaseCalculo::BaseSomaImportacao),
+            Self::AtividadeImobiliaria => Some(NaturezaBaseCalculo::BaseSomaAtividadeImobiliaria),
+            Self::Outros => Some(NaturezaBaseCalculo::BaseSomaOutros),
+            _ => None,
+        }
+    }
+
     /// Converte o código de crédito (ex: 101, 205) para o Enum correspondente.
     /// Baseado na regra: cod % 100.
     pub fn from_codigo_credito(cod: u16) -> Option<Self> {
@@ -1162,6 +1185,36 @@ impl NaturezaBaseCalculo {
         }
     }
 
+    /// Determina a natureza de ajuste baseada no tipo de operação e tributo
+    pub fn from_ajustes(tipo: TipoDeOperacao, tributo: Tributo) -> Option<Self> {
+        match (tipo, tributo) {
+            (TipoDeOperacao::AjusteAcrescimo, Tributo::Pis) => Some(Self::AjusteAcrescimoPis),
+            (TipoDeOperacao::AjusteAcrescimo, Tributo::Cofins) => Some(Self::AjusteAcrescimoCofins),
+            (TipoDeOperacao::AjusteReducao, Tributo::Pis) => Some(Self::AjusteReducaoPis),
+            (TipoDeOperacao::AjusteReducao, Tributo::Cofins) => Some(Self::AjusteReducaoCofins),
+            _ => None,
+        }
+    }
+
+    /// Determina a natureza de desconto baseada no tipo de operação e tributo
+    pub fn from_descontos(tipo: TipoDeOperacao, tributo: Tributo) -> Option<Self> {
+        match (tipo, tributo) {
+            (TipoDeOperacao::DescontoNoPeriodo, Tributo::Pis) => {
+                Some(Self::DescontoProprioPeriodoPis)
+            }
+            (TipoDeOperacao::DescontoNoPeriodo, Tributo::Cofins) => {
+                Some(Self::DescontoProprioPeriodoCofins)
+            }
+            (TipoDeOperacao::DescontoPosterior, Tributo::Pis) => {
+                Some(Self::DescontoPeriodoPosteriorPis)
+            }
+            (TipoDeOperacao::DescontoPosterior, Tributo::Cofins) => {
+                Some(Self::DescontoPeriodoPosteriorCofins)
+            }
+            _ => None,
+        }
+    }
+
     /// Retorna o valor numérico (u16)
     pub const fn code(self) -> u16 {
         self as u16
@@ -1326,9 +1379,14 @@ pub fn cred_presumido(aliq_pis: Option<Decimal>, aliq_cof: Option<Decimal>) -> b
 // ============================================================================
 
 /// 4.3.4 - Tabela Código da Situação Tributária (CST)
+///
+/// - CSTs oficiais vão de 1 a 99.
+///
+/// - CSTs fictícios vão de 490 a 980.
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum CodigoSituacaoTributaria {
+    // ... CSTs oficiais (01 a 99) ...
     #[serde(rename = "Operação Tributável com Alíquota Básica")]
     OperacaoTributavelComAliquotaBasica = 1,
 
@@ -1456,15 +1514,17 @@ pub enum CodigoSituacaoTributaria {
     #[serde(rename = "Outras Operações")]
     OutrasOperacoes = 99,
 
-    // CSTs fictícios apenas para fins de ordenação
+    // --- CSTs Fictícios para Organização/Ordenação de Relatórios ---
     #[serde(rename = "Total Receitas/Saídas")]
     TotalReceitasSaidas = 490,
 
-    #[serde(rename = "CST 900")]
-    Cst900 = 900,
+    /// 900 - Marca o início da seção de agrupamento da Base de Cálculo
+    #[serde(rename = "Agrupador da Base de Cálculo")]
+    AgrupadorSomaBC = 900,
 
-    #[serde(rename = "CST 910")]
-    Cst910 = 910,
+    /// 910 - Usado especificamente para as somas parciais da Base de Cálculo
+    #[serde(rename = "Soma Parcial da Base de Cálculo")]
+    SomaParcialDaBaseCalculo = 910,
 
     #[serde(rename = "Crédito Apurado no Período (PIS/PASEP)")]
     CSTApuradoPIS = 920,
@@ -1472,8 +1532,9 @@ pub enum CodigoSituacaoTributaria {
     #[serde(rename = "Crédito Apurado no Período (COFINS)")]
     CSTApuradoCofins = 930,
 
-    #[serde(rename = "CST 950")]
-    Cst950 = 950,
+    /// 950 - Marca o início da seção de saldos passíveis de ressarcimento/desconto
+    #[serde(rename = "Agrupador de Saldo Disponível")]
+    AgrupadorSaldoDisponivel = 950,
 
     #[serde(rename = "Total Aquisições/Custos/Despesas")]
     TotalAquisicoes = 980,
@@ -1531,6 +1592,17 @@ impl CodigoSituacaoTributaria {
     /// Retorna o valor numérico do CST (ex: 1, 50, 99).
     pub const fn code(self) -> u16 {
         self as u16
+    }
+
+    /// Indica se o CST é uma construção interna para fins de relatório
+    pub fn eh_ficticio(&self) -> bool {
+        self.code() >= 490
+    }
+
+    /// Indica se o CST deve ser ocultado/limpo após a ordenação
+    /// (Ex: Agrupadores técnicos vs Totais que talvez devam aparecer)
+    pub fn deve_limpar_cst(&self) -> bool {
+        self.code() >= 900
     }
 
     /// Define a ordem de apresentação da Consolidação de CST.
