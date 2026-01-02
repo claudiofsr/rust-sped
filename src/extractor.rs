@@ -1965,7 +1965,6 @@ impl CreditCorrelationManager {
         }
 
         // 2. TENTATIVA GLOBAL (Busca em outros códigos de crédito)
-        // Aqui o filtro é mais rigoroso (MIN_SCORE_GLOBAL)
         let global_match = self
             .cache
             .values_mut()
