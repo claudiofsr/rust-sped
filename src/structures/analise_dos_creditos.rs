@@ -32,6 +32,9 @@ use crate::{
     serialize_option_decimal, verificar_periodo_multiplo,
 };
 
+use CodigoSituacaoTributaria::*;
+use NaturezaBaseCalculo::*;
+
 use claudiofsr_lib::CFOP_DE_EXPORTACAO;
 
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Serialize, Deserialize)]
@@ -697,14 +700,14 @@ fn apurar_credito_das_contribuicoes(
                 (
                     Tributo::Pis,
                     chaves.aliq_pis,
-                    201,
-                    CodigoSituacaoTributaria::Cst920,
+                    NaturezaBaseCalculo::CreditoApuradoPis,
+                    CodigoSituacaoTributaria::CSTApuradoPIS,
                 ),
                 (
                     Tributo::Cofins,
                     chaves.aliq_cofins,
-                    205,
-                    CodigoSituacaoTributaria::Cst930,
+                    NaturezaBaseCalculo::CreditoApuradoCofins,
+                    CodigoSituacaoTributaria::CSTApuradoCofins,
                 ),
             ];
 
@@ -716,7 +719,7 @@ fn apurar_credito_das_contribuicoes(
 
                     // Lógica de construção da nova chave
                     let mut nova_chave = chaves.clone();
-                    nova_chave.natureza_bc = NaturezaBaseCalculo::from_u16(nova_nat);
+                    nova_chave.natureza_bc = Some(nova_nat);
                     nova_chave.cst = Some(novo_cst);
 
                     match tributo {
@@ -743,39 +746,32 @@ fn calcular_credito_apos_ajustes(
     base_creditos
         .iter()
         .filter_map(|(chaves, &valores)| {
-            let natureza = chaves.natureza_bc.map(|n| n.code())?;
+            // Obtemos a natureza. Se for None, filtramos para fora.
+            let natureza = chaves.natureza_bc?;
 
-            // Filtrar 'Crédito Apurado no Período':
-            let credito_apurado_pis: bool = natureza == 201;
-            let credito_apurado_cof: bool = natureza == 205;
-            let credito_apurado: bool = credito_apurado_pis || credito_apurado_cof;
-
-            // Filtrar 'Ajustes': Ajustes de Acréscimo e de Redução.
-            let ajustes_pis: bool = matches!(natureza, 31 | 41);
-            let ajustes_cof: bool = matches!(natureza, 35 | 45);
-            let ajustes: bool = ajustes_pis || ajustes_cof;
-
-            if !(credito_apurado || ajustes) {
+            // Usamos pattern matching para identificar se é PIS ou COFINS
+            // e já definir os novos valores de CST e Natureza.
+            let (novo_cst, nova_natureza) = if natureza.eh_ajuste_de_pis() {
+                (CSTApuradoPIS, CreditoAposAjustesPis)
+            } else if natureza.eh_ajuste_de_cofins() {
+                (CSTApuradoCofins, CreditoAposAjustesCofins)
+            } else {
                 return None;
-            }
+            };
 
-            let mut chaves_bc = chaves.clone();
-            chaves_bc.aliq_pis = None;
-            chaves_bc.aliq_cofins = None;
-            // Para fins de acumulação e ordenação foi escolhido TipoDeOperacao::AjusteReducao
-            chaves_bc.tipo_de_operacao = Some(TipoDeOperacao::AjusteReducao);
-
-            if credito_apurado_pis || ajustes_pis {
-                chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst920);
-                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposAjustesPis);
-            }
-            if credito_apurado_cof || ajustes_cof {
-                chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst930);
-                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposAjustesCofins);
-            }
+            let chaves_bc = Chaves {
+                aliq_pis: None,
+                aliq_cofins: None,
+                // Para fins de acumulação e ordenação foi escolhido TipoDeOperacao::AjusteReducao
+                tipo_de_operacao: Some(TipoDeOperacao::AjusteReducao),
+                cst: Some(novo_cst),
+                natureza_bc: Some(nova_natureza),
+                ..chaves.clone()
+            };
 
             Some((chaves_bc, valores))
         })
+        // Agrupamento (fold) permanece funcional e eficiente
         .fold(HashMap::new(), |mut acc, (k, v)| {
             *acc.entry(k).or_default() += v;
             acc
@@ -788,40 +784,33 @@ fn calcular_credito_apos_descontos(
     base_creditos
         .iter()
         .filter_map(|(chaves, &valores)| {
-            let natureza = chaves.natureza_bc.map(|n| n.code())?;
+            // 1. Extrai a natureza ou interrompe o fluxo
+            let natureza = chaves.natureza_bc?;
 
-            // Filtrar 'Crédito Disponível após Ajustes':
-            let cred_apos_ajustes_pis: bool = natureza == 211;
-            let cred_apos_ajustes_cof: bool = natureza == 215;
-            let cred_apos_ajustes: bool = cred_apos_ajustes_pis || cred_apos_ajustes_cof;
-
-            // Filtrar 'Descontos':
-            let descontos_pis: bool = matches!(natureza, 51 | 61);
-            let descontos_cof: bool = matches!(natureza, 55 | 65);
-            let descontos: bool = descontos_pis || descontos_cof;
-
-            if !(cred_apos_ajustes || descontos) {
+            // 2. Mapeia a Natureza de origem para o par (CST, Nova Natureza)
+            // Agrupamos aqui as regras de PIS (211, 51, 61) e COFINS (215, 55, 65)
+            let (novo_cst, nova_natureza) = if natureza.eh_desconto_de_pis() {
+                (CSTApuradoPIS, CreditoAposDescontosPis)
+            } else if natureza.eh_desconto_de_cofins() {
+                (CSTApuradoCofins, CreditoAposDescontosCofins)
+            } else {
                 return None;
-            }
+            };
 
-            let mut chaves_bc = chaves.clone();
+            // 3. Criação da nova chave usando a sintaxe de atualização de struct
+            let nova_chave = Chaves {
+                aliq_pis: None,
+                aliq_cofins: None,
+                // Para fins de acumulação e ordenação foi escolhido TipoDeOperacao::DescontoPosterior
+                tipo_de_operacao: Some(TipoDeOperacao::DescontoPosterior),
+                cst: Some(novo_cst),
+                natureza_bc: Some(nova_natureza),
+                ..chaves.clone()
+            };
 
-            chaves_bc.aliq_pis = None;
-            chaves_bc.aliq_cofins = None;
-            // Para fins de acumulação e ordenação foi escolhido TipoDeOperacao::DescontoPosterior
-            chaves_bc.tipo_de_operacao = Some(TipoDeOperacao::DescontoPosterior);
-
-            if cred_apos_ajustes_pis || descontos_pis {
-                chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst920);
-                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposDescontosPis);
-            }
-            if cred_apos_ajustes_cof || descontos_cof {
-                chaves_bc.cst = Some(CodigoSituacaoTributaria::Cst930);
-                chaves_bc.natureza_bc = Some(NaturezaBaseCalculo::CreditoAposDescontosCofins);
-            }
-
-            Some((chaves_bc, valores))
+            Some((nova_chave, valores))
         })
+        // 4. Agrega os resultados somando os valores para chaves idênticas
         .fold(HashMap::new(), |mut acc, (k, v)| {
             *acc.entry(k).or_default() += v;
             acc

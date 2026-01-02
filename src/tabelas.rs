@@ -1183,6 +1183,42 @@ impl NaturezaBaseCalculo {
             self.to_string()
         }
     }
+
+    /// Crédito Apurado ou Ajuste de PIS
+    pub fn eh_ajuste_de_pis(&self) -> bool {
+        matches!(
+            self,
+            Self::CreditoApuradoPis | Self::AjusteAcrescimoPis | Self::AjusteReducaoPis
+        )
+    }
+
+    /// Crédito Apurado ou Ajuste de COFINS
+    pub fn eh_ajuste_de_cofins(&self) -> bool {
+        matches!(
+            self,
+            Self::CreditoApuradoCofins | Self::AjusteAcrescimoCofins | Self::AjusteReducaoCofins
+        )
+    }
+
+    /// Crédito Após Ajuste e Descontos de PIS
+    pub fn eh_desconto_de_pis(&self) -> bool {
+        matches!(
+            self,
+            Self::CreditoAposAjustesPis
+                | Self::DescontoProprioPeriodoPis
+                | Self::DescontoPeriodoPosteriorPis
+        )
+    }
+
+    /// Crédito Após Ajuste e Descontos de COFINS
+    pub fn eh_desconto_de_cofins(&self) -> bool {
+        matches!(
+            self,
+            Self::CreditoAposAjustesCofins
+                | Self::DescontoProprioPeriodoCofins
+                | Self::DescontoPeriodoPosteriorCofins
+        )
+    }
 }
 
 impl fmt::Display for NaturezaBaseCalculo {
@@ -1401,10 +1437,10 @@ pub enum CodigoSituacaoTributaria {
     Cst910 = 910,
 
     #[serde(rename = "Crédito Apurado no Período (PIS/PASEP)")]
-    Cst920 = 920,
+    CSTApuradoPIS = 920,
 
     #[serde(rename = "Crédito Apurado no Período (COFINS)")]
-    Cst930 = 930,
+    CSTApuradoCofins = 930,
 
     #[serde(rename = "CST 950")]
     Cst950 = 950,
