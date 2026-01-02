@@ -25,8 +25,8 @@ use tabled::{
 
 use crate::{
     Arguments, CSTOption, CodigoSituacaoTributaria, DECIMAL_ALIQ, DecimalExt, Despise, DocsFiscais,
-    EFDResult, ExcelCustomFormatter, InfoExtension, MesesDoAno, NaturezaBaseCalculo, RowStyle,
-    TipoDeCredito, TipoDeOperacao, TipoDeRateio, Tributo, apurar_receita_bruta,
+    EFDResult, ExcelCustomFormatter, InfoExtension, MesesDoAno, NatBCOption, NaturezaBaseCalculo,
+    RowStyle, TipoDeCredito, TipoDeOperacao, TipoDeRateio, Tributo, apurar_receita_bruta,
     consolidar_registros, display_cst, display_decimal, display_mes, display_value,
     realizar_somas_trimestrais, serialize_cst, serialize_decimal, serialize_natureza_opt,
     serialize_option_decimal, verificar_periodo_multiplo,
@@ -320,7 +320,7 @@ impl InfoExtension for AnaliseDosCreditos {}
 
 impl ExcelCustomFormatter for AnaliseDosCreditos {
     fn row_style(&self) -> RowStyle {
-        match self.natureza_bc.map(|n| n.code()) {
+        match self.natureza_bc.code() {
             // "Soma" - Intervalo 101 a 199 ou 300
             Some(101..200 | 300) => RowStyle::Soma,
 
@@ -362,7 +362,6 @@ where
     tipo_opt
         .filter(|tipo| (1..100).contains(&tipo.code())) // Filtra apenas códigos válidos (01-99)
         //.map(|tipo| tipo.descricao_com_codigo()) // Transforma em String formatada
-        //.map(|tipo| format!("{:02}", tipo.code())) // Transforma em String formatada
         .serialize(serializer) // Serializa o Option resultante (Some ou None)
 }
 
@@ -690,9 +689,7 @@ fn apurar_credito_das_contribuicoes(
         .iter()
         .filter(|(chaves, _)| {
             // Filtrar 'Base de Cálculo dos Créditos', valores entre 101 e 199.
-            chaves
-                .natureza_bc
-                .is_some_and(|n| (101..=199).contains(&n.code()))
+            chaves.natureza_bc.eh_soma_de_bc()
         })
         .flat_map(|(chaves, &valores)| {
             // Configuração das regras para cada tributo (Tributo, Alíquota, NatBC, CST)
@@ -822,11 +819,7 @@ fn somar_base_de_calculo_valor_total(
 ) -> HashMap<Chaves, Valores> {
     base_creditos
         .iter()
-        .filter(|(chaves, _)| {
-            chaves
-                .natureza_bc
-                .is_some_and(|n| (101..=199).contains(&n.code()))
-        })
+        .filter(|(chaves, _)| chaves.natureza_bc.eh_soma_de_bc())
         .map(|(chaves, &valores)| {
             let bc_soma = Chaves {
                 tipo_de_operacao: None,

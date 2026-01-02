@@ -1173,6 +1173,11 @@ impl NaturezaBaseCalculo {
         matches!(self.code(), 1..=18)
     }
 
+    /// Verifica se o código está entre 101 e 199 (Operações de Soma de Base de Cálculo)
+    pub const fn eh_soma_de_bc(&self) -> bool {
+        matches!(self.code(), 101..=199)
+    }
+
     /// Retorna a descrição formatada.
     /// Mantém a lógica original: códigos <= 18 usam padding "02", outros usam a string pura.
     pub fn descricao_com_codigo(&self) -> String {
@@ -1236,6 +1241,31 @@ impl FromStr for NaturezaBaseCalculo {
             .parse::<u16>()
             .map_err(|_| format!("Código inválido: {}", s))?;
         Self::from_u16(val).ok_or_else(|| format!("Natureza da BC não encontrada: {}", val))
+    }
+}
+
+pub trait NatBCOption {
+    /// Retorna o valor numérico (u16)
+    fn code(&self) -> Option<u16>;
+
+    /// Retorna a descrição formatada.
+    fn descricao(&self) -> String;
+
+    /// Verifica se o código está entre 101 e 199 (Operações de Soma de Base de Cálculo)
+    fn eh_soma_de_bc(&self) -> bool;
+}
+
+impl NatBCOption for Option<NaturezaBaseCalculo> {
+    fn code(&self) -> Option<u16> {
+        self.map(|c| c as u16)
+    }
+
+    fn descricao(&self) -> String {
+        self.map(|c| c.descricao_com_codigo()).unwrap_or_default()
+    }
+
+    fn eh_soma_de_bc(&self) -> bool {
+        self.is_some_and(|n| n.eh_soma_de_bc())
     }
 }
 
