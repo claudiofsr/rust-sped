@@ -1215,6 +1215,29 @@ impl NaturezaBaseCalculo {
         }
     }
 
+    /// Determina a Natureza da BC para Descontos com base no tipo de operação e registro SPED.
+    pub fn from_tipo_de_operacao(tipo: TipoDeOperacao, registro: &str) -> Option<Self> {
+        match (tipo, registro) {
+            // PIS (Bloco M100 / 1100)
+            (TipoDeOperacao::DescontoNoPeriodo, "M100" | "1100") => {
+                Some(Self::DescontoProprioPeriodoPis)
+            }
+            (TipoDeOperacao::DescontoPosterior, "M100" | "1100") => {
+                Some(Self::DescontoPeriodoPosteriorPis)
+            }
+
+            // COFINS (Bloco M500 / 1500)
+            (TipoDeOperacao::DescontoNoPeriodo, "M500" | "1500") => {
+                Some(Self::DescontoProprioPeriodoCofins)
+            }
+            (TipoDeOperacao::DescontoPosterior, "M500" | "1500") => {
+                Some(Self::DescontoPeriodoPosteriorCofins)
+            }
+
+            _ => None,
+        }
+    }
+
     /// Retorna o valor numérico (u16)
     pub const fn code(self) -> u16 {
         self as u16
