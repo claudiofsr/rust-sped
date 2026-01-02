@@ -1950,35 +1950,41 @@ impl CreditCorrelationManager {
         // 1. TENTATIVA LOCAL
         // Tentamos o bucket. Se encontrarmos o bucket E uma entrada válida,
         // entramos no bloco 'if let' para atualizar e RETORNAR.
-        if let Some(entry) = self.cache.get_mut(&cod_cred).and_then(|entries| {
+        let local_match = self.cache.get_mut(&cod_cred).and_then(|entries| {
             entries
                 .iter_mut()
                 .filter(|e| e.aliq_cofins.is_none())
-                .max_by_key(|e| e.calculate_score(criteria))
-        }) {
+                .map(|e| (e.calculate_score(criteria), e))
+                .filter(|(score, _e)| *score >= PESO_NAT_BC) // Condição de determinismo
+                .max_by_key(|(score, _e)| *score)
+        });
+
+        if let Some((_score, entry)) = local_match {
             entry.aliq_cofins = aliq_cofins;
-            return entry.aliq_pis; // Retorno antecipado libera o self.cache
+            return entry.aliq_pis;
         }
 
-        // 2. TENTATIVA GLOBAL
-        // Só chegamos aqui se:
-        // a) cod_cred não estava no cache (o .get_mut retornou None)
-        // b) Ou o bucket estava vazio/sem matches (o .max_by_key retornou None)
-        self.cache
+        // 2. TENTATIVA GLOBAL (Busca em outros códigos de crédito)
+        // Aqui o filtro é mais rigoroso (MIN_SCORE_GLOBAL)
+        let global_match = self
+            .cache
             .values_mut()
             .flat_map(|entries| entries.iter_mut())
             .filter(|e| e.aliq_cofins.is_none())
-            .max_by_key(|e| e.calculate_score(criteria))
-            .and_then(|entry| {
-                self.has_global_matches = true; // Seta a flag aqui!
-                let msg = format!(
-                    "Correlação global: COFINS cod_cred {:?} -> PIS NatBC {:?}, ValorBC {:?}\n\n",
-                    cod_cred, criteria.nat_bc, criteria.vl_bc
-                );
-                messages.push(msg);
-                entry.aliq_cofins = aliq_cofins;
-                entry.aliq_pis
-            })
+            .map(|e| (e.calculate_score(criteria), e))
+            .filter(|(score, _)| *score >= (PESO_NAT_BC + PESO_CST)) // Exige alta similaridade para busca global
+            .max_by_key(|(score, _)| *score);
+
+        global_match.and_then(|(score, entry)| {
+            self.has_global_matches = true;
+            let msg = format!(
+                "Correlação global (Score {}/7): COFINS cod_cred {:?} -> PIS NatBC {:?}, ValorBC {:?}\n\n",
+                score, cod_cred, criteria.nat_bc, criteria.vl_bc
+            );
+            messages.push(msg);
+            entry.aliq_cofins = aliq_cofins;
+            entry.aliq_pis
+        })
     }
 
     /// Gera o relatório formatado como uma String.
