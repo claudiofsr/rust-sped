@@ -1948,18 +1948,12 @@ impl CreditCorrelationManager {
         messages: &mut Vec<String>,
     ) -> Option<Decimal> {
         // 1. TENTATIVA LOCAL
-        // Tentamos o bucket. Se encontrarmos o bucket E uma entrada válida,
-        // entramos no bloco 'if let' para atualizar e RETORNAR.
-        let local_match = self.cache.get_mut(&cod_cred).and_then(|entries| {
+        if let Some(entry) = self.cache.get_mut(&cod_cred).and_then(|entries| {
             entries
                 .iter_mut()
                 .filter(|e| e.aliq_cofins.is_none())
-                .map(|e| (e.calculate_score(criteria), e))
-                .filter(|(score, _e)| *score >= (PESO_NAT_BC + PESO_CST))
-                .max_by_key(|(score, _e)| *score)
-        });
-
-        if let Some((_score, entry)) = local_match {
+                .max_by_key(|e| e.calculate_score(criteria))
+        }) {
             entry.aliq_cofins = aliq_cofins;
             return entry.aliq_pis;
         }
@@ -1977,7 +1971,7 @@ impl CreditCorrelationManager {
         global_match.and_then(|(score, entry)| {
             self.has_global_matches = true;
             let msg = format!(
-                "Correlação global (Score {}/7): COFINS cod_cred {:?} -> PIS NatBC {:?}, ValorBC {:?}\n\n",
+                "Correlação global (Score {}/7): COFINS cod_cred {:?} -> PIS NatBC {:?}, ValorBC {:?}\n",
                 score, cod_cred, criteria.nat_bc, criteria.vl_bc
             );
             messages.push(msg);
