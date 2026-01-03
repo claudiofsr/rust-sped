@@ -1967,7 +1967,7 @@ impl CreditCorrelationManager {
         if let Some(entry) = self.cache.get_mut(&cofins_cod_cred).and_then(|entries| {
             entries
                 .iter_mut()
-                .filter(|e| e.aliq_cofins.is_none())
+                //.filter(|e| e.aliq_cofins.is_none())
                 .max_by_key(|e| e.calculate_score(&query))
         }) {
             entry.aliq_cofins = aliq_cofins;
