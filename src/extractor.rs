@@ -1913,10 +1913,10 @@ impl CreditEntry {
         // Para Valor BC, só pontuamos se houver match e o valor NÃO for zero,
         // ou se ambos forem zero mas o match for exato.
         if self.criteria.vl_bc.is_some() && self.criteria.vl_bc == query.vl_bc {
-            if !query.is_zero_bc() {
-                score += PESO_VL_BC;
-            } else {
+            if query.is_zero_bc() {
                 score += 1; // Match de zero é fraco
+            } else {
+                score += PESO_VL_BC;
             }
         }
         score
