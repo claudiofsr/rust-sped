@@ -1888,7 +1888,7 @@ struct CreditEntry {
 
 impl CreditEntry {
     /// Cria uma nova entrada
-    fn new(cod_cred: Option<u16>, criteria: CreditCriteria, aliq_pis: Option<Decimal>) -> Self {
+    fn new(cod_cred: Option<u16>, aliq_pis: Option<Decimal>, criteria: CreditCriteria) -> Self {
         Self {
             pis_cod_cred: cod_cred,
             criteria,
@@ -1945,7 +1945,7 @@ impl CreditCorrelationManager {
         aliq_pis: Option<Decimal>,
         criteria: CreditCriteria,
     ) {
-        let new_entry = CreditEntry::new(cod_cred, criteria, aliq_pis);
+        let new_entry = CreditEntry::new(cod_cred, aliq_pis, criteria);
 
         // Sempre adiciona uma nova entrada (push), criando slots disponíveis.
         // O campo 'aliq_cofins' inicia como None, indicando que o slot está livre.
