@@ -1960,11 +1960,11 @@ impl CreditCorrelationManager {
         messages: &mut Vec<String>,
     ) -> Option<Decimal> {
         // 1. TENTATIVA LOCAL (Mesmo COD_CRED)
-        if let Some(entry) = self
-            .cache
-            .get_mut(&cofins_cod_cred)
-            .and_then(|entries| entries.iter_mut().max_by_key(|e| e.calculate_score(&query)))
-        {
+        if let Some(entry) = self.cache.get_mut(&cofins_cod_cred).and_then(|infos| {
+            infos
+                .iter_mut()
+                .max_by_key(|info| info.calculate_score(&query))
+        }) {
             entry.aliq_cofins = aliq_cofins;
             return entry.aliq_pis;
         }
