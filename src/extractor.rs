@@ -2057,7 +2057,7 @@ impl CreditCorrelationManager {
 
             writeln!(
                 report,
-                "   PIS: {:>6} | COFINS: {:>6} | CST: {} | NatBC: {} | ValorBC: {:>13}",
+                "   PIS: {:>6} | COFINS: {:>6} | CST: {} | NatBC: {} | ValorBC_PIS: {:>13}",
                 pis_aliq, cof_aliq, cst, nat_bc, valor
             )
             .ok();
