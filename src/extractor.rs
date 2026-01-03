@@ -1988,7 +1988,7 @@ impl CreditCorrelationManager {
         if let Some((score, entry)) = global_match {
             self.has_global_matches = true;
             messages.push(format!(
-                "Correlação global (Score {}): COFINS cod_cred {:?} -> PIS cod_cred {:?} (NatBC {:?}, BC {:?})\n",
+                "Correlação global (Score {}): COFINS cod_cred {:?} -> PIS cod_cred {:?} (NatBC {:?}, Vl_BC {:?})\n",
                 score, cofins_cod_cred, entry.pis_cod_cred, query.nat_bc, query.vl_bc
             ));
             entry.aliq_cofins = aliq_cofins;
