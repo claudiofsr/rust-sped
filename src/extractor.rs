@@ -1373,7 +1373,7 @@ pub fn process_block_lines(
             bloco_m.process(records, ctx, &mut docs, &mut messages);
 
             // Se houve correlação global, geramos o relatório.
-            if bloco_m.correlacao.has_global_matches || log_enabled!(Level::Debug) {
+            if bloco_m.correlacao.correlacao_inexistente || log_enabled!(Level::Debug) {
                 // Gera o relatório uma única vez
                 let relatorio = bloco_m.correlacao.generate_report();
 
@@ -1381,7 +1381,7 @@ pub fn process_block_lines(
                     print!("{}", relatorio);
                 }
 
-                if bloco_m.correlacao.has_global_matches {
+                if bloco_m.correlacao.correlacao_inexistente {
                     messages.push(relatorio);
                 }
             }
@@ -1879,24 +1879,14 @@ impl CreditCriteria {
 
 /// Entrada armazenada no cache.
 #[derive(Debug, Clone)]
-struct CreditEntry {
-    pis_cod_cred: Option<u16>, // Código do crédito original do PIS
+struct CreditInfo {
+    cod_cred: Option<u16>, // Código do crédito original do PIS
     criteria: CreditCriteria,
     aliq_pis: Option<Decimal>,
     aliq_cofins: Option<Decimal>,
 }
 
-impl CreditEntry {
-    /// Cria uma nova entrada
-    fn new(cod_cred: Option<u16>, aliq_pis: Option<Decimal>, criteria: CreditCriteria) -> Self {
-        Self {
-            pis_cod_cred: cod_cred,
-            criteria,
-            aliq_pis,
-            aliq_cofins: None,
-        }
-    }
-
+impl CreditInfo {
     /// Retorna score mais alto para matches exatos nos campos de maior peso.
     #[inline(always)]
     fn calculate_score(&self, query: &CreditCriteria) -> u8 {
@@ -1926,14 +1916,14 @@ impl CreditEntry {
 #[derive(Default, Debug)]
 pub struct CreditCorrelationManager {
     /// Chave Primária: COD_CRED para busca rápida.
-    cache: HashMap<Option<u16>, Vec<CreditEntry>>,
-    pub has_global_matches: bool,
+    cache: HashMap<Option<u16>, Vec<CreditInfo>>,
+    pub correlacao_inexistente: bool,
 }
 
 impl CreditCorrelationManager {
     pub fn clear(&mut self) {
         self.cache.clear();
-        self.has_global_matches = false;
+        self.correlacao_inexistente = false;
     }
 
     /// Armazena (M100/M105) - Permite duplicatas para ter vagas suficientes
@@ -1945,11 +1935,17 @@ impl CreditCorrelationManager {
         aliq_pis: Option<Decimal>,
         criteria: CreditCriteria,
     ) {
-        let new_entry = CreditEntry::new(cod_cred, aliq_pis, criteria);
+        // Adicionar nova entrada de PIS
+        let info = CreditInfo {
+            cod_cred,
+            criteria,
+            aliq_pis,
+            aliq_cofins: None,
+        };
 
         // Sempre adiciona uma nova entrada (push), criando slots disponíveis.
         // O campo 'aliq_cofins' inicia como None, indicando que o slot está livre.
-        self.cache.entry(cod_cred).or_default().push(new_entry);
+        self.cache.entry(cod_cred).or_default().push(info);
     }
 
     /// Resolve a alíquota de PIS após leitura de registros de COFINS (M500/M505).
@@ -1964,38 +1960,33 @@ impl CreditCorrelationManager {
         messages: &mut Vec<String>,
     ) -> Option<Decimal> {
         // 1. TENTATIVA LOCAL (Mesmo COD_CRED)
-        if let Some(entry) = self.cache.get_mut(&cofins_cod_cred).and_then(|entries| {
-            entries
-                .iter_mut()
-                //.filter(|e| e.aliq_cofins.is_none())
-                .max_by_key(|e| e.calculate_score(&query))
-        }) {
-            entry.aliq_cofins = aliq_cofins;
-            return entry.aliq_pis;
-        }
-
-        // 2. TENTATIVA GLOBAL
-        // Só permitimos match global se o score for alto (mínimo NatBC + CST)
-        let min_global_score = PESO_NAT_BC + PESO_CST;
-
-        let global_match = self
+        if let Some(entry) = self
             .cache
-            .values_mut()
-            .flat_map(|v| v.iter_mut())
-            .filter(|e| e.aliq_cofins.is_none())
-            .map(|e| (e.calculate_score(&query), e))
-            .filter(|(score, _)| *score >= min_global_score)
-            .max_by_key(|(score, _)| *score);
-
-        if let Some((score, entry)) = global_match {
-            self.has_global_matches = true;
-            messages.push(format!(
-                "Correlação global (Score {}): COFINS cod_cred {:?} -> PIS cod_cred {:?} (NatBC {:?}, Valor_BC_Cofins {:?})\n",
-                score, cofins_cod_cred, entry.pis_cod_cred, query.nat_bc, query.vl_bc
-            ));
+            .get_mut(&cofins_cod_cred)
+            .and_then(|entries| entries.iter_mut().max_by_key(|e| e.calculate_score(&query)))
+        {
             entry.aliq_cofins = aliq_cofins;
             return entry.aliq_pis;
         }
+
+        // 2. Adicionar nova entrada de COFINS
+        // pois não foi encontrada correlação entre PIS e Cofins
+        let info = CreditInfo {
+            cod_cred: cofins_cod_cred,
+            criteria: query,
+            aliq_pis: None, // Ausência de informação de PIS
+            aliq_cofins,
+        };
+
+        self.cache.entry(cofins_cod_cred).or_default().push(info);
+        self.correlacao_inexistente = true;
+
+        let msg = format!(
+            "Ausência de Correlação: COFINS cod_cred {:?} -> PIS cod_cred: None \
+            (NatBC {:?}, Valor_BC_Cofins {:?})\n",
+            cofins_cod_cred, query.nat_bc, query.vl_bc
+        );
+        messages.push(msg);
 
         None
     }
@@ -2009,7 +2000,7 @@ impl CreditCorrelationManager {
 
         // 2. Ordenação Customizada (Dígitos finais primeiro)
         all_entries.sort_unstable_by_key(|e| {
-            let cod = e.pis_cod_cred.unwrap_or(0);
+            let cod = e.cod_cred.unwrap_or(0);
             (
                 cod % 100,         // 1º: Tipo do crédito (Ex: 01, 08...) - O "YY" do código XYY
                 cod / 100,         // 2º: Tipo de Rateio
@@ -2028,9 +2019,9 @@ impl CreditCorrelationManager {
 
         for entry in all_entries {
             // Se mudou o COD_CRED, imprime novo cabeçalho unificado
-            if current_cod != Some(entry.pis_cod_cred) {
-                current_cod = Some(entry.pis_cod_cred);
-                let cod_str = entry.pis_cod_cred.map_or("N/I".into(), |v| v.to_string());
+            if current_cod != Some(entry.cod_cred) {
+                current_cod = Some(entry.cod_cred);
+                let cod_str = entry.cod_cred.map_or("N/I".into(), |v| v.to_string());
 
                 writeln!(
                     report,
