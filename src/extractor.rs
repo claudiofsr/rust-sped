@@ -1844,9 +1844,9 @@ assemelha ao registro COFINS, mesmo que algum campo não essencial esteja difere
 desde que seja o "vencedor" na pontuação.
 */
 
-const PESO_NAT_BC: u8 = 4;
-const PESO_CST: u8 = 2;
-const PESO_VL_BC: u8 = 1;
+const PESO_NAT_BC: u8 = 10; // Maior peso: NatBC define a natureza do crédito
+const PESO_CST: u8 = 5;
+const PESO_VL_BC: u8 = 2;
 
 /// Critérios usados tanto para armazenar (PIS) quanto para buscar (COFINS).
 /// 'Copy' é barato aqui (u16 + u16 + Decimal de 128bit = ~20 bytes).
@@ -1870,11 +1870,17 @@ impl CreditCriteria {
             }),
         }
     }
+
+    /// Verifica se a base de cálculo é zero ou nula.
+    pub fn is_zero_bc(&self) -> bool {
+        self.vl_bc.is_none_or(|v| v.is_zero())
+    }
 }
 
 /// Entrada armazenada no cache.
 #[derive(Debug, Clone)]
 struct CreditEntry {
+    pis_cod_cred: Option<u16>, // Código do crédito original do PIS
     criteria: CreditCriteria,
     aliq_pis: Option<Decimal>,
     aliq_cofins: Option<Decimal>,
@@ -1882,37 +1888,44 @@ struct CreditEntry {
 
 impl CreditEntry {
     /// Cria uma nova entrada
-    fn new(criteria: CreditCriteria, aliq_pis: Option<Decimal>) -> Self {
-        CreditEntry {
+    fn new(cod_cred: Option<u16>, criteria: CreditCriteria, aliq_pis: Option<Decimal>) -> Self {
+        Self {
+            pis_cod_cred: cod_cred,
             criteria,
             aliq_pis,
             aliq_cofins: None,
         }
     }
 
-    /// Calcula pontuação de similaridade.
     /// Retorna score mais alto para matches exatos nos campos de maior peso.
     #[inline(always)]
-    fn calculate_score(&self, query: CreditCriteria) -> u8 {
-        // Solução: Função interna genérica.
-        // T: PartialEq permite usar '=='
-        // T: Copy permite passar os valores sem 'move' ou referências desnecessárias
-        fn check_match<T: PartialEq + Copy>(rule: Option<T>, query: Option<T>) -> u8 {
-            // Regra: Só pontua se a regra (cache) não for genérica (is_some)
-            // E se for igual ao valor consultado.
-            // cast 'bool as u8' converte true -> 1, false -> 0
-            (rule.is_some() && rule == query) as u8
+    fn calculate_score(&self, query: &CreditCriteria) -> u8 {
+        let mut score = 0;
+
+        if self.criteria.nat_bc.is_some() && self.criteria.nat_bc == query.nat_bc {
+            score += PESO_NAT_BC;
         }
 
-        check_match(self.criteria.cst, query.cst) * PESO_CST
-            + check_match(self.criteria.nat_bc, query.nat_bc) * PESO_NAT_BC
-            + check_match(self.criteria.vl_bc, query.vl_bc) * PESO_VL_BC
+        if self.criteria.cst.is_some() && self.criteria.cst == query.cst {
+            score += PESO_CST;
+        }
+
+        // Para Valor BC, só pontuamos se houver match e o valor NÃO for zero,
+        // ou se ambos forem zero mas o match for exato.
+        if self.criteria.vl_bc.is_some() && self.criteria.vl_bc == query.vl_bc {
+            if !query.is_zero_bc() {
+                score += PESO_VL_BC;
+            } else {
+                score += 1; // Match de zero é fraco
+            }
+        }
+        score
     }
 }
 
 #[derive(Default, Debug)]
 pub struct CreditCorrelationManager {
-    /// Chave Primária: Código do Crédito (M100.COD_CRED).
+    /// Chave Primária: COD_CRED para busca rápida.
     cache: HashMap<Option<u16>, Vec<CreditEntry>>,
     pub has_global_matches: bool,
 }
@@ -1920,6 +1933,7 @@ pub struct CreditCorrelationManager {
 impl CreditCorrelationManager {
     pub fn clear(&mut self) {
         self.cache.clear();
+        self.has_global_matches = false;
     }
 
     /// Armazena (M105) - Permite duplicatas para ter vagas suficientes
@@ -1929,7 +1943,7 @@ impl CreditCorrelationManager {
         criteria: CreditCriteria,
         aliq_pis: Option<Decimal>,
     ) {
-        let new_entry = CreditEntry::new(criteria, aliq_pis);
+        let new_entry = CreditEntry::new(cod_cred, criteria, aliq_pis);
 
         // Sempre adiciona uma nova entrada (push), criando slots disponíveis.
         // O campo 'aliq_cofins' inicia como None, indicando que o slot está livre.
@@ -1942,63 +1956,63 @@ impl CreditCorrelationManager {
     /// 2. Se não encontrar, realiza uma busca global em todos os buckets (Fuzzy Match).
     pub fn resolve(
         &mut self,
-        cod_cred: Option<u16>,
-        criteria: CreditCriteria,
+        cofins_cod_cred: Option<u16>,
+        query: CreditCriteria,
         aliq_cofins: Option<Decimal>,
         messages: &mut Vec<String>,
     ) -> Option<Decimal> {
-        // 1. TENTATIVA LOCAL
-        if let Some(entry) = self.cache.get_mut(&cod_cred).and_then(|entries| {
+        // 1. TENTATIVA LOCAL (Mesmo COD_CRED)
+        if let Some(entry) = self.cache.get_mut(&cofins_cod_cred).and_then(|entries| {
             entries
                 .iter_mut()
                 .filter(|e| e.aliq_cofins.is_none())
-                .max_by_key(|e| e.calculate_score(criteria))
+                .max_by_key(|e| e.calculate_score(&query))
         }) {
             entry.aliq_cofins = aliq_cofins;
             return entry.aliq_pis;
         }
 
-        // 2. TENTATIVA GLOBAL (Busca em outros códigos de crédito)
+        // 2. TENTATIVA GLOBAL
+        // Só permitimos match global se o score for alto (mínimo NatBC + CST)
+        let min_global_score = PESO_NAT_BC + PESO_CST;
+
         let global_match = self
             .cache
             .values_mut()
-            .flat_map(|entries| entries.iter_mut())
+            .flat_map(|v| v.iter_mut())
             .filter(|e| e.aliq_cofins.is_none())
-            .map(|e| (e.calculate_score(criteria), e))
-            .filter(|(score, _)| *score >= (PESO_NAT_BC + PESO_CST))
+            .map(|e| (e.calculate_score(&query), e))
+            .filter(|(score, _)| *score >= min_global_score)
             .max_by_key(|(score, _)| *score);
 
-        global_match.and_then(|(score, entry)| {
+        if let Some((score, entry)) = global_match {
             self.has_global_matches = true;
-            let msg = format!(
-                "Correlação global (Score {}/7): COFINS cod_cred {:?} -> PIS NatBC {:?}, ValorBC {:?}\n",
-                score, cod_cred, criteria.nat_bc, criteria.vl_bc
-            );
-            messages.push(msg);
+            messages.push(format!(
+                "Correlação global (Score {}): COFINS cod_cred {:?} -> PIS cod_cred {:?} (NatBC {:?}, BC {:?})\n",
+                score, cofins_cod_cred, entry.pis_cod_cred, query.nat_bc, query.vl_bc
+            ));
             entry.aliq_cofins = aliq_cofins;
-            entry.aliq_pis
-        })
+            return entry.aliq_pis;
+        }
+
+        None
     }
 
     /// Gera o relatório formatado como uma String.
     pub fn generate_report(&self) -> String {
         let mut report = String::new();
 
-        // 1. Flatten e Coleta
-        let mut list: Vec<_> = self
-            .cache
-            .iter()
-            .flat_map(|(cod, entries)| entries.iter().map(move |e| (*cod, e)))
-            .collect();
+        // Coletar todas as entradas e ordenar primariamente por COD_CRED do PIS
+        let mut all_entries: Vec<_> = self.cache.values().flatten().collect();
 
-        // 2. Sort Idiomático
-        list.sort_unstable_by_key(|(cod, entry)| {
+        // 2. Ordenação Customizada (Dígitos finais primeiro)
+        all_entries.sort_unstable_by_key(|e| {
+            let cod = e.pis_cod_cred.unwrap_or(0);
             (
-                *cod,
-                entry.aliq_cofins,
-                entry.criteria.cst,
-                entry.criteria.nat_bc,
-                entry.criteria.vl_bc,
+                cod % 100,         // 1º: Tipo do crédito (Ex: 01, 08...) - O "YY" do código XYY
+                cod / 100,         // 2º: Tipo de Rateio
+                e.criteria.nat_bc, // 3º: Natureza da BC
+                e.criteria.vl_bc,  // 4º: Valor
             )
         });
 
@@ -2008,65 +2022,51 @@ impl CreditCorrelationManager {
         )
         .ok();
 
-        let mut last_header = None;
+        let mut current_cod = None;
 
-        for (cod, entry) in list {
-            let current_header = (cod, entry.aliq_cofins);
-
-            if last_header != Some(current_header) {
-                let s_cod = cod
-                    .map(|v| v.to_string())
-                    .unwrap_or_else(|| "NÃO INFORMADO".to_string());
-
-                let s_cof = entry
-                    .aliq_cofins
-                    .map(|v| format!("{v}%"))
-                    .unwrap_or_else(|| "N/D".to_string());
+        for entry in all_entries {
+            // Se mudou o COD_CRED, imprime novo cabeçalho unificado
+            if current_cod != Some(entry.pis_cod_cred) {
+                current_cod = Some(entry.pis_cod_cred);
+                let cod_str = entry.pis_cod_cred.map_or("N/I".into(), |v| v.to_string());
 
                 writeln!(
                     report,
                     "-------------------------------------------------------------"
                 )
                 .ok();
-                writeln!(report, "COD_CRED: {s_cod}  | ALIQ_COFINS: {s_cof}").ok();
-                last_header = Some(current_header);
+                writeln!(report, "COD_CRED: {:<4}", cod_str).ok();
             }
 
-            // Formatação funcional dos campos individuais
-            let pis_str = entry
-                .aliq_pis
-                .map(|v| format!("{v}%"))
-                .unwrap_or_else(|| "?".to_string());
-            let cst_str = entry
-                .criteria
-                .cst
-                .map(|v| format!("{v:02}"))
-                .unwrap_or_else(|| "?".to_string());
-            let nat_str = entry
+            let pis_aliq = entry.aliq_pis.map_or("?".into(), |v| format!("{}%", v));
+            let cof_aliq = entry
+                .aliq_cofins
+                .map_or("N/D".into(), |v| format!("{}%", v));
+            let nat_bc = entry
                 .criteria
                 .nat_bc
-                .map(|v| format!("{v:>2}"))
-                .unwrap_or_else(|| "?".to_string());
-            let vbc_str = entry
+                .map_or("??".into(), |v| format!("{:>2}", v));
+            let cst = entry
+                .criteria
+                .cst
+                .map_or("??".into(), |v| format!("{:02}", v));
+            let valor = entry
                 .criteria
                 .vl_bc
-                .map(|v| v.to_formatted_string(DECIMAL_VALOR))
-                .unwrap_or_else(|| "?".to_string());
+                .map_or("0,00".into(), |v| v.to_formatted_string(DECIMAL_VALOR));
 
             writeln!(
                 report,
-                "   PIS: {:>6} | CST: {} | NatBC: {} | ValorBC: {:>13}",
-                pis_str, cst_str, nat_str, vbc_str
+                "   PIS: {:>6} | COFINS: {:>6} | CST: {} | NatBC: {} | ValorBC: {:>13}",
+                pis_aliq, cof_aliq, cst, nat_bc, valor
             )
             .ok();
         }
-
         writeln!(
             report,
             "-------------------------------------------------------------\n"
         )
         .ok();
-
         report
     }
 }
