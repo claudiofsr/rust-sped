@@ -1942,8 +1942,8 @@ impl CreditCorrelationManager {
     pub fn store(
         &mut self,
         cod_cred: Option<u16>,
-        criteria: CreditCriteria,
         aliq_pis: Option<Decimal>,
+        criteria: CreditCriteria,
     ) {
         let new_entry = CreditEntry::new(cod_cred, criteria, aliq_pis);
 
@@ -1959,8 +1959,8 @@ impl CreditCorrelationManager {
     pub fn resolve(
         &mut self,
         cofins_cod_cred: Option<u16>,
-        query: CreditCriteria,
         aliq_cofins: Option<Decimal>,
+        query: CreditCriteria,
         messages: &mut Vec<String>,
     ) -> Option<Decimal> {
         // 1. TENTATIVA LOCAL (Mesmo COD_CRED)
@@ -2083,29 +2083,27 @@ struct BlocoM<'a> {
 
 impl<'a> BlocoM<'a> {
     /// Lógica de Correlação de Alíquotas.
-    fn resolve_pis_aliq(
+    fn resolve_aliq_pis(
         &mut self,
-        aliq_cofins: Option<Decimal>,
-        filho: &RegistroM505,
         pai: &RegistroM500,
+        filho: &RegistroM505,
+        criteria: CreditCriteria,
         messages: &mut Vec<String>,
     ) -> Option<Decimal> {
-        // 1. Prioridade: Cache Dinâmico (Realidade do Arquivo)
+        // Prioridade: Cache Dinâmico (Realidade do Arquivo)
         // Tenta encontrar um M105 correspondente a este M505.
-
-        // 1. Tenta Cache Dinâmico
-        let criteria = CreditCriteria::new(filho.nat_bc_cred, filho.cst_cofins, filho.vl_bc_cofins);
 
         // Resultado da correlação entre as alíquotas de PIS e COFINS
         let resultado_pis = self
             .correlacao
-            .resolve(pai.cod_cred, criteria, aliq_cofins, messages)
+            .resolve(pai.cod_cred, pai.aliq_cofins, criteria, messages)
             // 2. Fallback: Tabela Estática (Legislação Padrão)
-            .or_else(|| obter_pis_da_tabela_estatica(aliq_cofins, pai, filho));
+            .or_else(|| obter_pis_da_tabela_estatica(pai, filho));
 
         // 3. Verificação e Log de Problema
         if resultado_pis.is_none() {
-            let cof_str = aliq_cofins
+            let cof_str = pai
+                .aliq_cofins
                 .map(|v| v.to_string())
                 .unwrap_or_else(|| "N/A".to_string());
 
@@ -2144,12 +2142,12 @@ impl<'a> BlocoM<'a> {
                     if let (Ok(filho), Some(pai)) =
                         (record.downcast_ref::<RegistroM105>(), self.m100)
                     {
-                        // Cria dados normalizados do PIS
+                        // Cria dados normalizados de PIS
                         let criteria =
                             CreditCriteria::new(filho.nat_bc_cred, filho.cst_pis, filho.vl_bc_pis);
 
                         // Armazena dados do PIS
-                        self.correlacao.store(pai.cod_cred, criteria, pai.aliq_pis);
+                        self.correlacao.store(pai.cod_cred, pai.aliq_pis, criteria);
                     }
                 }
                 "M500" => {
@@ -2159,11 +2157,20 @@ impl<'a> BlocoM<'a> {
                     }
                 }
                 "M505" => {
-                    if let (Ok(f), Some(pai)) = (record.downcast_ref::<RegistroM505>(), self.m500) {
-                        let aliq_pis = self.resolve_pis_aliq(pai.aliq_cofins, f, pai, messages);
+                    if let (Ok(filho), Some(pai)) =
+                        (record.downcast_ref::<RegistroM505>(), self.m500)
+                    {
+                        // Cria dados normalizados de COFINS
+                        let criteria = CreditCriteria::new(
+                            filho.nat_bc_cred,
+                            filho.cst_cofins,
+                            filho.vl_bc_cofins,
+                        );
+
+                        let aliq_pis = self.resolve_aliq_pis(pai, filho, criteria, messages);
 
                         // Construção do Documento
-                        let mut b = DocsBuilder::from_child(ctx, f, None);
+                        let mut b = DocsBuilder::from_child(ctx, filho, None);
 
                         // Dados organizacionais da Matriz (Bloco M é centralizado)
                         b.doc.estabelecimento_cnpj = ctx.matriz_estabelecimento_cnpj.clone();
@@ -2171,7 +2178,8 @@ impl<'a> BlocoM<'a> {
 
                         b.doc.data_emissao = ctx.periodo_de_apuracao;
                         b.doc.cod_credito = pai.cod_cred;
-                        b.doc.natureza_bc = f.nat_bc_cred.and_then(NaturezaBaseCalculo::from_u16);
+                        b.doc.natureza_bc =
+                            filho.nat_bc_cred.and_then(NaturezaBaseCalculo::from_u16);
                         b.doc.tipo_de_operacao = Some(TipoDeOperacao::Detalhamento);
 
                         b.doc.aliq_pis = aliq_pis;

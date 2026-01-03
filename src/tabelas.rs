@@ -654,12 +654,8 @@ static CORRELACAO_COFINS_PIS: LazyLock<HashMap<Decimal, Decimal>> = LazyLock::ne
 });
 
 /// Tenta obter a alíquota de PIS baseada na de COFINS usando a tabela estática.
-pub fn obter_pis_da_tabela_estatica(
-    aliq_cofins_opt: Option<Decimal>,
-    pai: &RegistroM500,
-    filho: &RegistroM505,
-) -> Option<Decimal> {
-    let aliq_cofins = aliq_cofins_opt?;
+pub fn obter_pis_da_tabela_estatica(pai: &RegistroM500, filho: &RegistroM505) -> Option<Decimal> {
+    let aliq_cofins = pai.aliq_cofins?;
     match CORRELACAO_COFINS_PIS.get(&aliq_cofins) {
         Some(aliq_pis) => Some(*aliq_pis),
         None => {
