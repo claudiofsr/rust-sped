@@ -1852,17 +1852,17 @@ const PESO_VL_BC: u8 = 2;
 /// 'Copy' é barato aqui (u16 + u16 + Decimal de 128bit = ~20 bytes).
 #[derive(Debug, Clone, Copy)]
 pub struct CreditCriteria {
-    pub cst: Option<u16>,
     pub nat_bc: Option<u16>,
+    pub cst: Option<u16>,
     pub vl_bc: Option<Decimal>,
 }
 
 impl CreditCriteria {
     /// Construtor único: garante que o Decimal esteja normalizado desde o nascimento.
-    pub fn new(cst: Option<u16>, nat_bc: Option<u16>, vl_bc: Option<Decimal>) -> Self {
+    pub fn new(nat_bc: Option<u16>, cst: Option<u16>, vl_bc: Option<Decimal>) -> Self {
         Self {
-            cst,
             nat_bc,
+            cst,
             // Uso de .map funcional para normalizar o valor se ele existir
             vl_bc: vl_bc.map(|mut v| {
                 v.normalize_assign();
@@ -1936,7 +1936,9 @@ impl CreditCorrelationManager {
         self.has_global_matches = false;
     }
 
-    /// Armazena (M105) - Permite duplicatas para ter vagas suficientes
+    /// Armazena (M100/M105) - Permite duplicatas para ter vagas suficientes
+    ///
+    /// Informações do PIS
     pub fn store(
         &mut self,
         cod_cred: Option<u16>,
@@ -1950,7 +1952,7 @@ impl CreditCorrelationManager {
         self.cache.entry(cod_cred).or_default().push(new_entry);
     }
 
-    /// Resolve a alíquota de PIS para um registro de COFINS.
+    /// Resolve a alíquota de PIS após leitura de registros de COFINS (M500/M505).
     /// Estratégia:
     /// 1. Tenta encontrar no bucket exato do cod_cred.
     /// 2. Se não encontrar, realiza uma busca global em todos os buckets (Fuzzy Match).
@@ -2092,11 +2094,7 @@ impl<'a> BlocoM<'a> {
         // Tenta encontrar um M105 correspondente a este M505.
 
         // 1. Tenta Cache Dinâmico
-        let criteria = CreditCriteria::new(
-            filho.cst_cofins, // Tenta casar CST de COFINS com o CST de PIS armazenado
-            filho.nat_bc_cred,
-            filho.vl_bc_cofins,
-        );
+        let criteria = CreditCriteria::new(filho.nat_bc_cred, filho.cst_cofins, filho.vl_bc_cofins);
 
         // Resultado da correlação entre as alíquotas de PIS e COFINS
         let resultado_pis = self
@@ -2148,7 +2146,7 @@ impl<'a> BlocoM<'a> {
                     {
                         // Cria dados normalizados do PIS
                         let criteria =
-                            CreditCriteria::new(filho.cst_pis, filho.nat_bc_cred, filho.vl_bc_pis);
+                            CreditCriteria::new(filho.nat_bc_cred, filho.cst_pis, filho.vl_bc_pis);
 
                         // Armazena dados do PIS
                         self.correlacao.store(pai.cod_cred, criteria, pai.aliq_pis);
