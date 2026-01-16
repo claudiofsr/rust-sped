@@ -1,0 +1,83 @@
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_reg_methods};
+use chrono::NaiveDate;
+use std::{path::Path, sync::Arc};
+
+const REGISTRO: &str = "M515";
+
+#[derive(Debug, Clone)]
+pub struct RegistroM515 {
+    /// Nível hierárquico
+    pub nivel: u16,
+
+    /// Organização do Arquivo da EFD Contribuições - Blocos e Registros
+    pub bloco: char,
+
+    /// Código de 4 caracteres do Registro
+    pub registro: Arc<str>,
+
+    /// Número da linha do arquivo Sped EFD Contribuições
+    pub line_number: usize,
+
+    pub det_valor_aj: Option<Arc<str>>, // 2
+    pub cst_cofins: Option<u16>,        // 3
+    pub det_bc_cred: Option<Arc<str>>,  // 4
+    pub det_aliq: Option<Arc<str>>,     // 5 (Pode ser String ou Decimal)
+    pub dt_oper_aj: Option<NaiveDate>,  // 6
+    pub desc_aj: Option<Arc<str>>,      // 7
+    pub cod_cta: Option<Arc<str>>,      // 8
+    pub info_compl: Option<Arc<str>>,   // 9
+}
+
+impl_reg_methods!(RegistroM515);
+
+impl SpedParser for RegistroM515 {
+    type Output = RegistroM515;
+
+    fn parse_reg(file_path: &Path, line_number: usize, fields: &[&str]) -> EFDResult<Self::Output> {
+        let len: usize = fields.len();
+
+        // O registro M515 possui 9 campos de dados + 2 delimitadores = 11.
+        if len != 11 {
+            return Err(EFDError::InvalidFieldCount {
+                arquivo: file_path.to_path_buf(),
+                linha_num: line_number,
+                registro: REGISTRO.into(),
+                tamanho_esperado: 11,
+                tamanho_encontrado: len,
+            });
+        }
+
+        // Closure para campos de data (Option<NaiveDate>)
+        let get_date = |idx: usize, field_name: &str| {
+            fields
+                .get(idx)
+                .to_optional_date(file_path, line_number, field_name)
+        };
+
+        let det_valor_aj = fields.get(2).to_arc();
+        let cst_cofins = fields.get(3).parse_opt();
+        let det_bc_cred = fields.get(4).to_arc();
+        let det_aliq = fields.get(5).to_arc();
+        let dt_oper_aj = get_date(6, "DT_OPER_AJ")?;
+        let desc_aj = fields.get(7).to_arc();
+        let cod_cta = fields.get(8).to_arc();
+        let info_compl = fields.get(9).to_arc();
+
+        let reg = RegistroM515 {
+            nivel: 4,
+            bloco: 'M',
+            registro: REGISTRO.into(),
+            line_number,
+            det_valor_aj,
+            cst_cofins,
+            det_bc_cred,
+            det_aliq,
+            dt_oper_aj,
+            desc_aj,
+            cod_cta,
+            info_compl,
+        };
+
+        Ok(reg)
+    }
+}
