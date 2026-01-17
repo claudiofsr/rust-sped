@@ -1439,7 +1439,7 @@ impl<'a> BlocoAExtractor<'a> {
             match bloco_a {
                 // A010: Identificação do Estabelecimento
                 BlocoA::RA010(r) => {
-                    self.current_cnpj = r.cnpj.clone();
+                    self.current_cnpj = r.cnpj.to_arc();
                 }
 
                 // A100: Registro Pai (Documento Fiscal)

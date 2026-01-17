@@ -1,6 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "F700";
 
@@ -13,18 +14,18 @@ pub struct RegistroF700 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_ori_ded: Option<Arc<str>>,  // 2
-    pub ind_nat_ded: Option<Arc<str>>,  // 3
-    pub vl_ded_pis: Option<Decimal>,    // 4
-    pub vl_ded_cofins: Option<Decimal>, // 5
-    pub vl_bc_oper: Option<Decimal>,    // 6
-    pub cnpj: Option<Arc<str>>,         // 7
-    pub inf_comp: Option<Arc<str>>,     // 8
+    pub ind_ori_ded: Option<CompactString>, // 2
+    pub ind_nat_ded: Option<CompactString>, // 3
+    pub vl_ded_pis: Option<Decimal>,        // 4
+    pub vl_ded_cofins: Option<Decimal>,     // 5
+    pub vl_bc_oper: Option<Decimal>,        // 6
+    pub cnpj: Option<CompactString>,        // 7
+    pub inf_comp: Option<CompactString>,    // 8
 }
 
 impl_reg_methods!(RegistroF700);
@@ -52,13 +53,13 @@ impl SpedParser for RegistroF700 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_ori_ded = fields.get(2).to_arc();
-        let ind_nat_ded = fields.get(3).to_arc();
+        let ind_ori_ded = fields.get(2).map(|&s| s.into());
+        let ind_nat_ded = fields.get(3).map(|&s| s.into());
         let vl_ded_pis = get_decimal(4, "VL_DED_PIS")?;
         let vl_ded_cofins = get_decimal(5, "VL_DED_COFINS")?;
         let vl_bc_oper = get_decimal(6, "VL_BC_OPER")?;
-        let cnpj = fields.get(7).to_arc();
-        let inf_comp = fields.get(8).to_arc();
+        let cnpj = fields.get(7).map(|&s| s.into());
+        let inf_comp = fields.get(8).map(|&s| s.into());
 
         let reg = RegistroF700 {
             nivel: 3,

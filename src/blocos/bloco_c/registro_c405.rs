@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C405";
 
@@ -11,14 +10,14 @@ const REGISTRO: &str = "C405";
 pub struct RegistroC405 {
     pub nivel: u16,
     pub bloco: char,
-    pub registro: Arc<str>,
+    pub registro: CompactString,
     pub line_number: usize,
-    pub dt_doc: Option<NaiveDate>,     // 2
-    pub cro: Option<Arc<str>>,         // 3
-    pub crz: Option<Arc<str>>,         // 4
-    pub num_coo_fin: Option<Arc<str>>, // 5
-    pub gt_fin: Option<Decimal>,       // 6 (Assumindo que GT_FIN é um valor decimal)
-    pub vl_brt: Option<Decimal>,       // 7
+    pub dt_doc: Option<NaiveDate>,          // 2
+    pub cro: Option<CompactString>,         // 3
+    pub crz: Option<CompactString>,         // 4
+    pub num_coo_fin: Option<CompactString>, // 5
+    pub gt_fin: Option<Decimal>,            // 6 (Assumindo que GT_FIN é um valor decimal)
+    pub vl_brt: Option<Decimal>,            // 7
 }
 
 impl_reg_methods!(RegistroC405);
@@ -52,9 +51,9 @@ impl SpedParser for RegistroC405 {
         };
 
         let dt_doc = get_date(2, "DT_DOC")?;
-        let cro = fields.get(3).to_arc();
-        let crz = fields.get(4).to_arc();
-        let num_coo_fin = fields.get(5).to_arc();
+        let cro = fields.get(3).map(|&s| s.into());
+        let crz = fields.get(4).map(|&s| s.into());
+        let num_coo_fin = fields.get(5).map(|&s| s.into());
         let gt_fin = get_decimal(6, "GT_FIN")?;
         let vl_brt = get_decimal(7, "VL_BRT")?;
 

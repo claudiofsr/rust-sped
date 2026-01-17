@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C800";
 
@@ -16,27 +15,27 @@ pub struct RegistroC800 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<Arc<str>>,     // 2
-    pub cod_sit: Option<Arc<str>>,     // 3
-    pub num_cfe: Option<Arc<str>>,     // 4
-    pub dt_doc: Option<NaiveDate>,     // 5
-    pub vl_cfe: Option<Decimal>,       // 6
-    pub vl_pis: Option<Decimal>,       // 7
-    pub vl_cofins: Option<Decimal>,    // 8
-    pub cnpj_cpf: Option<Arc<str>>,    // 9
-    pub nr_sat: Option<Arc<str>>,      // 10
-    pub chv_cfe: Option<Arc<str>>,     // 11
-    pub vl_desc: Option<Decimal>,      // 12
-    pub vl_merc: Option<Decimal>,      // 13
-    pub vl_out_da: Option<Decimal>,    // 14
-    pub vl_icms: Option<Decimal>,      // 15
-    pub vl_pis_st: Option<Decimal>,    // 16
-    pub vl_cofins_st: Option<Decimal>, // 17
+    pub cod_mod: Option<CompactString>,  // 2
+    pub cod_sit: Option<CompactString>,  // 3
+    pub num_cfe: Option<CompactString>,  // 4
+    pub dt_doc: Option<NaiveDate>,       // 5
+    pub vl_cfe: Option<Decimal>,         // 6
+    pub vl_pis: Option<Decimal>,         // 7
+    pub vl_cofins: Option<Decimal>,      // 8
+    pub cnpj_cpf: Option<CompactString>, // 9
+    pub nr_sat: Option<CompactString>,   // 10
+    pub chv_cfe: Option<CompactString>,  // 11
+    pub vl_desc: Option<Decimal>,        // 12
+    pub vl_merc: Option<Decimal>,        // 13
+    pub vl_out_da: Option<Decimal>,      // 14
+    pub vl_icms: Option<Decimal>,        // 15
+    pub vl_pis_st: Option<Decimal>,      // 16
+    pub vl_cofins_st: Option<Decimal>,   // 17
 }
 
 impl_reg_methods!(RegistroC800);
@@ -70,16 +69,16 @@ impl SpedParser for RegistroC800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_arc();
-        let cod_sit = fields.get(3).to_arc();
-        let num_cfe = fields.get(4).to_arc();
+        let cod_mod = fields.get(2).map(|&s| s.into());
+        let cod_sit = fields.get(3).map(|&s| s.into());
+        let num_cfe = fields.get(4).map(|&s| s.into());
         let dt_doc = get_date(5, "DT_DOC")?;
         let vl_cfe = get_decimal(6, "VL_CFE")?;
         let vl_pis = get_decimal(7, "VL_PIS")?;
         let vl_cofins = get_decimal(8, "VL_COFINS")?;
-        let cnpj_cpf = fields.get(9).to_arc();
-        let nr_sat = fields.get(10).to_arc();
-        let chv_cfe = fields.get(11).to_arc();
+        let cnpj_cpf = fields.get(9).map(|&s| s.into());
+        let nr_sat = fields.get(10).map(|&s| s.into());
+        let chv_cfe = fields.get(11).map(|&s| s.into());
         let vl_desc = get_decimal(12, "VL_DESC")?;
         let vl_merc = get_decimal(13, "VL_MERC")?;
         let vl_out_da = get_decimal(14, "VL_OUT_DA")?;

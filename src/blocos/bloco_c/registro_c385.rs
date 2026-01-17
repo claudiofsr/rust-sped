@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C385";
 
@@ -13,20 +14,20 @@ pub struct RegistroC385 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cst_cofins: Option<u16>,            // 2
-    pub cod_item: Option<Arc<str>>,         // 3
-    pub vl_item: Option<Decimal>,           // 4
-    pub vl_bc_cofins: Option<Decimal>,      // 5
-    pub aliq_cofins: Option<Decimal>,       // 6
-    pub quant_bc_cofins: Option<Arc<str>>,  // 7
-    pub aliq_cofins_quant: Option<Decimal>, // 8
-    pub vl_cofins: Option<Decimal>,         // 9
-    pub cod_cta: Option<Arc<str>>,          // 10
+    pub cst_cofins: Option<u16>,                // 2
+    pub cod_item: Option<CompactString>,        // 3
+    pub vl_item: Option<Decimal>,               // 4
+    pub vl_bc_cofins: Option<Decimal>,          // 5
+    pub aliq_cofins: Option<Decimal>,           // 6
+    pub quant_bc_cofins: Option<CompactString>, // 7
+    pub aliq_cofins_quant: Option<Decimal>,     // 8
+    pub vl_cofins: Option<Decimal>,             // 9
+    pub cod_cta: Option<CompactString>,         // 10
 }
 
 impl_reg_methods!(RegistroC385);
@@ -56,14 +57,14 @@ impl SpedParser for RegistroC385 {
         };
 
         let cst_cofins = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).to_arc();
+        let cod_item = fields.get(3).map(|&s| s.into());
         let vl_item = get_decimal(4, "VL_ITEM")?;
         let vl_bc_cofins = get_decimal(5, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(6, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(7).to_arc();
+        let quant_bc_cofins = fields.get(7).map(|&s| s.into());
         let aliq_cofins_quant = get_decimal(8, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(9, "VL_COFINS")?;
-        let cod_cta = fields.get(10).to_arc();
+        let cod_cta = fields.get(10).map(|&s| s.into());
 
         let reg = RegistroC385 {
             nivel: 4,

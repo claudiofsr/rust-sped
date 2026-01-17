@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "1800";
 
@@ -16,19 +15,19 @@ pub struct Registro1800 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub inc_imob: Option<Arc<str>>,     // 2
-    pub rec_receb_ret: Option<Decimal>, // 3
-    pub rec_fin_ret: Option<Decimal>,   // 4
-    pub bc_ret: Option<Arc<str>>,       // 5
-    pub aliq_ret: Option<Decimal>,      // 6
-    pub vl_rec_uni: Option<Decimal>,    // 7
-    pub dt_rec_uni: Option<NaiveDate>,  // 8
-    pub cod_rec: Option<Arc<str>>,      // 9
+    pub inc_imob: Option<CompactString>, // 2
+    pub rec_receb_ret: Option<Decimal>,  // 3
+    pub rec_fin_ret: Option<Decimal>,    // 4
+    pub bc_ret: Option<CompactString>,   // 5
+    pub aliq_ret: Option<Decimal>,       // 6
+    pub vl_rec_uni: Option<Decimal>,     // 7
+    pub dt_rec_uni: Option<NaiveDate>,   // 8
+    pub cod_rec: Option<CompactString>,  // 9
 }
 
 impl_reg_methods!(Registro1800);
@@ -62,14 +61,14 @@ impl SpedParser for Registro1800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let inc_imob = fields.get(2).to_arc();
+        let inc_imob = fields.get(2).map(|&s| s.into());
         let rec_receb_ret = get_decimal(3, "REC_RECEB_RET")?;
         let rec_fin_ret = get_decimal(4, "REC_FIN_RET")?;
-        let bc_ret = fields.get(5).to_arc();
+        let bc_ret = fields.get(5).map(|&s| s.into());
         let aliq_ret = get_decimal(6, "ALIQ_RET")?;
         let vl_rec_uni = get_decimal(7, "VL_REC_UNI")?;
         let dt_rec_uni = get_date(8, "DT_REC_UNI")?;
-        let cod_rec = fields.get(9).to_arc();
+        let cod_rec = fields.get(9).map(|&s| s.into());
 
         let reg = Registro1800 {
             nivel: 2,

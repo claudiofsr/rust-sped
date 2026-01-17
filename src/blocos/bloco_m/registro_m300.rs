@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "M300";
 
@@ -16,18 +15,18 @@ pub struct RegistroM300 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_cont: Option<Arc<str>>,          // 2
-    pub vl_cont_apur_difer: Option<Decimal>, // 3
-    pub nat_cred_desc: Option<Arc<str>>,     // 4
-    pub vl_cred_desc_difer: Option<Decimal>, // 5
-    pub vl_cont_difer_ant: Option<Decimal>,  // 6
-    pub per_apur: Option<Arc<str>>,          // 7
-    pub dt_receb: Option<NaiveDate>,         // 8
+    pub cod_cont: Option<CompactString>,      // 2
+    pub vl_cont_apur_difer: Option<Decimal>,  // 3
+    pub nat_cred_desc: Option<CompactString>, // 4
+    pub vl_cred_desc_difer: Option<Decimal>,  // 5
+    pub vl_cont_difer_ant: Option<Decimal>,   // 6
+    pub per_apur: Option<CompactString>,      // 7
+    pub dt_receb: Option<NaiveDate>,          // 8
 }
 
 impl_reg_methods!(RegistroM300);
@@ -63,12 +62,12 @@ impl SpedParser for RegistroM300 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_cont = fields.get(2).to_arc();
+        let cod_cont = fields.get(2).map(|&s| s.into());
         let vl_cont_apur_difer = get_decimal(3, "VL_CONT_APUR_DIFER")?;
-        let nat_cred_desc = fields.get(4).to_arc();
+        let nat_cred_desc = fields.get(4).map(|&s| s.into());
         let vl_cred_desc_difer = get_decimal(5, "VL_CRED_DESC_DIFER")?;
         let vl_cont_difer_ant = get_decimal(6, "VL_CONT_DIFER_ANT")?;
-        let per_apur = fields.get(7).to_arc();
+        let per_apur = fields.get(7).map(|&s| s.into());
         let dt_receb = get_date(8, "DT_RECEB")?;
 
         let reg = RegistroM300 {

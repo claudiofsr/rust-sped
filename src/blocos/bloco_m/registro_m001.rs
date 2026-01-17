@@ -1,5 +1,6 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_reg_methods};
-use std::{path::Path, sync::Arc};
+use compact_str::CompactString;
+use std::path::Path;
 
 const REGISTRO: &str = "M001";
 
@@ -12,12 +13,12 @@ pub struct RegistroM001 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_mov: Option<char>, // 2
+    pub ind_mov: Option<u8>, // 2
 }
 
 impl_reg_methods!(RegistroM001);

@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "M500";
 
@@ -13,25 +14,25 @@ pub struct RegistroM500 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_cred: Option<u16>,              // 2
-    pub ind_cred_ori: Option<Arc<str>>,     // 3
-    pub vl_bc_cofins: Option<Decimal>,      // 4
-    pub aliq_cofins: Option<Decimal>,       // 5
-    pub quant_bc_cofins: Option<Arc<str>>,  // 6 (Pode ser String ou Decimal)
-    pub aliq_cofins_quant: Option<Decimal>, // 7
-    pub vl_cred: Option<Decimal>,           // 8
-    pub vl_ajus_acres: Option<Decimal>,     // 9
-    pub vl_ajus_reduc: Option<Decimal>,     // 10
-    pub vl_cred_difer: Option<Decimal>,     // 11
-    pub vl_cred_disp: Option<Decimal>,      // 12
-    pub ind_desc_cred: Option<Arc<str>>,    // 13
-    pub vl_cred_desc: Option<Decimal>,      // 14
-    pub sld_cred: Option<Decimal>,          // 15
+    pub cod_cred: Option<u16>,                  // 2
+    pub ind_cred_ori: Option<CompactString>,    // 3
+    pub vl_bc_cofins: Option<Decimal>,          // 4
+    pub aliq_cofins: Option<Decimal>,           // 5
+    pub quant_bc_cofins: Option<CompactString>, // 6 (Pode ser String ou Decimal)
+    pub aliq_cofins_quant: Option<Decimal>,     // 7
+    pub vl_cred: Option<Decimal>,               // 8
+    pub vl_ajus_acres: Option<Decimal>,         // 9
+    pub vl_ajus_reduc: Option<Decimal>,         // 10
+    pub vl_cred_difer: Option<Decimal>,         // 11
+    pub vl_cred_disp: Option<Decimal>,          // 12
+    pub ind_desc_cred: Option<CompactString>,   // 13
+    pub vl_cred_desc: Option<Decimal>,          // 14
+    pub sld_cred: Option<Decimal>,              // 15
 }
 
 impl_reg_methods!(RegistroM500);
@@ -61,17 +62,17 @@ impl SpedParser for RegistroM500 {
         };
 
         let cod_cred = fields.get(2).parse_opt();
-        let ind_cred_ori = fields.get(3).to_arc();
+        let ind_cred_ori = fields.get(3).map(|&s| s.into());
         let vl_bc_cofins = get_decimal(4, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(5, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(6).to_arc();
+        let quant_bc_cofins = fields.get(6).map(|&s| s.into());
         let aliq_cofins_quant = get_decimal(7, "ALIQ_COFINS_QUANT")?;
         let vl_cred = get_decimal(8, "VL_CRED")?;
         let vl_ajus_acres = get_decimal(9, "VL_AJUS_ACRES")?;
         let vl_ajus_reduc = get_decimal(10, "VL_AJUS_REDUC")?;
         let vl_cred_difer = get_decimal(11, "VL_CRED_DIFER")?;
         let vl_cred_disp = get_decimal(12, "VL_CRED_DISP")?;
-        let ind_desc_cred = fields.get(13).to_arc();
+        let ind_desc_cred = fields.get(13).map(|&s| s.into());
         let vl_cred_desc = get_decimal(14, "VL_CRED_DESC")?;
         let sld_cred = get_decimal(15, "SLD_CRED")?;
 

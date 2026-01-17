@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "1500";
 
@@ -16,28 +17,28 @@ pub struct Registro1500 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_apu_cred: Option<NaiveDate>,       // 2
-    pub orig_cred: Option<Arc<str>>,           // 3
-    pub cnpj_suc: Option<Arc<str>>,            // 4
-    pub cod_cred: Option<u16>,                 // 5
-    pub vl_cred_apu: Option<Decimal>,          // 6
-    pub vl_cred_ext_apu: Option<Decimal>,      // 7
-    pub vl_tot_cred_apu: Option<Decimal>,      // 8
-    pub vl_cred_desc_pa_ant: Option<Decimal>,  // 9
-    pub vl_cred_per_pa_ant: Option<Decimal>,   // 10
-    pub vl_cred_dcomp_pa_ant: Option<Decimal>, // 11
-    pub sd_cred_disp_efd: Option<Arc<str>>,    // 12
-    pub vl_cred_desc_efd: Option<Decimal>,     // 13
-    pub vl_cred_per_efd: Option<Decimal>,      // 14
-    pub vl_cred_dcomp_efd: Option<Decimal>,    // 15
-    pub vl_cred_trans: Option<Decimal>,        // 16
-    pub vl_cred_out: Option<Decimal>,          // 17
-    pub sld_cred_fim: Option<Decimal>,         // 18
+    pub per_apu_cred: Option<NaiveDate>,         // 2
+    pub orig_cred: Option<CompactString>,        // 3
+    pub cnpj_suc: Option<CompactString>,         // 4
+    pub cod_cred: Option<u16>,                   // 5
+    pub vl_cred_apu: Option<Decimal>,            // 6
+    pub vl_cred_ext_apu: Option<Decimal>,        // 7
+    pub vl_tot_cred_apu: Option<Decimal>,        // 8
+    pub vl_cred_desc_pa_ant: Option<Decimal>,    // 9
+    pub vl_cred_per_pa_ant: Option<Decimal>,     // 10
+    pub vl_cred_dcomp_pa_ant: Option<Decimal>,   // 11
+    pub sd_cred_disp_efd: Option<CompactString>, // 12
+    pub vl_cred_desc_efd: Option<Decimal>,       // 13
+    pub vl_cred_per_efd: Option<Decimal>,        // 14
+    pub vl_cred_dcomp_efd: Option<Decimal>,      // 15
+    pub vl_cred_trans: Option<Decimal>,          // 16
+    pub vl_cred_out: Option<Decimal>,            // 17
+    pub sld_cred_fim: Option<Decimal>,           // 18
 }
 
 impl_reg_methods!(Registro1500);
@@ -72,8 +73,8 @@ impl SpedParser for Registro1500 {
         };
 
         let per_apu_cred = get_date(2, "PER_APU_CRED")?; // Will error if empty or invalid date
-        let orig_cred = fields.get(3).to_arc();
-        let cnpj_suc = fields.get(4).to_arc();
+        let orig_cred = fields.get(3).map(|&s| s.into());
+        let cnpj_suc = fields.get(4).map(|&s| s.into());
         let cod_cred = fields.get(5).parse_opt();
         let vl_cred_apu = get_decimal(6, "VL_CRED_APU")?;
         let vl_cred_ext_apu = get_decimal(7, "VL_CRED_EXT_APU")?;
@@ -81,7 +82,7 @@ impl SpedParser for Registro1500 {
         let vl_cred_desc_pa_ant = get_decimal(9, "VL_CRED_DESC_PA_ANT")?;
         let vl_cred_per_pa_ant = get_decimal(10, "VL_CRED_PER_PA_ANT")?;
         let vl_cred_dcomp_pa_ant = get_decimal(11, "VL_CRED_DCOMP_PA_ANT")?;
-        let sd_cred_disp_efd = fields.get(12).to_arc();
+        let sd_cred_disp_efd = fields.get(12).map(|&s| s.into());
         let vl_cred_desc_efd = get_decimal(13, "VL_CRED_DESC_EFD")?;
         let vl_cred_per_efd = get_decimal(14, "VL_CRED_PER_EFD")?;
         let vl_cred_dcomp_efd = get_decimal(15, "VL_CRED_DCOMP_EFD")?;

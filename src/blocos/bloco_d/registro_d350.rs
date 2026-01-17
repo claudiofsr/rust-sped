@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "D350";
 
@@ -16,33 +17,33 @@ pub struct RegistroD350 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<Arc<str>>,          // 2
-    pub ecf_mod: Option<Arc<str>>,          // 3
-    pub ecf_fab: Option<Arc<str>>,          // 4
-    pub dt_doc: Option<NaiveDate>,          // 5
-    pub cro: Option<Arc<str>>,              // 6
-    pub crz: Option<Arc<str>>,              // 7
-    pub num_coo_fin: Option<Arc<str>>,      // 8
-    pub gt_fin: Option<Arc<str>>,           // 9
-    pub vl_brt: Option<Decimal>,            // 10
-    pub cst_pis: Option<u16>,               // 11
-    pub vl_bc_pis: Option<Decimal>,         // 12
-    pub aliq_pis: Option<Decimal>,          // 13
-    pub quant_bc_pis: Option<Arc<str>>,     // 14
-    pub aliq_pis_quant: Option<Decimal>,    // 15
-    pub vl_pis: Option<Decimal>,            // 16
-    pub cst_cofins: Option<u16>,            // 17
-    pub vl_bc_cofins: Option<Decimal>,      // 18
-    pub aliq_cofins: Option<Decimal>,       // 19
-    pub quant_bc_cofins: Option<Arc<str>>,  // 20
-    pub aliq_cofins_quant: Option<Decimal>, // 21
-    pub vl_cofins: Option<Decimal>,         // 22
-    pub cod_cta: Option<Arc<str>>,          // 23
+    pub cod_mod: Option<CompactString>,         // 2
+    pub ecf_mod: Option<CompactString>,         // 3
+    pub ecf_fab: Option<CompactString>,         // 4
+    pub dt_doc: Option<NaiveDate>,              // 5
+    pub cro: Option<CompactString>,             // 6
+    pub crz: Option<CompactString>,             // 7
+    pub num_coo_fin: Option<CompactString>,     // 8
+    pub gt_fin: Option<CompactString>,          // 9
+    pub vl_brt: Option<Decimal>,                // 10
+    pub cst_pis: Option<u16>,                   // 11
+    pub vl_bc_pis: Option<Decimal>,             // 12
+    pub aliq_pis: Option<Decimal>,              // 13
+    pub quant_bc_pis: Option<CompactString>,    // 14
+    pub aliq_pis_quant: Option<Decimal>,        // 15
+    pub vl_pis: Option<Decimal>,                // 16
+    pub cst_cofins: Option<u16>,                // 17
+    pub vl_bc_cofins: Option<Decimal>,          // 18
+    pub aliq_cofins: Option<Decimal>,           // 19
+    pub quant_bc_cofins: Option<CompactString>, // 20
+    pub aliq_cofins_quant: Option<Decimal>,     // 21
+    pub vl_cofins: Option<Decimal>,             // 22
+    pub cod_cta: Option<CompactString>,         // 23
 }
 
 impl_reg_methods!(RegistroD350);
@@ -78,28 +79,28 @@ impl SpedParser for RegistroD350 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_arc();
-        let ecf_mod = fields.get(3).to_arc();
-        let ecf_fab = fields.get(4).to_arc();
+        let cod_mod = fields.get(2).map(|&s| s.into());
+        let ecf_mod = fields.get(3).map(|&s| s.into());
+        let ecf_fab = fields.get(4).map(|&s| s.into());
         let dt_doc = get_date(5, "DT_DOC")?;
-        let cro = fields.get(6).to_arc();
-        let crz = fields.get(7).to_arc();
-        let num_coo_fin = fields.get(8).to_arc();
-        let gt_fin = fields.get(9).to_arc();
+        let cro = fields.get(6).map(|&s| s.into());
+        let crz = fields.get(7).map(|&s| s.into());
+        let num_coo_fin = fields.get(8).map(|&s| s.into());
+        let gt_fin = fields.get(9).map(|&s| s.into());
         let vl_brt = get_decimal(10, "VL_BRT")?;
         let cst_pis = fields.get(11).parse_opt();
         let vl_bc_pis = get_decimal(12, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(13, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(14).to_arc();
+        let quant_bc_pis = fields.get(14).map(|&s| s.into());
         let aliq_pis_quant = get_decimal(15, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(16, "VL_PIS")?;
         let cst_cofins = fields.get(17).parse_opt();
         let vl_bc_cofins = get_decimal(18, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(19, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(20).to_arc();
+        let quant_bc_cofins = fields.get(20).map(|&s| s.into());
         let aliq_cofins_quant = get_decimal(21, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(22, "VL_COFINS")?;
-        let cod_cta = fields.get(23).to_arc();
+        let cod_cta = fields.get(23).map(|&s| s.into());
 
         let reg = RegistroD350 {
             nivel: 3,

@@ -1,7 +1,8 @@
 // registro_c120.rs
-use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C120";
 
@@ -9,13 +10,13 @@ const REGISTRO: &str = "C120";
 pub struct RegistroC120 {
     pub nivel: u16,
     pub bloco: char,
-    pub registro: Arc<str>,
+    pub registro: CompactString,
     pub line_number: usize,
-    pub cod_doc_imp: Option<Arc<str>>,  // 2
-    pub num_doc_imp: Option<Arc<str>>,  // 3
-    pub vl_pis_imp: Option<Decimal>,    // 4
-    pub vl_cofins_imp: Option<Decimal>, // 5
-    pub num_acdraw: Option<Arc<str>>,   // 6
+    pub cod_doc_imp: Option<CompactString>, // 2
+    pub num_doc_imp: Option<CompactString>, // 3
+    pub vl_pis_imp: Option<Decimal>,        // 4
+    pub vl_cofins_imp: Option<Decimal>,     // 5
+    pub num_acdraw: Option<CompactString>,  // 6
 }
 
 impl_reg_methods!(RegistroC120);
@@ -42,11 +43,11 @@ impl SpedParser for RegistroC120 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_doc_imp = fields.get(2).to_arc();
-        let num_doc_imp = fields.get(3).to_arc();
+        let cod_doc_imp = fields.get(2).map(|&s| s.into());
+        let num_doc_imp = fields.get(3).map(|&s| s.into());
         let vl_pis_imp = get_decimal(4, "VL_PIS_IMP")?;
         let vl_cofins_imp = get_decimal(5, "VL_COFINS_IMP")?;
-        let num_acdraw = fields.get(6).to_arc();
+        let num_acdraw = fields.get(6).map(|&s| s.into());
 
         let reg = RegistroC120 {
             nivel: 4,

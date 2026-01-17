@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "P100";
 
@@ -16,22 +15,22 @@ pub struct RegistroP100 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub dt_ini: Option<NaiveDate>,          // 2
-    pub dt_fin: Option<NaiveDate>,          // 3
-    pub vl_rec_tot_est: Option<Decimal>,    // 4
-    pub cod_ativ_econ: Option<Arc<str>>,    // 5
-    pub vl_rec_ativ_estab: Option<Decimal>, // 6
-    pub vl_exc: Option<Decimal>,            // 7
-    pub vl_bc_cont: Option<Decimal>,        // 8
-    pub aliq_cont: Option<Decimal>,         // 9
-    pub vl_cont_apu: Option<Decimal>,       // 10
-    pub cod_cta: Option<Arc<str>>,          // 11
-    pub info_compl: Option<Arc<str>>,       // 12
+    pub dt_ini: Option<NaiveDate>,            // 2
+    pub dt_fin: Option<NaiveDate>,            // 3
+    pub vl_rec_tot_est: Option<Decimal>,      // 4
+    pub cod_ativ_econ: Option<CompactString>, // 5
+    pub vl_rec_ativ_estab: Option<Decimal>,   // 6
+    pub vl_exc: Option<Decimal>,              // 7
+    pub vl_bc_cont: Option<Decimal>,          // 8
+    pub aliq_cont: Option<Decimal>,           // 9
+    pub vl_cont_apu: Option<Decimal>,         // 10
+    pub cod_cta: Option<CompactString>,       // 11
+    pub info_compl: Option<CompactString>,    // 12
 }
 
 impl_reg_methods!(RegistroP100);
@@ -72,14 +71,14 @@ impl SpedParser for RegistroP100 {
         let dt_ini = get_date(2, "DT_INI")?;
         let dt_fin = get_date(3, "DT_FIN")?;
         let vl_rec_tot_est = get_decimal(4, "VL_REC_TOT_EST")?;
-        let cod_ativ_econ = fields.get(5).to_arc();
+        let cod_ativ_econ = fields.get(5).map(|&s| s.into());
         let vl_rec_ativ_estab = get_decimal(6, "VL_REC_ATIV_ESTAB")?;
         let vl_exc = get_decimal(7, "VL_EXC")?;
         let vl_bc_cont = get_decimal(8, "VL_BC_CONT")?;
         let aliq_cont = get_decimal(9, "ALIQ_CONT")?;
         let vl_cont_apu = get_decimal(10, "VL_CONT_APU")?;
-        let cod_cta = fields.get(11).to_arc();
-        let info_compl = fields.get(12).to_arc();
+        let cod_cta = fields.get(11).map(|&s| s.into());
+        let info_compl = fields.get(12).map(|&s| s.into());
 
         let reg = RegistroP100 {
             nivel: 3,

@@ -1,6 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "M610";
 
@@ -13,23 +14,23 @@ pub struct RegistroM610Antigo {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_cont: Option<Arc<str>>,         // 2
-    pub vl_rec_brt: Option<Decimal>,        // 3
-    pub vl_bc_cont: Option<Decimal>,        // 4
-    pub aliq_cofins: Option<Decimal>,       // 5
-    pub quant_bc_cofins: Option<Arc<str>>,  // 6 (Pode ser String ou Decimal)
-    pub aliq_cofins_quant: Option<Decimal>, // 7
-    pub vl_cont_apur: Option<Decimal>,      // 8
-    pub vl_ajus_acres: Option<Decimal>,     // 9
-    pub vl_ajus_reduc: Option<Decimal>,     // 10
-    pub vl_cont_difer: Option<Decimal>,     // 11
-    pub vl_cont_difer_ant: Option<Decimal>, // 12
-    pub vl_cont_per: Option<Decimal>,       // 13
+    pub cod_cont: Option<CompactString>,        // 2
+    pub vl_rec_brt: Option<Decimal>,            // 3
+    pub vl_bc_cont: Option<Decimal>,            // 4
+    pub aliq_cofins: Option<Decimal>,           // 5
+    pub quant_bc_cofins: Option<CompactString>, // 6 (Pode ser String ou Decimal)
+    pub aliq_cofins_quant: Option<Decimal>,     // 7
+    pub vl_cont_apur: Option<Decimal>,          // 8
+    pub vl_ajus_acres: Option<Decimal>,         // 9
+    pub vl_ajus_reduc: Option<Decimal>,         // 10
+    pub vl_cont_difer: Option<Decimal>,         // 11
+    pub vl_cont_difer_ant: Option<Decimal>,     // 12
+    pub vl_cont_per: Option<Decimal>,           // 13
 }
 
 impl_reg_methods!(RegistroM610Antigo);
@@ -58,11 +59,11 @@ impl SpedParser for RegistroM610Antigo {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_cont = fields.get(2).to_arc();
+        let cod_cont = fields.get(2).map(|&s| s.into());
         let vl_rec_brt = get_decimal(3, "VL_REC_BRT")?;
         let vl_bc_cont = get_decimal(4, "VL_BC_CONT")?;
         let aliq_cofins = get_decimal(5, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(6).to_arc();
+        let quant_bc_cofins = fields.get(6).map(|&s| s.into());
         let aliq_cofins_quant = get_decimal(7, "ALIQ_COFINS_QUANT")?;
         let vl_cont_apur = get_decimal(8, "VL_CONT_APUR")?;
         let vl_ajus_acres = get_decimal(9, "VL_AJUS_ACRES")?;

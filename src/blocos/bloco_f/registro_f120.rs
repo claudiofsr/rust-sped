@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "F120";
 
@@ -13,28 +14,28 @@ pub struct RegistroF120 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub nat_bc_cred: Option<u16>,                // 2
-    pub ident_bem_imob: Option<Arc<str>>,        // 3
-    pub ind_orig_cred: Option<Arc<str>>,         // 4
-    pub ind_util_bem_imob: Option<Arc<str>>,     // 5
-    pub vl_oper_dep: Option<Decimal>,            // 6
-    pub parc_oper_nao_bc_cred: Option<Arc<str>>, // 7 (Assumindo String, pode ser Decimal)
-    pub cst_pis: Option<u16>,                    // 8
-    pub vl_bc_pis: Option<Decimal>,              // 9
-    pub aliq_pis: Option<Decimal>,               // 10
-    pub vl_pis: Option<Decimal>,                 // 11
-    pub cst_cofins: Option<u16>,                 // 12
-    pub vl_bc_cofins: Option<Decimal>,           // 13
-    pub aliq_cofins: Option<Decimal>,            // 14
-    pub vl_cofins: Option<Decimal>,              // 15
-    pub cod_cta: Option<Arc<str>>,               // 16
-    pub cod_ccus: Option<Arc<str>>,              // 17
-    pub desc_bem_imob: Option<Arc<str>>,         // 18
+    pub nat_bc_cred: Option<u16>,                     // 2
+    pub ident_bem_imob: Option<CompactString>,        // 3
+    pub ind_orig_cred: Option<CompactString>,         // 4
+    pub ind_util_bem_imob: Option<CompactString>,     // 5
+    pub vl_oper_dep: Option<Decimal>,                 // 6
+    pub parc_oper_nao_bc_cred: Option<CompactString>, // 7 (Assumindo String, pode ser Decimal)
+    pub cst_pis: Option<u16>,                         // 8
+    pub vl_bc_pis: Option<Decimal>,                   // 9
+    pub aliq_pis: Option<Decimal>,                    // 10
+    pub vl_pis: Option<Decimal>,                      // 11
+    pub cst_cofins: Option<u16>,                      // 12
+    pub vl_bc_cofins: Option<Decimal>,                // 13
+    pub aliq_cofins: Option<Decimal>,                 // 14
+    pub vl_cofins: Option<Decimal>,                   // 15
+    pub cod_cta: Option<CompactString>,               // 16
+    pub cod_ccus: Option<CompactString>,              // 17
+    pub desc_bem_imob: Option<CompactString>,         // 18
 }
 
 impl_reg_methods!(RegistroF120);
@@ -63,11 +64,11 @@ impl SpedParser for RegistroF120 {
         };
 
         let nat_bc_cred = fields.get(2).parse_opt();
-        let ident_bem_imob = fields.get(3).to_arc();
-        let ind_orig_cred = fields.get(4).to_arc();
-        let ind_util_bem_imob = fields.get(5).to_arc();
+        let ident_bem_imob = fields.get(3).map(|&s| s.into());
+        let ind_orig_cred = fields.get(4).map(|&s| s.into());
+        let ind_util_bem_imob = fields.get(5).map(|&s| s.into());
         let vl_oper_dep = get_decimal(6, "VL_OPER_DEP")?;
-        let parc_oper_nao_bc_cred = fields.get(7).to_arc();
+        let parc_oper_nao_bc_cred = fields.get(7).map(|&s| s.into());
         let cst_pis = fields.get(8).parse_opt();
         let vl_bc_pis = get_decimal(9, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(10, "ALIQ_PIS")?;
@@ -76,9 +77,9 @@ impl SpedParser for RegistroF120 {
         let vl_bc_cofins = get_decimal(13, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(14, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(15, "VL_COFINS")?;
-        let cod_cta = fields.get(16).to_arc();
-        let cod_ccus = fields.get(17).to_arc();
-        let desc_bem_imob = fields.get(18).to_arc();
+        let cod_cta = fields.get(16).map(|&s| s.into());
+        let cod_ccus = fields.get(17).map(|&s| s.into());
+        let desc_bem_imob = fields.get(18).map(|&s| s.into());
 
         let reg = RegistroF120 {
             nivel: 3,

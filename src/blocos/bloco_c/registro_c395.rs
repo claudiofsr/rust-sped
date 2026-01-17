@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C395";
 
@@ -16,18 +17,18 @@ pub struct RegistroC395 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<Arc<str>>,  // 2
-    pub cod_part: Option<Arc<str>>, // 3
-    pub ser: Option<Arc<str>>,      // 4
-    pub sub_ser: Option<Arc<str>>,  // 5
-    pub num_doc: Option<usize>,     // 6
-    pub dt_doc: Option<NaiveDate>,  // 7
-    pub vl_doc: Option<Decimal>,    // 8
+    pub cod_mod: Option<CompactString>,  // 2
+    pub cod_part: Option<CompactString>, // 3
+    pub ser: Option<CompactString>,      // 4
+    pub sub_ser: Option<CompactString>,  // 5
+    pub num_doc: Option<usize>,          // 6
+    pub dt_doc: Option<NaiveDate>,       // 7
+    pub vl_doc: Option<Decimal>,         // 8
 }
 
 impl_reg_methods!(RegistroC395);
@@ -61,10 +62,10 @@ impl SpedParser for RegistroC395 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_arc();
-        let cod_part = fields.get(3).to_arc();
-        let ser = fields.get(4).to_arc();
-        let sub_ser = fields.get(5).to_arc();
+        let cod_mod = fields.get(2).map(|&s| s.into());
+        let cod_part = fields.get(3).map(|&s| s.into());
+        let ser = fields.get(4).map(|&s| s.into());
+        let sub_ser = fields.get(5).map(|&s| s.into());
         let num_doc = fields.get(6).parse_opt();
         let dt_doc = get_date(7, "DT_DOC")?;
         let vl_doc = get_decimal(8, "VL_DOC")?;

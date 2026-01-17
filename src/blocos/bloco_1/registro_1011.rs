@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "1011";
 
@@ -16,36 +17,36 @@ pub struct Registro1011 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub reg_ref: Option<Arc<str>>,          // 2
-    pub chave_doc: Option<Arc<str>>,        // 3
-    pub cod_part: Option<Arc<str>>,         // 4
-    pub cod_item: Option<Arc<str>>,         // 5
-    pub dt_oper: Option<NaiveDate>,         // 6
-    pub vl_oper: Option<Decimal>,           // 7
-    pub cst_pis: Option<u16>,               // 8
-    pub vl_bc_pis: Option<Decimal>,         // 9
-    pub aliq_pis: Option<Decimal>,          // 10
-    pub vl_pis: Option<Decimal>,            // 11
-    pub cst_cofins: Option<u16>,            // 12
-    pub vl_bc_cofins: Option<Decimal>,      // 13
-    pub aliq_cofins: Option<Decimal>,       // 14
-    pub vl_cofins: Option<Decimal>,         // 15
-    pub cst_pis_susp: Option<u16>,          // 16
-    pub vl_bc_pis_susp: Option<Decimal>,    // 17
-    pub aliq_pis_susp: Option<Decimal>,     // 18
-    pub vl_pis_susp: Option<Decimal>,       // 19
-    pub cst_cofins_susp: Option<u16>,       // 20
-    pub vl_bc_cofins_susp: Option<Decimal>, // 21
-    pub aliq_cofins_susp: Option<Decimal>,  // 22
-    pub vl_cofins_susp: Option<Decimal>,    // 23
-    pub cod_cta: Option<Arc<str>>,          // 24
-    pub cod_ccus: Option<Arc<str>>,         // 25
-    pub desc_doc_oper: Option<Arc<str>>,    // 26
+    pub reg_ref: Option<CompactString>,       // 2
+    pub chave_doc: Option<CompactString>,     // 3
+    pub cod_part: Option<CompactString>,      // 4
+    pub cod_item: Option<CompactString>,      // 5
+    pub dt_oper: Option<NaiveDate>,           // 6
+    pub vl_oper: Option<Decimal>,             // 7
+    pub cst_pis: Option<u16>,                 // 8
+    pub vl_bc_pis: Option<Decimal>,           // 9
+    pub aliq_pis: Option<Decimal>,            // 10
+    pub vl_pis: Option<Decimal>,              // 11
+    pub cst_cofins: Option<u16>,              // 12
+    pub vl_bc_cofins: Option<Decimal>,        // 13
+    pub aliq_cofins: Option<Decimal>,         // 14
+    pub vl_cofins: Option<Decimal>,           // 15
+    pub cst_pis_susp: Option<u16>,            // 16
+    pub vl_bc_pis_susp: Option<Decimal>,      // 17
+    pub aliq_pis_susp: Option<Decimal>,       // 18
+    pub vl_pis_susp: Option<Decimal>,         // 19
+    pub cst_cofins_susp: Option<u16>,         // 20
+    pub vl_bc_cofins_susp: Option<Decimal>,   // 21
+    pub aliq_cofins_susp: Option<Decimal>,    // 22
+    pub vl_cofins_susp: Option<Decimal>,      // 23
+    pub cod_cta: Option<CompactString>,       // 24
+    pub cod_ccus: Option<CompactString>,      // 25
+    pub desc_doc_oper: Option<CompactString>, // 26
 }
 
 impl_reg_methods!(Registro1011);
@@ -80,10 +81,10 @@ impl SpedParser for Registro1011 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let reg_ref = fields.get(2).to_arc();
-        let chave_doc = fields.get(3).to_arc();
-        let cod_part = fields.get(4).to_arc();
-        let cod_item = fields.get(5).to_arc();
+        let reg_ref = fields.get(2).map(|&s| s.into());
+        let chave_doc = fields.get(3).map(|&s| s.into());
+        let cod_part = fields.get(4).map(|&s| s.into());
+        let cod_item = fields.get(5).map(|&s| s.into());
         let dt_oper = get_date(6, "DT_OPER")?;
         let vl_oper = get_decimal(7, "VL_OPER")?;
         let cst_pis = fields.get(8).parse_opt();
@@ -102,9 +103,9 @@ impl SpedParser for Registro1011 {
         let vl_bc_cofins_susp = get_decimal(21, "VL_BC_COFINS_SUSP")?;
         let aliq_cofins_susp = get_decimal(22, "ALIQ_COFINS_SUSP")?;
         let vl_cofins_susp = get_decimal(23, "VL_COFINS_SUSP")?;
-        let cod_cta = fields.get(24).to_arc();
-        let cod_ccus = fields.get(25).to_arc();
-        let desc_doc_oper = fields.get(26).to_arc();
+        let cod_cta = fields.get(24).map(|&s| s.into());
+        let cod_ccus = fields.get(25).map(|&s| s.into());
+        let desc_doc_oper = fields.get(26).map(|&s| s.into());
 
         let reg = Registro1011 {
             nivel: 3,

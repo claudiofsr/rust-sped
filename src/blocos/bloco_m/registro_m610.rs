@@ -1,6 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "M610";
 
@@ -13,19 +14,19 @@ pub struct RegistroM610 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_cont: Option<Arc<str>>,               // 2
+    pub cod_cont: Option<CompactString>,          // 2
     pub vl_rec_brt: Option<Decimal>,              // 3
     pub vl_bc_cont: Option<Decimal>,              // 4
     pub vl_ajus_acres_bc_cofins: Option<Decimal>, // 5
     pub vl_ajus_reduc_bc_cofins: Option<Decimal>, // 6
     pub vl_bc_cont_ajus: Option<Decimal>,         // 7
     pub aliq_cofins: Option<Decimal>,             // 8
-    pub quant_bc_cofins: Option<Arc<str>>,        // 9 (Pode ser String ou Decimal)
+    pub quant_bc_cofins: Option<CompactString>,   // 9 (Pode ser String ou Decimal)
     pub aliq_cofins_quant: Option<Decimal>,       // 10
     pub vl_cont_apur: Option<Decimal>,            // 11
     pub vl_ajus_acres: Option<Decimal>,           // 12
@@ -61,14 +62,14 @@ impl SpedParser for RegistroM610 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_cont = fields.get(2).to_arc();
+        let cod_cont = fields.get(2).map(|&s| s.into());
         let vl_rec_brt = get_decimal(3, "VL_REC_BRT")?;
         let vl_bc_cont = get_decimal(4, "VL_BC_CONT")?;
         let vl_ajus_acres_bc_cofins = get_decimal(5, "VL_AJUS_ACRES_BC_COFINS")?;
         let vl_ajus_reduc_bc_cofins = get_decimal(6, "VL_AJUS_REDUC_BC_COFINS")?;
         let vl_bc_cont_ajus = get_decimal(7, "VL_BC_CONT_AJUS")?;
         let aliq_cofins = get_decimal(8, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(9).to_arc();
+        let quant_bc_cofins = fields.get(9).map(|&s| s.into());
         let aliq_cofins_quant = get_decimal(10, "ALIQ_COFINS_QUANT")?;
         let vl_cont_apur = get_decimal(11, "VL_CONT_APUR")?;
         let vl_ajus_acres = get_decimal(12, "VL_AJUS_ACRES")?;

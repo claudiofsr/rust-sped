@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "F500";
 
@@ -13,26 +14,26 @@ pub struct RegistroF500 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub vl_rec_caixa: Option<Decimal>,   // 2
-    pub cst_pis: Option<u16>,            // 3
-    pub vl_desc_pis: Option<Decimal>,    // 4
-    pub vl_bc_pis: Option<Decimal>,      // 5
-    pub aliq_pis: Option<Decimal>,       // 6
-    pub vl_pis: Option<Decimal>,         // 7
-    pub cst_cofins: Option<u16>,         // 8
-    pub vl_desc_cofins: Option<Decimal>, // 9
-    pub vl_bc_cofins: Option<Decimal>,   // 10
-    pub aliq_cofins: Option<Decimal>,    // 11
-    pub vl_cofins: Option<Decimal>,      // 12
-    pub cod_mod: Option<Arc<str>>,       // 13
-    pub cfop: Option<u16>,               // 14
-    pub cod_cta: Option<Arc<str>>,       // 15
-    pub info_compl: Option<Arc<str>>,    // 16
+    pub vl_rec_caixa: Option<Decimal>,     // 2
+    pub cst_pis: Option<u16>,              // 3
+    pub vl_desc_pis: Option<Decimal>,      // 4
+    pub vl_bc_pis: Option<Decimal>,        // 5
+    pub aliq_pis: Option<Decimal>,         // 6
+    pub vl_pis: Option<Decimal>,           // 7
+    pub cst_cofins: Option<u16>,           // 8
+    pub vl_desc_cofins: Option<Decimal>,   // 9
+    pub vl_bc_cofins: Option<Decimal>,     // 10
+    pub aliq_cofins: Option<Decimal>,      // 11
+    pub vl_cofins: Option<Decimal>,        // 12
+    pub cod_mod: Option<CompactString>,    // 13
+    pub cfop: Option<u16>,                 // 14
+    pub cod_cta: Option<CompactString>,    // 15
+    pub info_compl: Option<CompactString>, // 16
 }
 
 impl_reg_methods!(RegistroF500);
@@ -71,10 +72,10 @@ impl SpedParser for RegistroF500 {
         let vl_bc_cofins = get_decimal(10, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(11, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(12, "VL_COFINS")?;
-        let cod_mod = fields.get(13).to_arc();
+        let cod_mod = fields.get(13).map(|&s| s.into());
         let cfop = fields.get(14).parse_opt();
-        let cod_cta = fields.get(15).to_arc();
-        let info_compl = fields.get(16).to_arc();
+        let cod_cta = fields.get(15).map(|&s| s.into());
+        let info_compl = fields.get(16).map(|&s| s.into());
 
         let reg = RegistroF500 {
             nivel: 3,

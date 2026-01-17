@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "I100";
 
@@ -13,22 +14,22 @@ pub struct RegistroI100 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub vl_rec: Option<Decimal>,         // 2
-    pub cst_pis_cofins: Option<u16>,     // 3
-    pub vl_tot_ded_ger: Option<Decimal>, // 4
-    pub vl_tot_ded_esp: Option<Decimal>, // 5
-    pub vl_bc_pis: Option<Decimal>,      // 6
-    pub aliq_pis: Option<Decimal>,       // 7
-    pub vl_pis: Option<Decimal>,         // 8
-    pub vl_bc_cofins: Option<Decimal>,   // 9
-    pub aliq_cofins: Option<Decimal>,    // 10
-    pub vl_cofins: Option<Decimal>,      // 11
-    pub info_compl: Option<Arc<str>>,    // 12
+    pub vl_rec: Option<Decimal>,           // 2
+    pub cst_pis_cofins: Option<u16>,       // 3
+    pub vl_tot_ded_ger: Option<Decimal>,   // 4
+    pub vl_tot_ded_esp: Option<Decimal>,   // 5
+    pub vl_bc_pis: Option<Decimal>,        // 6
+    pub aliq_pis: Option<Decimal>,         // 7
+    pub vl_pis: Option<Decimal>,           // 8
+    pub vl_bc_cofins: Option<Decimal>,     // 9
+    pub aliq_cofins: Option<Decimal>,      // 10
+    pub vl_cofins: Option<Decimal>,        // 11
+    pub info_compl: Option<CompactString>, // 12
 }
 
 impl_reg_methods!(RegistroI100);
@@ -67,7 +68,7 @@ impl SpedParser for RegistroI100 {
         let vl_bc_cofins = get_decimal(9, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(10, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(11, "VL_COFINS")?;
-        let info_compl = fields.get(12).to_arc();
+        let info_compl = fields.get(12).map(|&s| s.into());
 
         let reg = RegistroI100 {
             nivel: 3,

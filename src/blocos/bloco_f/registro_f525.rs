@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "F525";
 
@@ -13,21 +14,21 @@ pub struct RegistroF525 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub vl_rec: Option<Decimal>,      // 2
-    pub ind_rec: Option<Arc<str>>,    // 3
-    pub cnpj_cpf: Option<Arc<str>>,   // 4
-    pub num_doc: Option<usize>,       // 5
-    pub cod_item: Option<Arc<str>>,   // 6
-    pub vl_rec_det: Option<Decimal>,  // 7
-    pub cst_pis: Option<u16>,         // 8
-    pub cst_cofins: Option<u16>,      // 9
-    pub info_compl: Option<Arc<str>>, // 10
-    pub cod_cta: Option<Arc<str>>,    // 11
+    pub vl_rec: Option<Decimal>,           // 2
+    pub ind_rec: Option<CompactString>,    // 3
+    pub cnpj_cpf: Option<CompactString>,   // 4
+    pub num_doc: Option<usize>,            // 5
+    pub cod_item: Option<CompactString>,   // 6
+    pub vl_rec_det: Option<Decimal>,       // 7
+    pub cst_pis: Option<u16>,              // 8
+    pub cst_cofins: Option<u16>,           // 9
+    pub info_compl: Option<CompactString>, // 10
+    pub cod_cta: Option<CompactString>,    // 11
 }
 
 impl_reg_methods!(RegistroF525);
@@ -56,15 +57,15 @@ impl SpedParser for RegistroF525 {
         };
 
         let vl_rec = get_decimal(2, "VL_REC")?;
-        let ind_rec = fields.get(3).to_arc();
-        let cnpj_cpf = fields.get(4).to_arc();
+        let ind_rec = fields.get(3).map(|&s| s.into());
+        let cnpj_cpf = fields.get(4).map(|&s| s.into());
         let num_doc = fields.get(5).parse_opt();
-        let cod_item = fields.get(6).to_arc();
+        let cod_item = fields.get(6).map(|&s| s.into());
         let vl_rec_det = get_decimal(7, "VL_REC_DET")?;
         let cst_pis = fields.get(8).parse_opt();
         let cst_cofins = fields.get(9).parse_opt();
-        let info_compl = fields.get(10).to_arc();
-        let cod_cta = fields.get(11).to_arc();
+        let info_compl = fields.get(10).map(|&s| s.into());
+        let cod_cta = fields.get(11).map(|&s| s.into());
 
         let reg = RegistroF525 {
             nivel: 3,

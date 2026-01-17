@@ -1,6 +1,7 @@
-use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "P200";
 
@@ -13,17 +14,17 @@ pub struct RegistroP200 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_ref: Option<Arc<str>>,        // 2
+    pub per_ref: Option<CompactString>,   // 2
     pub vl_tot_cont_apu: Option<Decimal>, // 3
     pub vl_tot_aj_reduc: Option<Decimal>, // 4
     pub vl_tot_aj_acres: Option<Decimal>, // 5
     pub vl_tot_cont_dev: Option<Decimal>, // 6
-    pub cod_rec: Option<Arc<str>>,        // 7
+    pub cod_rec: Option<CompactString>,   // 7
 }
 
 impl_reg_methods!(RegistroP200);
@@ -52,12 +53,12 @@ impl SpedParser for RegistroP200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_ref = fields.get(2).to_arc();
+        let per_ref = fields.get(2).map(|&s| s.into());
         let vl_tot_cont_apu = get_decimal(3, "VL_TOT_CONT_APU")?;
         let vl_tot_aj_reduc = get_decimal(4, "VL_TOT_AJ_REDUC")?;
         let vl_tot_aj_acres = get_decimal(5, "VL_TOT_AJ_ACRES")?;
         let vl_tot_cont_dev = get_decimal(6, "VL_TOT_CONT_DEV")?;
-        let cod_rec = fields.get(7).to_arc();
+        let cod_rec = fields.get(7).map(|&s| s.into());
 
         let reg = RegistroP200 {
             nivel: 2,

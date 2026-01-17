@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "D505";
 
@@ -13,18 +14,18 @@ pub struct RegistroD505 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cst_cofins: Option<u16>,       // 2
-    pub vl_item: Option<Decimal>,      // 3
-    pub nat_bc_cred: Option<u16>,      // 4
-    pub vl_bc_cofins: Option<Decimal>, // 5
-    pub aliq_cofins: Option<Decimal>,  // 6
-    pub vl_cofins: Option<Decimal>,    // 7
-    pub cod_cta: Option<Arc<str>>,     // 8
+    pub cst_cofins: Option<u16>,        // 2
+    pub vl_item: Option<Decimal>,       // 3
+    pub nat_bc_cred: Option<u16>,       // 4
+    pub vl_bc_cofins: Option<Decimal>,  // 5
+    pub aliq_cofins: Option<Decimal>,   // 6
+    pub vl_cofins: Option<Decimal>,     // 7
+    pub cod_cta: Option<CompactString>, // 8
 }
 
 impl_reg_methods!(RegistroD505);
@@ -59,7 +60,7 @@ impl SpedParser for RegistroD505 {
         let vl_bc_cofins = get_decimal(5, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(6, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(7, "VL_COFINS")?;
-        let cod_cta = fields.get(8).to_arc();
+        let cod_cta = fields.get(8).map(|&s| s.into());
 
         let reg = RegistroD505 {
             nivel: 4,

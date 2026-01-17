@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "M105";
 
@@ -13,20 +14,20 @@ pub struct RegistroM105 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub nat_bc_cred: Option<u16>,           // 2
-    pub cst_pis: Option<u16>,               // 3
-    pub vl_bc_pis_tot: Option<Decimal>,     // 4
-    pub vl_bc_pis_cum: Option<Decimal>,     // 5
-    pub vl_bc_pis_nc: Option<Decimal>,      // 6
-    pub vl_bc_pis: Option<Decimal>,         // 7
-    pub quant_bc_pis_tot: Option<Arc<str>>, // 8 (Pode ser String ou Decimal)
-    pub quant_bc_pis: Option<Arc<str>>,     // 9 (Pode ser String ou Decimal)
-    pub desc_cred: Option<Arc<str>>,        // 10
+    pub nat_bc_cred: Option<u16>,                // 2
+    pub cst_pis: Option<u16>,                    // 3
+    pub vl_bc_pis_tot: Option<Decimal>,          // 4
+    pub vl_bc_pis_cum: Option<Decimal>,          // 5
+    pub vl_bc_pis_nc: Option<Decimal>,           // 6
+    pub vl_bc_pis: Option<Decimal>,              // 7
+    pub quant_bc_pis_tot: Option<CompactString>, // 8 (Pode ser String ou Decimal)
+    pub quant_bc_pis: Option<CompactString>,     // 9 (Pode ser String ou Decimal)
+    pub desc_cred: Option<CompactString>,        // 10
 }
 
 impl_reg_methods!(RegistroM105);
@@ -61,9 +62,9 @@ impl SpedParser for RegistroM105 {
         let vl_bc_pis_cum = get_decimal(5, "VL_BC_PIS_CUM")?;
         let vl_bc_pis_nc = get_decimal(6, "VL_BC_PIS_NC")?;
         let vl_bc_pis = get_decimal(7, "VL_BC_PIS")?;
-        let quant_bc_pis_tot = fields.get(8).to_arc();
-        let quant_bc_pis = fields.get(9).to_arc();
-        let desc_cred = fields.get(10).to_arc();
+        let quant_bc_pis_tot = fields.get(8).map(|&s| s.into());
+        let quant_bc_pis = fields.get(9).map(|&s| s.into());
+        let desc_cred = fields.get(10).map(|&s| s.into());
 
         let reg = RegistroM105 {
             nivel: 3,

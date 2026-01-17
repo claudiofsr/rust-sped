@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "M215";
 
@@ -16,20 +17,20 @@ pub struct RegistroM215 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_aj_bc: Option<Arc<str>>,   // 2
-    pub vl_aj_bc: Option<Decimal>,     // 3
-    pub cod_aj_bc: Option<Arc<str>>,   // 4
-    pub num_doc: Option<usize>,        // 5
-    pub descr_aj_bc: Option<Arc<str>>, // 6
-    pub dt_ref: Option<NaiveDate>,     // 7
-    pub cod_cta: Option<Arc<str>>,     // 8
-    pub cnpj: Option<Arc<str>>,        // 9
-    pub info_compl: Option<Arc<str>>,  // 10
+    pub ind_aj_bc: Option<CompactString>,   // 2
+    pub vl_aj_bc: Option<Decimal>,          // 3
+    pub cod_aj_bc: Option<CompactString>,   // 4
+    pub num_doc: Option<usize>,             // 5
+    pub descr_aj_bc: Option<CompactString>, // 6
+    pub dt_ref: Option<NaiveDate>,          // 7
+    pub cod_cta: Option<CompactString>,     // 8
+    pub cnpj: Option<CompactString>,        // 9
+    pub info_compl: Option<CompactString>,  // 10
 }
 
 impl_reg_methods!(RegistroM215);
@@ -65,15 +66,15 @@ impl SpedParser for RegistroM215 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_aj_bc = fields.get(2).to_arc();
+        let ind_aj_bc = fields.get(2).map(|&s| s.into());
         let vl_aj_bc = get_decimal(3, "VL_AJ_BC")?;
-        let cod_aj_bc = fields.get(4).to_arc();
+        let cod_aj_bc = fields.get(4).map(|&s| s.into());
         let num_doc = fields.get(5).parse_opt();
-        let descr_aj_bc = fields.get(6).to_arc();
+        let descr_aj_bc = fields.get(6).map(|&s| s.into());
         let dt_ref = get_date(7, "DT_REF")?;
-        let cod_cta = fields.get(8).to_arc();
-        let cnpj = fields.get(9).to_arc();
-        let info_compl = fields.get(10).to_arc();
+        let cod_cta = fields.get(8).map(|&s| s.into());
+        let cnpj = fields.get(9).map(|&s| s.into());
+        let info_compl = fields.get(10).map(|&s| s.into());
 
         let reg = RegistroM215 {
             nivel: 4,

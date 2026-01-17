@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "M505";
 
@@ -13,20 +14,20 @@ pub struct RegistroM505 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub nat_bc_cred: Option<u16>,              // 2
-    pub cst_cofins: Option<u16>,               // 3
-    pub vl_bc_cofins_tot: Option<Decimal>,     // 4
-    pub vl_bc_cofins_cum: Option<Decimal>,     // 5
-    pub vl_bc_cofins_nc: Option<Decimal>,      // 6
-    pub vl_bc_cofins: Option<Decimal>,         // 7
-    pub quant_bc_cofins_tot: Option<Arc<str>>, // 8 (Pode ser String ou Decimal)
-    pub quant_bc_cofins: Option<Arc<str>>,     // 9 (Pode ser String ou Decimal)
-    pub desc_cred: Option<Arc<str>>,           // 10
+    pub nat_bc_cred: Option<u16>,                   // 2
+    pub cst_cofins: Option<u16>,                    // 3
+    pub vl_bc_cofins_tot: Option<Decimal>,          // 4
+    pub vl_bc_cofins_cum: Option<Decimal>,          // 5
+    pub vl_bc_cofins_nc: Option<Decimal>,           // 6
+    pub vl_bc_cofins: Option<Decimal>,              // 7
+    pub quant_bc_cofins_tot: Option<CompactString>, // 8 (Pode ser String ou Decimal)
+    pub quant_bc_cofins: Option<CompactString>,     // 9 (Pode ser String ou Decimal)
+    pub desc_cred: Option<CompactString>,           // 10
 }
 
 impl_reg_methods!(RegistroM505);
@@ -61,9 +62,9 @@ impl SpedParser for RegistroM505 {
         let vl_bc_cofins_cum = get_decimal(5, "VL_BC_COFINS_CUM")?;
         let vl_bc_cofins_nc = get_decimal(6, "VL_BC_COFINS_NC")?;
         let vl_bc_cofins = get_decimal(7, "VL_BC_COFINS")?;
-        let quant_bc_cofins_tot = fields.get(8).to_arc();
-        let quant_bc_cofins = fields.get(9).to_arc();
-        let desc_cred = fields.get(10).to_arc();
+        let quant_bc_cofins_tot = fields.get(8).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(9).map(|&s| s.into());
+        let desc_cred = fields.get(10).map(|&s| s.into());
 
         let reg = RegistroM505 {
             nivel: 3,

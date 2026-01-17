@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C810";
 
@@ -13,23 +14,23 @@ pub struct RegistroC810 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cfop: Option<u16>,             // 2
-    pub vl_item: Option<Decimal>,      // 3
-    pub cod_item: Option<Arc<str>>,    // 4
-    pub cst_pis: Option<u16>,          // 5
-    pub vl_bc_pis: Option<Decimal>,    // 6
-    pub aliq_pis: Option<Decimal>,     // 7
-    pub vl_pis: Option<Decimal>,       // 8
-    pub cst_cofins: Option<u16>,       // 9
-    pub vl_bc_cofins: Option<Decimal>, // 10
-    pub aliq_cofins: Option<Decimal>,  // 11
-    pub vl_cofins: Option<Decimal>,    // 12
-    pub cod_cta: Option<Arc<str>>,     // 13
+    pub cfop: Option<u16>,               // 2
+    pub vl_item: Option<Decimal>,        // 3
+    pub cod_item: Option<CompactString>, // 4
+    pub cst_pis: Option<u16>,            // 5
+    pub vl_bc_pis: Option<Decimal>,      // 6
+    pub aliq_pis: Option<Decimal>,       // 7
+    pub vl_pis: Option<Decimal>,         // 8
+    pub cst_cofins: Option<u16>,         // 9
+    pub vl_bc_cofins: Option<Decimal>,   // 10
+    pub aliq_cofins: Option<Decimal>,    // 11
+    pub vl_cofins: Option<Decimal>,      // 12
+    pub cod_cta: Option<CompactString>,  // 13
 }
 
 impl_reg_methods!(RegistroC810);
@@ -59,7 +60,7 @@ impl SpedParser for RegistroC810 {
 
         let cfop = fields.get(2).parse_opt();
         let vl_item = get_decimal(3, "VL_ITEM")?;
-        let cod_item = fields.get(4).to_arc();
+        let cod_item = fields.get(4).map(|&s| s.into());
         let cst_pis = fields.get(5).parse_opt();
         let vl_bc_pis = get_decimal(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(7, "ALIQ_PIS")?;
@@ -68,7 +69,7 @@ impl SpedParser for RegistroC810 {
         let vl_bc_cofins = get_decimal(10, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(11, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(12, "VL_COFINS")?;
-        let cod_cta = fields.get(13).to_arc();
+        let cod_cta = fields.get(13).map(|&s| s.into());
 
         let reg = RegistroC810 {
             nivel: 4,

@@ -1,5 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_reg_methods};
-use std::{path::Path, sync::Arc};
+use crate::{EFDError, EFDResult, SpedParser, impl_reg_methods};
+use compact_str::CompactString;
+use std::path::Path;
 
 const REGISTRO: &str = "C400";
 
@@ -12,15 +13,15 @@ pub struct RegistroC400 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<Arc<str>>, // 2
-    pub ecf_mod: Option<Arc<str>>, // 3
-    pub ecf_fab: Option<Arc<str>>, // 4
-    pub ecf_cx: Option<Arc<str>>,  // 5
+    pub cod_mod: Option<CompactString>, // 2
+    pub ecf_mod: Option<CompactString>, // 3
+    pub ecf_fab: Option<CompactString>, // 4
+    pub ecf_cx: Option<CompactString>,  // 5
 }
 
 impl_reg_methods!(RegistroC400);
@@ -42,10 +43,10 @@ impl SpedParser for RegistroC400 {
             });
         }
 
-        let cod_mod = fields.get(2).to_arc();
-        let ecf_mod = fields.get(3).to_arc();
-        let ecf_fab = fields.get(4).to_arc();
-        let ecf_cx = fields.get(5).to_arc();
+        let cod_mod = fields.get(2).map(|&s| s.into());
+        let ecf_mod = fields.get(3).map(|&s| s.into());
+        let ecf_fab = fields.get(4).map(|&s| s.into());
+        let ecf_cx = fields.get(5).map(|&s| s.into());
 
         let reg = RegistroC400 {
             nivel: 3,

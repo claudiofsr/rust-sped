@@ -39,7 +39,7 @@ pub struct Registro0001 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_mov: Option<char>, // 2
+    pub ind_mov: Option<u8>, // 2
 }
 
 impl_reg_methods!(Registro0001);

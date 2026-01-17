@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "1200";
 
@@ -16,21 +15,21 @@ pub struct Registro1200 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_apur_ant: Option<Arc<str>>,    // 2
-    pub nat_cont_rec: Option<Arc<str>>,    // 3
-    pub vl_cont_apur: Option<Decimal>,     // 4
-    pub vl_cred_pis_desc: Option<Decimal>, // 5
-    pub vl_cont_dev: Option<Decimal>,      // 6
-    pub vl_out_ded: Option<Decimal>,       // 7
-    pub vl_cont_ext: Option<Decimal>,      // 8
-    pub vl_mul: Option<Decimal>,           // 9
-    pub vl_jur: Option<Decimal>,           // 10
-    pub dt_recol: Option<NaiveDate>,       // 11
+    pub per_apur_ant: Option<CompactString>, // 2
+    pub nat_cont_rec: Option<CompactString>, // 3
+    pub vl_cont_apur: Option<Decimal>,       // 4
+    pub vl_cred_pis_desc: Option<Decimal>,   // 5
+    pub vl_cont_dev: Option<Decimal>,        // 6
+    pub vl_out_ded: Option<Decimal>,         // 7
+    pub vl_cont_ext: Option<Decimal>,        // 8
+    pub vl_mul: Option<Decimal>,             // 9
+    pub vl_jur: Option<Decimal>,             // 10
+    pub dt_recol: Option<NaiveDate>,         // 11
 }
 
 impl_reg_methods!(Registro1200);
@@ -65,8 +64,8 @@ impl SpedParser for Registro1200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_apur_ant = fields.get(2).to_arc();
-        let nat_cont_rec = fields.get(3).to_arc();
+        let per_apur_ant = fields.get(2).map(|&s| s.into());
+        let nat_cont_rec = fields.get(3).map(|&s| s.into());
         let vl_cont_apur = get_decimal(4, "VL_CONT_APUR")?;
         let vl_cred_pis_desc = get_decimal(5, "VL_CRED_PIS_DESC")?;
         let vl_cont_dev = get_decimal(6, "VL_CONT_DEV")?;

@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "D600";
 
@@ -16,29 +15,29 @@ pub struct RegistroD600 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<Arc<str>>,     // 2
-    pub cod_mun: Option<Arc<str>>,     // 3
-    pub ser: Option<Arc<str>>,         // 4
-    pub sub: Option<Arc<str>>,         // 5
-    pub ind_rec: Option<Arc<str>>,     // 6
-    pub qtd_cons: Option<Arc<str>>,    // 7
-    pub dt_doc_ini: Option<NaiveDate>, // 8
-    pub dt_doc_fin: Option<NaiveDate>, // 9
-    pub vl_doc: Option<Decimal>,       // 10
-    pub vl_desc: Option<Decimal>,      // 11
-    pub vl_serv: Option<Decimal>,      // 12
-    pub vl_serv_nt: Option<Decimal>,   // 13
-    pub vl_terc: Option<Decimal>,      // 14
-    pub vl_da: Option<Decimal>,        // 15
-    pub vl_bc_icms: Option<Decimal>,   // 16
-    pub vl_icms: Option<Decimal>,      // 17
-    pub vl_pis: Option<Decimal>,       // 18
-    pub vl_cofins: Option<Decimal>,    // 19
+    pub cod_mod: Option<CompactString>,  // 2
+    pub cod_mun: Option<CompactString>,  // 3
+    pub ser: Option<CompactString>,      // 4
+    pub sub: Option<CompactString>,      // 5
+    pub ind_rec: Option<CompactString>,  // 6
+    pub qtd_cons: Option<CompactString>, // 7
+    pub dt_doc_ini: Option<NaiveDate>,   // 8
+    pub dt_doc_fin: Option<NaiveDate>,   // 9
+    pub vl_doc: Option<Decimal>,         // 10
+    pub vl_desc: Option<Decimal>,        // 11
+    pub vl_serv: Option<Decimal>,        // 12
+    pub vl_serv_nt: Option<Decimal>,     // 13
+    pub vl_terc: Option<Decimal>,        // 14
+    pub vl_da: Option<Decimal>,          // 15
+    pub vl_bc_icms: Option<Decimal>,     // 16
+    pub vl_icms: Option<Decimal>,        // 17
+    pub vl_pis: Option<Decimal>,         // 18
+    pub vl_cofins: Option<Decimal>,      // 19
 }
 
 impl_reg_methods!(RegistroD600);
@@ -74,12 +73,12 @@ impl SpedParser for RegistroD600 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_arc();
-        let cod_mun = fields.get(3).to_arc();
-        let ser = fields.get(4).to_arc();
-        let sub = fields.get(5).to_arc();
-        let ind_rec = fields.get(6).to_arc();
-        let qtd_cons = fields.get(7).to_arc(); // Pode ser Decimal se sempre numérico
+        let cod_mod = fields.get(2).map(|&s| s.into());
+        let cod_mun = fields.get(3).map(|&s| s.into());
+        let ser = fields.get(4).map(|&s| s.into());
+        let sub = fields.get(5).map(|&s| s.into());
+        let ind_rec = fields.get(6).map(|&s| s.into());
+        let qtd_cons = fields.get(7).map(|&s| s.into()); // Pode ser Decimal se sempre numérico
         let dt_doc_ini = get_date(8, "DT_DOC_INI")?;
         let dt_doc_fin = get_date(9, "DT_DOC_FIN")?;
         let vl_doc = get_decimal(10, "VL_DOC")?;

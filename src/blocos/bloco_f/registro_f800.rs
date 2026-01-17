@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "F800";
 
@@ -16,19 +17,19 @@ pub struct RegistroF800 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_nat_even: Option<Arc<str>>,  // 2
-    pub dt_even: Option<NaiveDate>,      // 3
-    pub cnpj_suced: Option<Arc<str>>,    // 4
-    pub pa_cont_cred: Option<Arc<str>>,  // 5
-    pub cod_cred: Option<u16>,           // 6
-    pub vl_cred_pis: Option<Decimal>,    // 7
-    pub vl_cred_cofins: Option<Decimal>, // 8
-    pub per_cred_cis: Option<Arc<str>>,  // 9
+    pub ind_nat_even: Option<CompactString>, // 2
+    pub dt_even: Option<NaiveDate>,          // 3
+    pub cnpj_suced: Option<CompactString>,   // 4
+    pub pa_cont_cred: Option<CompactString>, // 5
+    pub cod_cred: Option<u16>,               // 6
+    pub vl_cred_pis: Option<Decimal>,        // 7
+    pub vl_cred_cofins: Option<Decimal>,     // 8
+    pub per_cred_cis: Option<CompactString>, // 9
 }
 
 impl_reg_methods!(RegistroF800);
@@ -62,14 +63,14 @@ impl SpedParser for RegistroF800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_nat_even = fields.get(2).to_arc();
+        let ind_nat_even = fields.get(2).map(|&s| s.into());
         let dt_even = get_date(3, "DT_EVEN")?;
-        let cnpj_suced = fields.get(4).to_arc();
-        let pa_cont_cred = fields.get(5).to_arc();
+        let cnpj_suced = fields.get(4).map(|&s| s.into());
+        let pa_cont_cred = fields.get(5).map(|&s| s.into());
         let cod_cred = fields.get(6).parse_opt();
         let vl_cred_pis = get_decimal(7, "VL_CRED_PIS")?;
         let vl_cred_cofins = get_decimal(8, "VL_CRED_COFINS")?;
-        let per_cred_cis = fields.get(9).to_arc();
+        let per_cred_cis = fields.get(9).map(|&s| s.into());
 
         let reg = RegistroF800 {
             nivel: 3,

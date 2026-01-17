@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C381";
 
@@ -13,20 +14,20 @@ pub struct RegistroC381 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cst_pis: Option<u16>,            // 2
-    pub cod_item: Option<Arc<str>>,      // 3
-    pub vl_item: Option<Decimal>,        // 4
-    pub vl_bc_pis: Option<Decimal>,      // 5
-    pub aliq_pis: Option<Decimal>,       // 6
-    pub quant_bc_pis: Option<Arc<str>>,  // 7
-    pub aliq_pis_quant: Option<Decimal>, // 8
-    pub vl_pis: Option<Decimal>,         // 9
-    pub cod_cta: Option<Arc<str>>,       // 10
+    pub cst_pis: Option<u16>,                // 2
+    pub cod_item: Option<CompactString>,     // 3
+    pub vl_item: Option<Decimal>,            // 4
+    pub vl_bc_pis: Option<Decimal>,          // 5
+    pub aliq_pis: Option<Decimal>,           // 6
+    pub quant_bc_pis: Option<CompactString>, // 7
+    pub aliq_pis_quant: Option<Decimal>,     // 8
+    pub vl_pis: Option<Decimal>,             // 9
+    pub cod_cta: Option<CompactString>,      // 10
 }
 
 impl_reg_methods!(RegistroC381);
@@ -56,14 +57,14 @@ impl SpedParser for RegistroC381 {
         };
 
         let cst_pis = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).to_arc();
+        let cod_item = fields.get(3).map(|&s| s.into());
         let vl_item = get_decimal(4, "VL_ITEM")?;
         let vl_bc_pis = get_decimal(5, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(6, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(7).to_arc();
+        let quant_bc_pis = fields.get(7).map(|&s| s.into());
         let aliq_pis_quant = get_decimal(8, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(9, "VL_PIS")?;
-        let cod_cta = fields.get(10).to_arc();
+        let cod_cta = fields.get(10).map(|&s| s.into());
 
         let reg = RegistroC381 {
             nivel: 4,

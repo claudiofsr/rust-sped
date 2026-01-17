@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "F200";
 
@@ -16,32 +17,32 @@ pub struct RegistroF200 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_oper: Option<Arc<str>>,       // 2
-    pub unid_imob: Option<Arc<str>>,      // 3
-    pub ident_emp: Option<Arc<str>>,      // 4
-    pub desc_unid_imob: Option<Arc<str>>, // 5
-    pub num_cont: Option<Arc<str>>,       // 6
-    pub cpf_cnpj_adqu: Option<Arc<str>>,  // 7
-    pub dt_oper: Option<NaiveDate>,       // 8
-    pub vl_tot_vend: Option<Decimal>,     // 9
-    pub vl_rec_acum: Option<Decimal>,     // 10
-    pub vl_tot_rec: Option<Decimal>,      // 11
-    pub cst_pis: Option<u16>,             // 12
-    pub vl_bc_pis: Option<Decimal>,       // 13
-    pub aliq_pis: Option<Decimal>,        // 14
-    pub vl_pis: Option<Decimal>,          // 15
-    pub cst_cofins: Option<u16>,          // 16
-    pub vl_bc_cofins: Option<Decimal>,    // 17
-    pub aliq_cofins: Option<Decimal>,     // 18
-    pub vl_cofins: Option<Decimal>,       // 19
-    pub perc_rec_receb: Option<Arc<str>>, // 20 (Assumindo String, pode ser Decimal)
-    pub ind_nat_emp: Option<Arc<str>>,    // 21
-    pub inf_comp: Option<Arc<str>>,       // 22
+    pub ind_oper: Option<CompactString>,       // 2
+    pub unid_imob: Option<CompactString>,      // 3
+    pub ident_emp: Option<CompactString>,      // 4
+    pub desc_unid_imob: Option<CompactString>, // 5
+    pub num_cont: Option<CompactString>,       // 6
+    pub cpf_cnpj_adqu: Option<CompactString>,  // 7
+    pub dt_oper: Option<NaiveDate>,            // 8
+    pub vl_tot_vend: Option<Decimal>,          // 9
+    pub vl_rec_acum: Option<Decimal>,          // 10
+    pub vl_tot_rec: Option<Decimal>,           // 11
+    pub cst_pis: Option<u16>,                  // 12
+    pub vl_bc_pis: Option<Decimal>,            // 13
+    pub aliq_pis: Option<Decimal>,             // 14
+    pub vl_pis: Option<Decimal>,               // 15
+    pub cst_cofins: Option<u16>,               // 16
+    pub vl_bc_cofins: Option<Decimal>,         // 17
+    pub aliq_cofins: Option<Decimal>,          // 18
+    pub vl_cofins: Option<Decimal>,            // 19
+    pub perc_rec_receb: Option<CompactString>, // 20 (Assumindo String, pode ser Decimal)
+    pub ind_nat_emp: Option<CompactString>,    // 21
+    pub inf_comp: Option<CompactString>,       // 22
 }
 
 impl_reg_methods!(RegistroF200);
@@ -75,12 +76,12 @@ impl SpedParser for RegistroF200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).to_arc();
-        let unid_imob = fields.get(3).to_arc();
-        let ident_emp = fields.get(4).to_arc();
-        let desc_unid_imob = fields.get(5).to_arc();
-        let num_cont = fields.get(6).to_arc();
-        let cpf_cnpj_adqu = fields.get(7).to_arc();
+        let ind_oper = fields.get(2).map(|&s| s.into());
+        let unid_imob = fields.get(3).map(|&s| s.into());
+        let ident_emp = fields.get(4).map(|&s| s.into());
+        let desc_unid_imob = fields.get(5).map(|&s| s.into());
+        let num_cont = fields.get(6).map(|&s| s.into());
+        let cpf_cnpj_adqu = fields.get(7).map(|&s| s.into());
         let dt_oper = get_date(8, "DT_OPER")?;
         let vl_tot_vend = get_decimal(9, "VL_TOT_VEND")?;
         let vl_rec_acum = get_decimal(10, "VL_REC_ACUM")?;
@@ -93,9 +94,9 @@ impl SpedParser for RegistroF200 {
         let vl_bc_cofins = get_decimal(17, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(18, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(19, "VL_COFINS")?;
-        let perc_rec_receb = fields.get(20).to_arc();
-        let ind_nat_emp = fields.get(21).to_arc();
-        let inf_comp = fields.get(22).to_arc();
+        let perc_rec_receb = fields.get(20).map(|&s| s.into());
+        let ind_nat_emp = fields.get(21).map(|&s| s.into());
+        let inf_comp = fields.get(22).map(|&s| s.into());
 
         let reg = RegistroF200 {
             nivel: 3,

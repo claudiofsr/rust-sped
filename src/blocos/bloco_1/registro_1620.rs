@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "1620";
 
@@ -13,15 +14,15 @@ pub struct Registro1620 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub per_apu_cred: Option<Arc<str>>, // 2
-    pub orig_cred: Option<Arc<str>>,    // 3
-    pub cod_cred: Option<u16>,          // 4
-    pub vl_cred: Option<Decimal>,       // 5
+    pub per_apu_cred: Option<CompactString>, // 2
+    pub orig_cred: Option<CompactString>,    // 3
+    pub cod_cred: Option<u16>,               // 4
+    pub vl_cred: Option<Decimal>,            // 5
 }
 
 impl_reg_methods!(Registro1620);
@@ -49,8 +50,8 @@ impl SpedParser for Registro1620 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_apu_cred = fields.get(2).to_arc();
-        let orig_cred = fields.get(3).to_arc();
+        let per_apu_cred = fields.get(2).map(|&s| s.into());
+        let orig_cred = fields.get(3).map(|&s| s.into());
         let cod_cred = fields.get(4).parse_opt();
         let vl_cred = get_decimal(5, "VL_CRED")?;
 

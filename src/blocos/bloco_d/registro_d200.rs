@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "D200";
 
@@ -16,21 +17,21 @@ pub struct RegistroD200 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<Arc<str>>,  // 2
-    pub cod_sit: Option<Arc<str>>,  // 3
-    pub ser: Option<Arc<str>>,      // 4
-    pub sub: Option<Arc<str>>,      // 5
-    pub num_doc_ini: Option<usize>, // 6
-    pub num_doc_fin: Option<usize>, // 7
-    pub cfop: Option<u16>,          // 8
-    pub dt_ref: Option<NaiveDate>,  // 9
-    pub vl_doc: Option<Decimal>,    // 10
-    pub vl_desc: Option<Decimal>,   // 11
+    pub cod_mod: Option<CompactString>, // 2
+    pub cod_sit: Option<CompactString>, // 3
+    pub ser: Option<CompactString>,     // 4
+    pub sub: Option<CompactString>,     // 5
+    pub num_doc_ini: Option<usize>,     // 6
+    pub num_doc_fin: Option<usize>,     // 7
+    pub cfop: Option<u16>,              // 8
+    pub dt_ref: Option<NaiveDate>,      // 9
+    pub vl_doc: Option<Decimal>,        // 10
+    pub vl_desc: Option<Decimal>,       // 11
 }
 
 impl_reg_methods!(RegistroD200);
@@ -66,10 +67,10 @@ impl SpedParser for RegistroD200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).to_arc();
-        let cod_sit = fields.get(3).to_arc();
-        let ser = fields.get(4).to_arc();
-        let sub = fields.get(5).to_arc();
+        let cod_mod = fields.get(2).map(|&s| s.into());
+        let cod_sit = fields.get(3).map(|&s| s.into());
+        let ser = fields.get(4).map(|&s| s.into());
+        let sub = fields.get(5).map(|&s| s.into());
         let num_doc_ini = fields.get(6).parse_opt();
         let num_doc_fin = fields.get(7).parse_opt();
         let cfop = fields.get(8).parse_opt();

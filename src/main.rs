@@ -18,8 +18,11 @@ Ao final, estas informações são padronizadas em Excel e CSV e escritas em arq
     # uso de find + sed para alterar variáveis dos muitos registros.
     # exemplo: impl_sped_record_trait para impl_reg_methods
     find ./src/blocos -type f -name "*.rs" -exec sed -i -E 's/impl_sped_record_trait/impl_reg_methods/' {} +
-    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/Arc\<str\>/CompactString/' {} +
-    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/\.to_arc\(\)/.map(|&s| s.into())/' {} +
+
+    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/use std::\{path::Path, sync::Arc\};/use std::{path::Path}; use compact_str::CompactString;/' {} +
+    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/Arc<str>/CompactString/' {} +
+    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/\.to_arc\(\)/.map\(\|\&s\| s.into\(\)\)/' {} +
+    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/\.to_upper_arc\(\)/.map\(\|\&s\| s.to_ascii_uppercase\(\).into\(\)\)/' {} +
 
     cargo test --features old
     cargo test -- --nocapture

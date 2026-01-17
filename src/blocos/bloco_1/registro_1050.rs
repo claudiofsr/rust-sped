@@ -1,9 +1,8 @@
-use crate::{
-    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
-};
+use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "1050";
 
@@ -16,29 +15,29 @@ pub struct Registro1050 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub dt_ref: Option<NaiveDate>,    // 2
-    pub ind_aj_bc: Option<Arc<str>>,  // 3
-    pub cnpj: Option<Arc<str>>,       // 4
-    pub vl_aj_tot: Option<Decimal>,   // 5
-    pub vl_aj_cst01: Option<Decimal>, // 6
-    pub vl_aj_cst02: Option<Decimal>, // 7
-    pub vl_aj_cst03: Option<Decimal>, // 8
-    pub vl_aj_cst04: Option<Decimal>, // 9
-    pub vl_aj_cst05: Option<Decimal>, // 10
-    pub vl_aj_cst06: Option<Decimal>, // 11
-    pub vl_aj_cst07: Option<Decimal>, // 12
-    pub vl_aj_cst08: Option<Decimal>, // 13
-    pub vl_aj_cst09: Option<Decimal>, // 14
-    pub vl_aj_cst49: Option<Decimal>, // 15
-    pub vl_aj_cst99: Option<Decimal>, // 16
-    pub ind_aprop: Option<Arc<str>>,  // 17
-    pub num_rec: Option<Arc<str>>,    // 18
-    pub info_compl: Option<Arc<str>>, // 19
+    pub dt_ref: Option<NaiveDate>,         // 2
+    pub ind_aj_bc: Option<CompactString>,  // 3
+    pub cnpj: Option<CompactString>,       // 4
+    pub vl_aj_tot: Option<Decimal>,        // 5
+    pub vl_aj_cst01: Option<Decimal>,      // 6
+    pub vl_aj_cst02: Option<Decimal>,      // 7
+    pub vl_aj_cst03: Option<Decimal>,      // 8
+    pub vl_aj_cst04: Option<Decimal>,      // 9
+    pub vl_aj_cst05: Option<Decimal>,      // 10
+    pub vl_aj_cst06: Option<Decimal>,      // 11
+    pub vl_aj_cst07: Option<Decimal>,      // 12
+    pub vl_aj_cst08: Option<Decimal>,      // 13
+    pub vl_aj_cst09: Option<Decimal>,      // 14
+    pub vl_aj_cst49: Option<Decimal>,      // 15
+    pub vl_aj_cst99: Option<Decimal>,      // 16
+    pub ind_aprop: Option<CompactString>,  // 17
+    pub num_rec: Option<CompactString>,    // 18
+    pub info_compl: Option<CompactString>, // 19
 }
 
 impl_reg_methods!(Registro1050);
@@ -74,8 +73,8 @@ impl SpedParser for Registro1050 {
         };
 
         let dt_ref = get_date(2, "DT_REF")?;
-        let ind_aj_bc = fields.get(3).to_arc();
-        let cnpj = fields.get(4).to_arc();
+        let ind_aj_bc = fields.get(3).map(|&s| s.into());
+        let cnpj = fields.get(4).map(|&s| s.into());
         let vl_aj_tot = get_decimal(5, "VL_AJ_TOT")?;
         let vl_aj_cst01 = get_decimal(6, "VL_AJ_CST01")?;
         let vl_aj_cst02 = get_decimal(7, "VL_AJ_CST02")?;
@@ -88,9 +87,9 @@ impl SpedParser for Registro1050 {
         let vl_aj_cst09 = get_decimal(14, "VL_AJ_CST09")?;
         let vl_aj_cst49 = get_decimal(15, "VL_AJ_CST49")?;
         let vl_aj_cst99 = get_decimal(16, "VL_AJ_CST99")?;
-        let ind_aprop = fields.get(17).to_arc();
-        let num_rec = fields.get(18).to_arc();
-        let info_compl = fields.get(19).to_arc();
+        let ind_aprop = fields.get(17).map(|&s| s.into());
+        let num_rec = fields.get(18).map(|&s| s.into());
+        let info_compl = fields.get(19).map(|&s| s.into());
 
         let reg = Registro1050 {
             nivel: 2,

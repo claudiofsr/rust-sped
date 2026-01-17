@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "D101";
 
@@ -13,19 +14,19 @@ pub struct RegistroD101 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_nat_frt: Option<Arc<str>>, // 2
-    pub vl_item: Option<Decimal>,      // 3
-    pub cst_pis: Option<u16>,          // 4
-    pub nat_bc_cred: Option<u16>,      // 5
-    pub vl_bc_pis: Option<Decimal>,    // 6
-    pub aliq_pis: Option<Decimal>,     // 7
-    pub vl_pis: Option<Decimal>,       // 8
-    pub cod_cta: Option<Arc<str>>,     // 9
+    pub ind_nat_frt: Option<CompactString>, // 2
+    pub vl_item: Option<Decimal>,           // 3
+    pub cst_pis: Option<u16>,               // 4
+    pub nat_bc_cred: Option<u16>,           // 5
+    pub vl_bc_pis: Option<Decimal>,         // 6
+    pub aliq_pis: Option<Decimal>,          // 7
+    pub vl_pis: Option<Decimal>,            // 8
+    pub cod_cta: Option<CompactString>,     // 9
 }
 
 impl_reg_methods!(RegistroD101);
@@ -54,14 +55,14 @@ impl SpedParser for RegistroD101 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_nat_frt = fields.get(2).to_arc();
+        let ind_nat_frt = fields.get(2).map(|&s| s.into());
         let vl_item = get_decimal(3, "VL_ITEM")?;
         let cst_pis = fields.get(4).parse_opt();
         let nat_bc_cred = fields.get(5).parse_opt();
         let vl_bc_pis = get_decimal(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(7, "ALIQ_PIS")?;
         let vl_pis = get_decimal(8, "VL_PIS")?;
-        let cod_cta = fields.get(9).to_arc();
+        let cod_cta = fields.get(9).map(|&s| s.into());
 
         let reg = RegistroD101 {
             nivel: 4,

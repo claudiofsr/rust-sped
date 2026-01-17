@@ -1,5 +1,6 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_reg_methods};
-use std::{path::Path, sync::Arc};
+use compact_str::CompactString;
+use std::path::Path;
 
 const REGISTRO: &str = "9900";
 
@@ -12,13 +13,13 @@ pub struct Registro9900 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub reg_blc: Option<Arc<str>>,     // 2
-    pub qtd_reg_blc: Option<Arc<str>>, // 3 (Assumindo que pode ser String se for complexo, ou u64)
+    pub reg_blc: Option<CompactString>, // 2
+    pub qtd_reg_blc: Option<u64>,       // 3 (Assumindo que pode ser String se for complexo, ou u64)
 }
 
 impl_reg_methods!(Registro9900);
@@ -40,8 +41,8 @@ impl SpedParser for Registro9900 {
             });
         }
 
-        let reg_blc = fields.get(2).to_arc();
-        let qtd_reg_blc = fields.get(3).to_arc(); // Pode ser convertido para u64 se necessário
+        let reg_blc = fields.get(2).map(|&s| s.into());
+        let qtd_reg_blc = fields.get(3).parse_opt(); // Pode ser convertido para u64 se necessário
 
         let reg = Registro9900 {
             nivel: 2,

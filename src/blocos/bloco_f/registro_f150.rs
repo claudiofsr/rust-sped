@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "F150";
 
@@ -13,14 +14,14 @@ pub struct RegistroF150 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
     pub nat_bc_cred: Option<u16>,        // 2
     pub vl_tot_est: Option<Decimal>,     // 3
-    pub est_imp: Option<Arc<str>>,       // 4
+    pub est_imp: Option<CompactString>,  // 4
     pub vl_bc_est: Option<Decimal>,      // 5
     pub vl_bc_men_est: Option<Decimal>,  // 6
     pub cst_pis: Option<u16>,            // 7
@@ -29,8 +30,8 @@ pub struct RegistroF150 {
     pub cst_cofins: Option<u16>,         // 10
     pub aliq_cofins: Option<Decimal>,    // 11
     pub vl_cred_cofins: Option<Decimal>, // 12
-    pub desc_est: Option<Arc<str>>,      // 13
-    pub cod_cta: Option<Arc<str>>,       // 14
+    pub desc_est: Option<CompactString>, // 13
+    pub cod_cta: Option<CompactString>,  // 14
 }
 
 impl_reg_methods!(RegistroF150);
@@ -60,7 +61,7 @@ impl SpedParser for RegistroF150 {
 
         let nat_bc_cred = fields.get(2).parse_opt();
         let vl_tot_est = get_decimal(3, "VL_TOT_EST")?;
-        let est_imp = fields.get(4).to_arc();
+        let est_imp = fields.get(4).map(|&s| s.into());
         let vl_bc_est = get_decimal(5, "VL_BC_EST")?;
         let vl_bc_men_est = get_decimal(6, "VL_BC_MEN_EST")?;
         let cst_pis = fields.get(7).parse_opt();
@@ -69,8 +70,8 @@ impl SpedParser for RegistroF150 {
         let cst_cofins = fields.get(10).parse_opt();
         let aliq_cofins = get_decimal(11, "ALIQ_COFINS")?;
         let vl_cred_cofins = get_decimal(12, "VL_CRED_COFINS")?;
-        let desc_est = fields.get(13).to_arc();
-        let cod_cta = fields.get(14).to_arc();
+        let desc_est = fields.get(13).map(|&s| s.into());
+        let cod_cta = fields.get(14).map(|&s| s.into());
 
         let reg = RegistroF150 {
             nivel: 3,

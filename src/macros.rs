@@ -292,7 +292,7 @@ macro_rules! impl_filho {
 macro_rules! capture_cnpj {
     ($target:expr, $rec:expr) => {
         // r.cnpj é Option<Arc<str>>. Clonar o Arc é custo zero.
-        $target = $rec.cnpj.clone()
+        $target = $rec.cnpj.to_arc()
     };
 }
 

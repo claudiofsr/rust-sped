@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "1210";
 
@@ -16,21 +17,21 @@ pub struct Registro1210 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cnpj: Option<Arc<str>>,       // 2
-    pub cst_pis: Option<u16>,         // 3
-    pub cod_part: Option<Arc<str>>,   // 4
-    pub dt_oper: Option<NaiveDate>,   // 5
-    pub vl_oper: Option<Decimal>,     // 6
-    pub vl_bc_pis: Option<Decimal>,   // 7
-    pub aliq_pis: Option<Decimal>,    // 8
-    pub vl_pis: Option<Decimal>,      // 9
-    pub cod_cta: Option<Arc<str>>,    // 10
-    pub desc_compl: Option<Arc<str>>, // 11
+    pub cnpj: Option<CompactString>,       // 2
+    pub cst_pis: Option<u16>,              // 3
+    pub cod_part: Option<CompactString>,   // 4
+    pub dt_oper: Option<NaiveDate>,        // 5
+    pub vl_oper: Option<Decimal>,          // 6
+    pub vl_bc_pis: Option<Decimal>,        // 7
+    pub aliq_pis: Option<Decimal>,         // 8
+    pub vl_pis: Option<Decimal>,           // 9
+    pub cod_cta: Option<CompactString>,    // 10
+    pub desc_compl: Option<CompactString>, // 11
 }
 
 impl_reg_methods!(Registro1210);
@@ -65,16 +66,16 @@ impl SpedParser for Registro1210 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cnpj = fields.get(2).to_arc();
+        let cnpj = fields.get(2).map(|&s| s.into());
         let cst_pis = fields.get(3).parse_opt();
-        let cod_part = fields.get(4).to_arc();
+        let cod_part = fields.get(4).map(|&s| s.into());
         let dt_oper = get_date(5, "DT_OPER")?;
         let vl_oper = get_decimal(6, "VL_OPER")?;
         let vl_bc_pis = get_decimal(7, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(8, "ALIQ_PIS")?;
         let vl_pis = get_decimal(9, "VL_PIS")?;
-        let cod_cta = fields.get(10).to_arc();
-        let desc_compl = fields.get(11).to_arc();
+        let cod_cta = fields.get(10).map(|&s| s.into());
+        let desc_compl = fields.get(11).map(|&s| s.into());
 
         let reg = Registro1210 {
             nivel: 3,

@@ -1,6 +1,7 @@
 use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "D201";
 
@@ -13,17 +14,17 @@ pub struct RegistroD201 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cst_pis: Option<u16>,       // 2
-    pub vl_item: Option<Decimal>,   // 3
-    pub vl_bc_pis: Option<Decimal>, // 4
-    pub aliq_pis: Option<Decimal>,  // 5
-    pub vl_pis: Option<Decimal>,    // 6
-    pub cod_cta: Option<Arc<str>>,  // 7
+    pub cst_pis: Option<u16>,           // 2
+    pub vl_item: Option<Decimal>,       // 3
+    pub vl_bc_pis: Option<Decimal>,     // 4
+    pub aliq_pis: Option<Decimal>,      // 5
+    pub vl_pis: Option<Decimal>,        // 6
+    pub cod_cta: Option<CompactString>, // 7
 }
 
 impl_reg_methods!(RegistroD201);
@@ -57,7 +58,7 @@ impl SpedParser for RegistroD201 {
         let vl_bc_pis = get_decimal(4, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(5, "ALIQ_PIS")?;
         let vl_pis = get_decimal(6, "VL_PIS")?;
-        let cod_cta = fields.get(7).to_arc();
+        let cod_cta = fields.get(7).map(|&s| s.into());
 
         let reg = RegistroD201 {
             nivel: 4,

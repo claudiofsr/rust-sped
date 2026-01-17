@@ -1,5 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_reg_methods};
-use std::{path::Path, sync::Arc};
+use crate::{EFDError, EFDResult, SpedParser, impl_reg_methods};
+use compact_str::CompactString;
+use std::path::Path;
 
 const REGISTRO: &str = "D010";
 
@@ -7,9 +8,9 @@ const REGISTRO: &str = "D010";
 pub struct RegistroD010 {
     pub nivel: u16,
     pub bloco: char,
-    pub registro: Arc<str>,
+    pub registro: CompactString,
     pub line_number: usize,
-    pub cnpj: Option<Arc<str>>, // 2
+    pub cnpj: Option<CompactString>, // 2
 }
 
 impl_reg_methods!(RegistroD010);
@@ -30,7 +31,7 @@ impl SpedParser for RegistroD010 {
             });
         }
 
-        let cnpj = fields.get(2).to_arc();
+        let cnpj = fields.get(2).map(|&s| s.into());
 
         let reg = RegistroD010 {
             nivel: 2,
