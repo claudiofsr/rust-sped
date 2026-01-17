@@ -63,14 +63,14 @@ impl SpedParser for RegistroF800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_nat_even = fields.get(2).map(|&s| s.into());
+        let ind_nat_even = fields.get(2).to_compact_string();
         let dt_even = get_date(3, "DT_EVEN")?;
-        let cnpj_suced = fields.get(4).map(|&s| s.into());
-        let pa_cont_cred = fields.get(5).map(|&s| s.into());
+        let cnpj_suced = fields.get(4).to_compact_string();
+        let pa_cont_cred = fields.get(5).to_compact_string();
         let cod_cred = fields.get(6).parse_opt();
         let vl_cred_pis = get_decimal(7, "VL_CRED_PIS")?;
         let vl_cred_cofins = get_decimal(8, "VL_CRED_COFINS")?;
-        let per_cred_cis = fields.get(9).map(|&s| s.into());
+        let per_cred_cis = fields.get(9).to_compact_string();
 
         let reg = RegistroF800 {
             nivel: 3,

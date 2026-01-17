@@ -66,15 +66,15 @@ impl SpedParser for RegistroM215 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_aj_bc = fields.get(2).map(|&s| s.into());
+        let ind_aj_bc = fields.get(2).to_compact_string();
         let vl_aj_bc = get_decimal(3, "VL_AJ_BC")?;
-        let cod_aj_bc = fields.get(4).map(|&s| s.into());
+        let cod_aj_bc = fields.get(4).to_compact_string();
         let num_doc = fields.get(5).parse_opt();
-        let descr_aj_bc = fields.get(6).map(|&s| s.into());
+        let descr_aj_bc = fields.get(6).to_compact_string();
         let dt_ref = get_date(7, "DT_REF")?;
-        let cod_cta = fields.get(8).map(|&s| s.into());
-        let cnpj = fields.get(9).map(|&s| s.into());
-        let info_compl = fields.get(10).map(|&s| s.into());
+        let cod_cta = fields.get(8).to_compact_string();
+        let cnpj = fields.get(9).to_compact_string();
+        let info_compl = fields.get(10).to_compact_string();
 
         let reg = RegistroM215 {
             nivel: 4,

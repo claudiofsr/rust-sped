@@ -64,11 +64,11 @@ impl SpedParser for RegistroF120 {
         };
 
         let nat_bc_cred = fields.get(2).parse_opt();
-        let ident_bem_imob = fields.get(3).map(|&s| s.into());
-        let ind_orig_cred = fields.get(4).map(|&s| s.into());
-        let ind_util_bem_imob = fields.get(5).map(|&s| s.into());
+        let ident_bem_imob = fields.get(3).to_compact_string();
+        let ind_orig_cred = fields.get(4).to_compact_string();
+        let ind_util_bem_imob = fields.get(5).to_compact_string();
         let vl_oper_dep = get_decimal(6, "VL_OPER_DEP")?;
-        let parc_oper_nao_bc_cred = fields.get(7).map(|&s| s.into());
+        let parc_oper_nao_bc_cred = fields.get(7).to_compact_string();
         let cst_pis = fields.get(8).parse_opt();
         let vl_bc_pis = get_decimal(9, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(10, "ALIQ_PIS")?;
@@ -77,9 +77,9 @@ impl SpedParser for RegistroF120 {
         let vl_bc_cofins = get_decimal(13, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(14, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(15, "VL_COFINS")?;
-        let cod_cta = fields.get(16).map(|&s| s.into());
-        let cod_ccus = fields.get(17).map(|&s| s.into());
-        let desc_bem_imob = fields.get(18).map(|&s| s.into());
+        let cod_cta = fields.get(16).to_compact_string();
+        let cod_ccus = fields.get(17).to_compact_string();
+        let desc_bem_imob = fields.get(18).to_compact_string();
 
         let reg = RegistroF120 {
             nivel: 3,

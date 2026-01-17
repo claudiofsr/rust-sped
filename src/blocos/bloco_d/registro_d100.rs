@@ -68,28 +68,28 @@ impl SpedParser for RegistroD100 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).map(|&s| s.into());
-        let ind_emit = fields.get(3).map(|&s| s.into());
-        let cod_part = fields.get(4).map(|&s| s.into());
-        let cod_mod = fields.get(5).map(|&s| s.into());
-        let cod_sit = fields.get(6).map(|&s| s.into());
-        let ser = fields.get(7).map(|&s| s.into());
-        let sub = fields.get(8).map(|&s| s.into());
+        let ind_oper = fields.get(2).to_compact_string();
+        let ind_emit = fields.get(3).to_compact_string();
+        let cod_part = fields.get(4).to_compact_string();
+        let cod_mod = fields.get(5).to_compact_string();
+        let cod_sit = fields.get(6).to_compact_string();
+        let ser = fields.get(7).to_compact_string();
+        let sub = fields.get(8).to_compact_string();
         let num_doc = fields.get(9).parse_opt();
-        let chv_cte = fields.get(10).map(|&s| s.into());
+        let chv_cte = fields.get(10).to_compact_string();
         let dt_doc = get_date(11, "DT_DOC")?;
         let dt_a_p = get_date(12, "DT_A_P")?;
-        let tp_cte = fields.get(13).map(|&s| s.into());
-        let chv_cte_ref = fields.get(14).map(|&s| s.into());
+        let tp_cte = fields.get(13).to_compact_string();
+        let chv_cte_ref = fields.get(14).to_compact_string();
         let vl_doc = get_decimal(15, "VL_DOC")?;
         let vl_desc = get_decimal(16, "VL_DESC")?;
-        let ind_frt = fields.get(17).map(|&s| s.into());
+        let ind_frt = fields.get(17).to_compact_string();
         let vl_serv = get_decimal(18, "VL_SERV")?;
         let vl_bc_icms = get_decimal(19, "VL_BC_ICMS")?;
         let vl_icms = get_decimal(20, "VL_ICMS")?;
         let vl_nt = get_decimal(21, "VL_NT")?;
-        let cod_inf = fields.get(22).map(|&s| s.into());
-        let cod_cta = fields.get(23).map(|&s| s.into());
+        let cod_inf = fields.get(22).to_compact_string();
+        let cod_cta = fields.get(23).to_compact_string();
 
         let reg = RegistroD100 {
             nivel: 3,

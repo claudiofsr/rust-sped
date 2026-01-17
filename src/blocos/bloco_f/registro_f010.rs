@@ -1,4 +1,4 @@
-use crate::{EFDError, EFDResult, SpedParser, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_reg_methods};
 use compact_str::CompactString;
 use std::path::Path;
 
@@ -40,7 +40,7 @@ impl SpedParser for RegistroF010 {
             });
         }
 
-        let cnpj = fields.get(2).map(|&s| s.into());
+        let cnpj = fields.get(2).to_compact_string();
 
         let reg = RegistroF010 {
             nivel: 2,

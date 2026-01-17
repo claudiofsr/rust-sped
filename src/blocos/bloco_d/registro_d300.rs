@@ -75,11 +75,11 @@ impl SpedParser for RegistroD300 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).map(|&s| s.into());
-        let ser = fields.get(3).map(|&s| s.into());
-        let sub = fields.get(4).map(|&s| s.into());
-        let num_doc_ini = fields.get(5).map(|&s| s.into());
-        let num_doc_fin = fields.get(6).map(|&s| s.into());
+        let cod_mod = fields.get(2).to_compact_string();
+        let ser = fields.get(3).to_compact_string();
+        let sub = fields.get(4).to_compact_string();
+        let num_doc_ini = fields.get(5).to_compact_string();
+        let num_doc_fin = fields.get(6).to_compact_string();
         let cfop = fields.get(7).parse_opt();
         let dt_ref = get_date(8, "DT_REF")?;
         let vl_doc = get_decimal(9, "VL_DOC")?;
@@ -92,7 +92,7 @@ impl SpedParser for RegistroD300 {
         let vl_bc_cofins = get_decimal(16, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(17, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(18, "VL_COFINS")?;
-        let cod_cta = fields.get(19).map(|&s| s.into());
+        let cod_cta = fields.get(19).to_compact_string();
 
         let reg = RegistroD300 {
             nivel: 3,

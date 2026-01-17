@@ -76,12 +76,12 @@ impl SpedParser for RegistroF200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).map(|&s| s.into());
-        let unid_imob = fields.get(3).map(|&s| s.into());
-        let ident_emp = fields.get(4).map(|&s| s.into());
-        let desc_unid_imob = fields.get(5).map(|&s| s.into());
-        let num_cont = fields.get(6).map(|&s| s.into());
-        let cpf_cnpj_adqu = fields.get(7).map(|&s| s.into());
+        let ind_oper = fields.get(2).to_compact_string();
+        let unid_imob = fields.get(3).to_compact_string();
+        let ident_emp = fields.get(4).to_compact_string();
+        let desc_unid_imob = fields.get(5).to_compact_string();
+        let num_cont = fields.get(6).to_compact_string();
+        let cpf_cnpj_adqu = fields.get(7).to_compact_string();
         let dt_oper = get_date(8, "DT_OPER")?;
         let vl_tot_vend = get_decimal(9, "VL_TOT_VEND")?;
         let vl_rec_acum = get_decimal(10, "VL_REC_ACUM")?;
@@ -94,9 +94,9 @@ impl SpedParser for RegistroF200 {
         let vl_bc_cofins = get_decimal(17, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(18, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(19, "VL_COFINS")?;
-        let perc_rec_receb = fields.get(20).map(|&s| s.into());
-        let ind_nat_emp = fields.get(21).map(|&s| s.into());
-        let inf_comp = fields.get(22).map(|&s| s.into());
+        let perc_rec_receb = fields.get(20).to_compact_string();
+        let ind_nat_emp = fields.get(21).to_compact_string();
+        let inf_comp = fields.get(22).to_compact_string();
 
         let reg = RegistroF200 {
             nivel: 3,

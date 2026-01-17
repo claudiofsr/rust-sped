@@ -55,7 +55,7 @@ impl SpedParser for RegistroM630 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cnpj = fields.get(2).map(|&s| s.into());
+        let cnpj = fields.get(2).to_compact_string();
         let vl_vend = get_decimal(3, "VL_VEND")?;
         let vl_nao_receb = get_decimal(4, "VL_NAO_RECEB")?;
         let vl_cont_dif = get_decimal(5, "VL_CONT_DIF")?;

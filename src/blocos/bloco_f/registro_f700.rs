@@ -1,4 +1,4 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
 use compact_str::CompactString;
 use rust_decimal::Decimal;
 use std::path::Path;
@@ -53,13 +53,13 @@ impl SpedParser for RegistroF700 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_ori_ded = fields.get(2).map(|&s| s.into());
-        let ind_nat_ded = fields.get(3).map(|&s| s.into());
+        let ind_ori_ded = fields.get(2).to_compact_string();
+        let ind_nat_ded = fields.get(3).to_compact_string();
         let vl_ded_pis = get_decimal(4, "VL_DED_PIS")?;
         let vl_ded_cofins = get_decimal(5, "VL_DED_COFINS")?;
         let vl_bc_oper = get_decimal(6, "VL_BC_OPER")?;
-        let cnpj = fields.get(7).map(|&s| s.into());
-        let inf_comp = fields.get(8).map(|&s| s.into());
+        let cnpj = fields.get(7).to_compact_string();
+        let inf_comp = fields.get(8).to_compact_string();
 
         let reg = RegistroF700 {
             nivel: 3,

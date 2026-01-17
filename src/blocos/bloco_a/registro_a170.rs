@@ -67,12 +67,12 @@ impl SpedParser for RegistroA170 {
         };
 
         let num_item = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).map(|&s| s.into());
-        let descr_compl = fields.get(4).map(|&s| s.to_uppercase().into());
+        let cod_item = fields.get(3).to_compact_string();
+        let descr_compl = fields.get(4).to_compact_string(); // .to_compact_string()
         let vl_item = get_decimal(5, "VL_ITEM")?;
         let vl_desc = get_decimal(6, "VL_DESC")?;
         let nat_bc_cred = fields.get(7).parse_opt();
-        let ind_orig_cred = fields.get(8).map(|&s| s.into());
+        let ind_orig_cred = fields.get(8).to_compact_string();
         let cst_pis = fields.get(9).parse_opt();
         let vl_bc_pis = get_decimal(10, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(11, "ALIQ_PIS")?;
@@ -81,8 +81,8 @@ impl SpedParser for RegistroA170 {
         let vl_bc_cofins = get_decimal(14, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(15, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(16, "VL_COFINS")?;
-        let cod_cta = fields.get(17).map(|&s| s.into());
-        let cod_ccus = fields.get(18).map(|&s| s.into());
+        let cod_cta = fields.get(17).to_compact_string();
+        let cod_ccus = fields.get(18).to_compact_string();
 
         let reg = RegistroA170 {
             nivel: 4,

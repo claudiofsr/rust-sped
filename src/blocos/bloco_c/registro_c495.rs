@@ -47,16 +47,16 @@ impl SpedParser for RegistroC495 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_item = fields.get(2).map(|&s| s.into());
+        let cod_item = fields.get(2).to_compact_string();
         let cst_cofins = fields.get(3).parse_opt();
         let cfop = fields.get(4).parse_opt();
         let vl_item = get_decimal(5, "VL_ITEM")?;
         let vl_bc_cofins = get_decimal(6, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(7, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(8).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(8).to_compact_string();
         let aliq_cofins_quant = get_decimal(9, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(10, "VL_COFINS")?;
-        let cod_cta = fields.get(11).map(|&s| s.into());
+        let cod_cta = fields.get(11).to_compact_string();
 
         let reg = RegistroC495 {
             nivel: 4,

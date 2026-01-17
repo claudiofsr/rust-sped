@@ -1,4 +1,4 @@
-use crate::{EFDError, EFDResult, SpedParser, ToNaiveDate, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToNaiveDate, impl_reg_methods};
 use chrono::NaiveDate;
 use compact_str::CompactString;
 use std::path::Path;
@@ -42,7 +42,7 @@ impl SpedParser for RegistroC490 {
 
         let dt_doc_ini = get_date(2, "DT_DOC_INI")?;
         let dt_doc_fin = get_date(3, "DT_DOC_FIN")?;
-        let cod_mod = fields.get(4).map(|&s| s.into());
+        let cod_mod = fields.get(4).to_compact_string();
 
         let reg = RegistroC490 {
             nivel: 3,

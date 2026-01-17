@@ -67,14 +67,14 @@ impl SpedParser for RegistroM625 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let det_valor_aj = fields.get(2).map(|&s| s.into());
+        let det_valor_aj = fields.get(2).to_compact_string();
         let cst_cofins = fields.get(3).parse_opt();
         let det_bc_cred = get_decimal(4, "DET_BC_CRED")?;
         let det_aliq = get_decimal(5, "DET_ALIQ")?;
         let dt_oper_aj = get_date(6, "DT_OPER_AJ")?;
-        let desc_aj = fields.get(7).map(|&s| s.into());
-        let cod_cta = fields.get(8).map(|&s| s.into());
-        let info_compl = fields.get(9).map(|&s| s.into());
+        let desc_aj = fields.get(7).to_compact_string();
+        let cod_cta = fields.get(8).to_compact_string();
+        let info_compl = fields.get(9).to_compact_string();
 
         let reg = RegistroM625 {
             nivel: 5,

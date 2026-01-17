@@ -1,4 +1,4 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
 use compact_str::CompactString;
 use rust_decimal::Decimal;
 use std::path::Path;
@@ -51,11 +51,11 @@ impl SpedParser for RegistroC199 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_doc_imp = fields.get(2).map(|&s| s.into());
-        let num_doc_imp = fields.get(3).map(|&s| s.into());
+        let cod_doc_imp = fields.get(2).to_compact_string();
+        let num_doc_imp = fields.get(3).to_compact_string();
         let vl_pis_imp = get_decimal(4, "VL_PIS_IMP")?;
         let vl_cofins_imp = get_decimal(5, "VL_COFINS_IMP")?;
-        let num_acdraw = fields.get(6).map(|&s| s.into());
+        let num_acdraw = fields.get(6).to_compact_string();
 
         let reg = RegistroC199 {
             nivel: 4,

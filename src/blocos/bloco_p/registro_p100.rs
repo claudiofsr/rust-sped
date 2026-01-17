@@ -1,4 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
+};
 use chrono::NaiveDate;
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -71,14 +73,14 @@ impl SpedParser for RegistroP100 {
         let dt_ini = get_date(2, "DT_INI")?;
         let dt_fin = get_date(3, "DT_FIN")?;
         let vl_rec_tot_est = get_decimal(4, "VL_REC_TOT_EST")?;
-        let cod_ativ_econ = fields.get(5).map(|&s| s.into());
+        let cod_ativ_econ = fields.get(5).to_compact_string();
         let vl_rec_ativ_estab = get_decimal(6, "VL_REC_ATIV_ESTAB")?;
         let vl_exc = get_decimal(7, "VL_EXC")?;
         let vl_bc_cont = get_decimal(8, "VL_BC_CONT")?;
         let aliq_cont = get_decimal(9, "ALIQ_CONT")?;
         let vl_cont_apu = get_decimal(10, "VL_CONT_APU")?;
-        let cod_cta = fields.get(11).map(|&s| s.into());
-        let info_compl = fields.get(12).map(|&s| s.into());
+        let cod_cta = fields.get(11).to_compact_string();
+        let info_compl = fields.get(12).to_compact_string();
 
         let reg = RegistroP100 {
             nivel: 3,

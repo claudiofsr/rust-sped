@@ -1,4 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
+};
 use chrono::NaiveDate;
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -74,17 +76,17 @@ impl SpedParser for RegistroC600 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).map(|&s| s.into());
-        let cod_mun = fields.get(3).map(|&s| s.into());
-        let ser = fields.get(4).map(|&s| s.into());
-        let sub = fields.get(5).map(|&s| s.into());
-        let cod_cons = fields.get(6).map(|&s| s.into());
-        let qtd_cons = fields.get(7).map(|&s| s.into()); // Pode ser String se for apenas inteiro
-        let qtd_canc = fields.get(8).map(|&s| s.into()); // Pode ser String se for apenas inteiro
+        let cod_mod = fields.get(2).to_compact_string();
+        let cod_mun = fields.get(3).to_compact_string();
+        let ser = fields.get(4).to_compact_string();
+        let sub = fields.get(5).to_compact_string();
+        let cod_cons = fields.get(6).to_compact_string();
+        let qtd_cons = fields.get(7).to_compact_string(); // Pode ser String se for apenas inteiro
+        let qtd_canc = fields.get(8).to_compact_string(); // Pode ser String se for apenas inteiro
         let dt_doc = get_date(9, "DT_DOC")?;
         let vl_doc = get_decimal(10, "VL_DOC")?;
         let vl_desc = get_decimal(11, "VL_DESC")?;
-        let cons = fields.get(12).map(|&s| s.into());
+        let cons = fields.get(12).to_compact_string();
         let vl_forn = get_decimal(13, "VL_FORN")?;
         let vl_serv_nt = get_decimal(14, "VL_SERV_NT")?;
         let vl_terc = get_decimal(15, "VL_TERC")?;

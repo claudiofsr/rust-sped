@@ -62,10 +62,10 @@ impl SpedParser for RegistroC185 {
         let vl_desc = get_decimal(5, "VL_DESC")?;
         let vl_bc_cofins = get_decimal(6, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(7, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(8).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(8).to_compact_string();
         let aliq_cofins_quant = get_decimal(9, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(10, "VL_COFINS")?;
-        let cod_cta = fields.get(11).map(|&s| s.into());
+        let cod_cta = fields.get(11).to_compact_string();
 
         let reg = RegistroC185 {
             nivel: 4,

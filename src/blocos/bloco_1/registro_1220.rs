@@ -51,8 +51,8 @@ impl SpedParser for Registro1220 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_apu_cred = fields.get(2).map(|&s| s.into());
-        let orig_cred = fields.get(3).map(|&s| s.into());
+        let per_apu_cred = fields.get(2).to_compact_string();
+        let orig_cred = fields.get(3).to_compact_string();
         let cod_cred = fields.get(4).parse_opt();
         let vl_cred = get_decimal(5, "VL_CRED")?;
 

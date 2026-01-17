@@ -77,27 +77,27 @@ impl SpedParser for Registro1101 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_part = fields.get(2).map(|&s| s.into());
-        let cod_item = fields.get(3).map(|&s| s.into());
-        let cod_mod = fields.get(4).map(|&s| s.into());
-        let ser = fields.get(5).map(|&s| s.into());
-        let sub_ser = fields.get(6).map(|&s| s.into());
+        let cod_part = fields.get(2).to_compact_string();
+        let cod_item = fields.get(3).to_compact_string();
+        let cod_mod = fields.get(4).to_compact_string();
+        let ser = fields.get(5).to_compact_string();
+        let sub_ser = fields.get(6).to_compact_string();
         let num_doc = fields.get(7).parse_opt();
         let dt_oper = get_date(8, "DT_OPER")?;
-        let chv_nfe = fields.get(9).map(|&s| s.into());
+        let chv_nfe = fields.get(9).to_compact_string();
         let vl_oper = get_decimal(10, "VL_OPER")?;
         let cfop = fields.get(11).parse_opt();
         let nat_bc_cred = fields.get(12).parse_opt();
-        let ind_orig_cred = fields.get(13).map(|&s| s.into());
+        let ind_orig_cred = fields.get(13).to_compact_string();
         let cst_pis = fields.get(14).parse_opt();
         let vl_bc_pis = get_decimal(15, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(16, "ALIQ_PIS")?;
         let vl_pis = get_decimal(17, "VL_PIS")?;
-        let cod_cta = fields.get(18).map(|&s| s.into());
-        let cod_ccus = fields.get(19).map(|&s| s.into());
-        let desc_compl = fields.get(20).map(|&s| s.into());
-        let per_escrit = fields.get(21).map(|&s| s.into());
-        let cnpj = fields.get(22).map(|&s| s.into());
+        let cod_cta = fields.get(18).to_compact_string();
+        let cod_ccus = fields.get(19).to_compact_string();
+        let desc_compl = fields.get(20).to_compact_string();
+        let per_escrit = fields.get(21).to_compact_string();
+        let cnpj = fields.get(22).to_compact_string();
 
         let reg = Registro1101 {
             nivel: 3,

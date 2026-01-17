@@ -55,14 +55,14 @@ impl SpedParser for RegistroD605 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_class = fields.get(2).map(|&s| s.into());
+        let cod_class = fields.get(2).to_compact_string();
         let vl_item = get_decimal(3, "VL_ITEM")?;
         let vl_desc = get_decimal(4, "VL_DESC")?;
         let cst_cofins = fields.get(5).parse_opt();
         let vl_bc_cofins = get_decimal(6, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(7, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(8, "VL_COFINS")?;
-        let cod_cta = fields.get(9).map(|&s| s.into());
+        let cod_cta = fields.get(9).to_compact_string();
 
         let reg = RegistroD605 {
             nivel: 4,

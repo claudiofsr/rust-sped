@@ -81,10 +81,10 @@ impl SpedParser for Registro1011 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let reg_ref = fields.get(2).map(|&s| s.into());
-        let chave_doc = fields.get(3).map(|&s| s.into());
-        let cod_part = fields.get(4).map(|&s| s.into());
-        let cod_item = fields.get(5).map(|&s| s.into());
+        let reg_ref = fields.get(2).to_compact_string();
+        let chave_doc = fields.get(3).to_compact_string();
+        let cod_part = fields.get(4).to_compact_string();
+        let cod_item = fields.get(5).to_compact_string();
         let dt_oper = get_date(6, "DT_OPER")?;
         let vl_oper = get_decimal(7, "VL_OPER")?;
         let cst_pis = fields.get(8).parse_opt();
@@ -103,9 +103,9 @@ impl SpedParser for Registro1011 {
         let vl_bc_cofins_susp = get_decimal(21, "VL_BC_COFINS_SUSP")?;
         let aliq_cofins_susp = get_decimal(22, "ALIQ_COFINS_SUSP")?;
         let vl_cofins_susp = get_decimal(23, "VL_COFINS_SUSP")?;
-        let cod_cta = fields.get(24).map(|&s| s.into());
-        let cod_ccus = fields.get(25).map(|&s| s.into());
-        let desc_doc_oper = fields.get(26).map(|&s| s.into());
+        let cod_cta = fields.get(24).to_compact_string();
+        let cod_ccus = fields.get(25).to_compact_string();
+        let desc_doc_oper = fields.get(26).to_compact_string();
 
         let reg = Registro1011 {
             nivel: 3,

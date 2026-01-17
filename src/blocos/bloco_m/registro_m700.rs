@@ -1,4 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
+};
 use chrono::NaiveDate;
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -64,12 +66,12 @@ impl SpedParser for RegistroM700 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let cod_cont = fields.get(2).map(|&s| s.into());
+        let cod_cont = fields.get(2).to_compact_string();
         let vl_cont_apur_difer = get_decimal(3, "VL_CONT_APUR_DIFER")?;
-        let nat_cred_desc = fields.get(4).map(|&s| s.into());
+        let nat_cred_desc = fields.get(4).to_compact_string();
         let vl_cred_desc_difer = get_decimal(5, "VL_CRED_DESC_DIFER")?;
         let vl_cont_difer_ant = get_decimal(6, "VL_CONT_DIFER_ANT")?;
-        let per_apur = fields.get(7).map(|&s| s.into()); // Manter como String, se for um período sem formato de data
+        let per_apur = fields.get(7).to_compact_string(); // Manter como String, se for um período sem formato de data
         let dt_receb = get_date(8, "DT_RECEB")?;
 
         let reg = RegistroM700 {

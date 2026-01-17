@@ -55,14 +55,14 @@ impl SpedParser for RegistroM225 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let det_valor_aj = fields.get(2).map(|&s| s.into());
+        let det_valor_aj = fields.get(2).to_compact_string();
         let cst_pis = fields.get(3).parse_opt();
-        let det_bc_cred = fields.get(4).map(|&s| s.into());
-        let det_aliq = fields.get(5).map(|&s| s.into());
+        let det_bc_cred = fields.get(4).to_compact_string();
+        let det_aliq = fields.get(5).to_compact_string();
         let dt_oper_aj = get_date(6, "DT_OPER_AJ")?;
-        let desc_aj = fields.get(7).map(|&s| s.into());
-        let cod_cta = fields.get(8).map(|&s| s.into());
-        let info_compl = fields.get(9).map(|&s| s.into());
+        let desc_aj = fields.get(7).to_compact_string();
+        let cod_cta = fields.get(8).to_compact_string();
+        let info_compl = fields.get(9).to_compact_string();
 
         let reg = RegistroM225 {
             nivel: 5,

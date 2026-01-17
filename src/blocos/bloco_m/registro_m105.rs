@@ -62,9 +62,9 @@ impl SpedParser for RegistroM105 {
         let vl_bc_pis_cum = get_decimal(5, "VL_BC_PIS_CUM")?;
         let vl_bc_pis_nc = get_decimal(6, "VL_BC_PIS_NC")?;
         let vl_bc_pis = get_decimal(7, "VL_BC_PIS")?;
-        let quant_bc_pis_tot = fields.get(8).map(|&s| s.into());
-        let quant_bc_pis = fields.get(9).map(|&s| s.into());
-        let desc_cred = fields.get(10).map(|&s| s.into());
+        let quant_bc_pis_tot = fields.get(8).to_compact_string();
+        let quant_bc_pis = fields.get(9).to_compact_string();
+        let desc_cred = fields.get(10).to_compact_string();
 
         let reg = RegistroM105 {
             nivel: 3,

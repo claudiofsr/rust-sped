@@ -1,4 +1,4 @@
-use crate::{EFDError, EFDResult, SpedParser, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, impl_reg_methods};
 use compact_str::CompactString;
 use std::path::Path;
 
@@ -43,10 +43,10 @@ impl SpedParser for RegistroP110 {
             });
         }
 
-        let num_campo = fields.get(2).map(|&s| s.into());
-        let cod_det = fields.get(3).map(|&s| s.into());
-        let det_valor = fields.get(4).map(|&s| s.into());
-        let inf_compl = fields.get(5).map(|&s| s.into());
+        let num_campo = fields.get(2).to_compact_string();
+        let cod_det = fields.get(3).to_compact_string();
+        let det_valor = fields.get(4).to_compact_string();
+        let inf_compl = fields.get(5).to_compact_string();
 
         let reg = RegistroP110 {
             nivel: 4,

@@ -69,17 +69,17 @@ impl SpedParser for RegistroC175 {
         let cst_pis = fields.get(5).parse_opt();
         let vl_bc_pis = get_decimal(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(7, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(8).map(|&s| s.into());
+        let quant_bc_pis = fields.get(8).to_compact_string();
         let aliq_pis_quant = get_decimal(9, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(10, "VL_PIS")?;
         let cst_cofins = fields.get(11).parse_opt();
         let vl_bc_cofins = get_decimal(12, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(13, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(14).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(14).to_compact_string();
         let aliq_cofins_quant = get_decimal(15, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(16, "VL_COFINS")?;
-        let cod_cta = fields.get(17).map(|&s| s.into());
-        let info_compl = fields.get(18).map(|&s| s.into());
+        let cod_cta = fields.get(17).to_compact_string();
+        let info_compl = fields.get(18).to_compact_string();
 
         let reg = RegistroC175 {
             nivel: 4,

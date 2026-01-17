@@ -1,4 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
+};
 use chrono::NaiveDate;
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -73,12 +75,12 @@ impl SpedParser for RegistroD600 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).map(|&s| s.into());
-        let cod_mun = fields.get(3).map(|&s| s.into());
-        let ser = fields.get(4).map(|&s| s.into());
-        let sub = fields.get(5).map(|&s| s.into());
-        let ind_rec = fields.get(6).map(|&s| s.into());
-        let qtd_cons = fields.get(7).map(|&s| s.into()); // Pode ser Decimal se sempre numérico
+        let cod_mod = fields.get(2).to_compact_string();
+        let cod_mun = fields.get(3).to_compact_string();
+        let ser = fields.get(4).to_compact_string();
+        let sub = fields.get(5).to_compact_string();
+        let ind_rec = fields.get(6).to_compact_string();
+        let qtd_cons = fields.get(7).to_compact_string(); // Pode ser Decimal se sempre numérico
         let dt_doc_ini = get_date(8, "DT_DOC_INI")?;
         let dt_doc_fin = get_date(9, "DT_DOC_FIN")?;
         let vl_doc = get_decimal(10, "VL_DOC")?;

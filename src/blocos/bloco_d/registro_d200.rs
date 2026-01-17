@@ -67,10 +67,10 @@ impl SpedParser for RegistroD200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).map(|&s| s.into());
-        let cod_sit = fields.get(3).map(|&s| s.into());
-        let ser = fields.get(4).map(|&s| s.into());
-        let sub = fields.get(5).map(|&s| s.into());
+        let cod_mod = fields.get(2).to_compact_string();
+        let cod_sit = fields.get(3).to_compact_string();
+        let ser = fields.get(4).to_compact_string();
+        let sub = fields.get(5).to_compact_string();
         let num_doc_ini = fields.get(6).parse_opt();
         let num_doc_fin = fields.get(7).parse_opt();
         let cfop = fields.get(8).parse_opt();

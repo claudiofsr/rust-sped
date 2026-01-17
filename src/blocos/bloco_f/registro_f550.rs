@@ -72,10 +72,10 @@ impl SpedParser for RegistroF550 {
         let vl_bc_cofins = get_decimal(10, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(11, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(12, "VL_COFINS")?;
-        let cod_mod = fields.get(13).map(|&s| s.into());
+        let cod_mod = fields.get(13).to_compact_string();
         let cfop = fields.get(14).parse_opt();
-        let cod_cta = fields.get(15).map(|&s| s.into());
-        let info_compl = fields.get(16).map(|&s| s.into());
+        let cod_cta = fields.get(15).to_compact_string();
+        let info_compl = fields.get(16).to_compact_string();
 
         let reg = RegistroF550 {
             nivel: 3,

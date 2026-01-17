@@ -65,11 +65,11 @@ impl SpedParser for RegistroM620 {
                 .to_optional_date(file_path, line_number, field_name)
         };
 
-        let ind_aj = fields.get(2).map(|&s| s.into());
+        let ind_aj = fields.get(2).to_compact_string();
         let vl_aj = get_decimal(3, "VL_AJ")?;
-        let cod_aj = fields.get(4).map(|&s| s.into());
+        let cod_aj = fields.get(4).to_compact_string();
         let num_doc = fields.get(5).parse_opt();
-        let descr_aj = fields.get(6).map(|&s| s.into());
+        let descr_aj = fields.get(6).to_compact_string();
         let dt_ref = get_date(7, "DT_REF")?;
 
         let reg = RegistroM620 {

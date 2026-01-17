@@ -57,14 +57,14 @@ impl SpedParser for RegistroC381 {
         };
 
         let cst_pis = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).map(|&s| s.into());
+        let cod_item = fields.get(3).to_compact_string();
         let vl_item = get_decimal(4, "VL_ITEM")?;
         let vl_bc_pis = get_decimal(5, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(6, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(7).map(|&s| s.into());
+        let quant_bc_pis = fields.get(7).to_compact_string();
         let aliq_pis_quant = get_decimal(8, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(9, "VL_PIS")?;
-        let cod_cta = fields.get(10).map(|&s| s.into());
+        let cod_cta = fields.get(10).to_compact_string();
 
         let reg = RegistroC381 {
             nivel: 4,

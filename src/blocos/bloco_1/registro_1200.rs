@@ -1,4 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
+};
 use chrono::NaiveDate;
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -64,8 +66,8 @@ impl SpedParser for Registro1200 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let per_apur_ant = fields.get(2).map(|&s| s.into());
-        let nat_cont_rec = fields.get(3).map(|&s| s.into());
+        let per_apur_ant = fields.get(2).to_compact_string();
+        let nat_cont_rec = fields.get(3).to_compact_string();
         let vl_cont_apur = get_decimal(4, "VL_CONT_APUR")?;
         let vl_cred_pis_desc = get_decimal(5, "VL_CRED_PIS_DESC")?;
         let vl_cont_dev = get_decimal(6, "VL_CONT_DEV")?;

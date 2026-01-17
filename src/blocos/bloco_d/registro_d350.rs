@@ -79,28 +79,28 @@ impl SpedParser for RegistroD350 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).map(|&s| s.into());
-        let ecf_mod = fields.get(3).map(|&s| s.into());
-        let ecf_fab = fields.get(4).map(|&s| s.into());
+        let cod_mod = fields.get(2).to_compact_string();
+        let ecf_mod = fields.get(3).to_compact_string();
+        let ecf_fab = fields.get(4).to_compact_string();
         let dt_doc = get_date(5, "DT_DOC")?;
-        let cro = fields.get(6).map(|&s| s.into());
-        let crz = fields.get(7).map(|&s| s.into());
-        let num_coo_fin = fields.get(8).map(|&s| s.into());
-        let gt_fin = fields.get(9).map(|&s| s.into());
+        let cro = fields.get(6).to_compact_string();
+        let crz = fields.get(7).to_compact_string();
+        let num_coo_fin = fields.get(8).to_compact_string();
+        let gt_fin = fields.get(9).to_compact_string();
         let vl_brt = get_decimal(10, "VL_BRT")?;
         let cst_pis = fields.get(11).parse_opt();
         let vl_bc_pis = get_decimal(12, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(13, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(14).map(|&s| s.into());
+        let quant_bc_pis = fields.get(14).to_compact_string();
         let aliq_pis_quant = get_decimal(15, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(16, "VL_PIS")?;
         let cst_cofins = fields.get(17).parse_opt();
         let vl_bc_cofins = get_decimal(18, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(19, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(20).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(20).to_compact_string();
         let aliq_cofins_quant = get_decimal(21, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(22, "VL_COFINS")?;
-        let cod_cta = fields.get(23).map(|&s| s.into());
+        let cod_cta = fields.get(23).to_compact_string();
 
         let reg = RegistroD350 {
             nivel: 3,

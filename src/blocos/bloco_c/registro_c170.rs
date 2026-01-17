@@ -88,41 +88,41 @@ impl SpedParser for RegistroC170 {
         };
 
         let num_item = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).map(|&s| s.into());
-        let descr_compl = fields.get(4).map(|&s| s.into());
+        let cod_item = fields.get(3).to_compact_string();
+        let descr_compl = fields.get(4).to_compact_string(); // .to_compact_string()
         let qtd = get_decimal(5, "QTD")?; // Assumindo QTD como Decimal
-        let unid = fields.get(6).map(|&s| s.into());
+        let unid = fields.get(6).to_compact_string();
         let vl_item = get_decimal(7, "VL_ITEM")?;
         let vl_desc = get_decimal(8, "VL_DESC")?;
         let ind_mov = fields.get(9).parse_opt();
         let cst_icms = fields.get(10).parse_opt();
         let cfop = fields.get(11).parse_opt();
-        let cod_nat = fields.get(12).map(|&s| s.into());
+        let cod_nat = fields.get(12).to_compact_string();
         let vl_bc_icms = get_decimal(13, "VL_BC_ICMS")?;
         let aliq_icms = get_decimal(14, "ALIQ_ICMS")?;
         let vl_icms = get_decimal(15, "VL_ICMS")?;
         let vl_bc_icms_st = get_decimal(16, "VL_BC_ICMS_ST")?;
         let aliq_st = get_decimal(17, "ALIQ_ST")?;
         let vl_icms_st = get_decimal(18, "VL_ICMS_ST")?;
-        let ind_apur = fields.get(19).map(|&s| s.into());
+        let ind_apur = fields.get(19).to_compact_string();
         let cst_ipi = fields.get(20).parse_opt();
-        let cod_enq = fields.get(21).map(|&s| s.into());
+        let cod_enq = fields.get(21).to_compact_string();
         let vl_bc_ipi = get_decimal(22, "VL_BC_IPI")?;
         let aliq_ipi = get_decimal(23, "ALIQ_IPI")?;
         let vl_ipi = get_decimal(24, "VL_IPI")?;
         let cst_pis = fields.get(25).parse_opt();
         let vl_bc_pis = get_decimal(26, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(27, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(28).map(|&s| s.into()); // Pode ser String ou Decimal
+        let quant_bc_pis = fields.get(28).to_compact_string(); // Pode ser String ou Decimal
         let aliq_pis_quant = get_decimal(29, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(30, "VL_PIS")?;
         let cst_cofins = fields.get(31).parse_opt();
         let vl_bc_cofins = get_decimal(32, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(33, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(34).map(|&s| s.into()); // Pode ser String ou Decimal
+        let quant_bc_cofins = fields.get(34).to_compact_string(); // Pode ser String ou Decimal
         let aliq_cofins_quant = get_decimal(35, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(36, "VL_COFINS")?;
-        let cod_cta = fields.get(37).map(|&s| s.into());
+        let cod_cta = fields.get(37).to_compact_string();
 
         let reg = RegistroC170 {
             nivel: 4,

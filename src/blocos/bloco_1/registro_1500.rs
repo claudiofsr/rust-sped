@@ -73,8 +73,8 @@ impl SpedParser for Registro1500 {
         };
 
         let per_apu_cred = get_date(2, "PER_APU_CRED")?; // Will error if empty or invalid date
-        let orig_cred = fields.get(3).map(|&s| s.into());
-        let cnpj_suc = fields.get(4).map(|&s| s.into());
+        let orig_cred = fields.get(3).to_compact_string();
+        let cnpj_suc = fields.get(4).to_compact_string();
         let cod_cred = fields.get(5).parse_opt();
         let vl_cred_apu = get_decimal(6, "VL_CRED_APU")?;
         let vl_cred_ext_apu = get_decimal(7, "VL_CRED_EXT_APU")?;
@@ -82,7 +82,7 @@ impl SpedParser for Registro1500 {
         let vl_cred_desc_pa_ant = get_decimal(9, "VL_CRED_DESC_PA_ANT")?;
         let vl_cred_per_pa_ant = get_decimal(10, "VL_CRED_PER_PA_ANT")?;
         let vl_cred_dcomp_pa_ant = get_decimal(11, "VL_CRED_DCOMP_PA_ANT")?;
-        let sd_cred_disp_efd = fields.get(12).map(|&s| s.into());
+        let sd_cred_disp_efd = fields.get(12).to_compact_string();
         let vl_cred_desc_efd = get_decimal(13, "VL_CRED_DESC_EFD")?;
         let vl_cred_per_efd = get_decimal(14, "VL_CRED_PER_EFD")?;
         let vl_cred_dcomp_efd = get_decimal(15, "VL_CRED_DCOMP_EFD")?;

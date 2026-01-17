@@ -62,10 +62,10 @@ impl SpedParser for RegistroC395 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).map(|&s| s.into());
-        let cod_part = fields.get(3).map(|&s| s.into());
-        let ser = fields.get(4).map(|&s| s.into());
-        let sub_ser = fields.get(5).map(|&s| s.into());
+        let cod_mod = fields.get(2).to_compact_string();
+        let cod_part = fields.get(3).to_compact_string();
+        let ser = fields.get(4).to_compact_string();
+        let sub_ser = fields.get(5).to_compact_string();
         let num_doc = fields.get(6).parse_opt();
         let dt_doc = get_date(7, "DT_DOC")?;
         let vl_doc = get_decimal(8, "VL_DOC")?;

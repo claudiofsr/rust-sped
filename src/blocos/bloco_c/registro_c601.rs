@@ -57,7 +57,7 @@ impl SpedParser for RegistroC601 {
         let vl_bc_pis = get_decimal(4, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(5, "ALIQ_PIS")?;
         let vl_pis = get_decimal(6, "VL_PIS")?;
-        let cod_cta = fields.get(7).map(|&s| s.into());
+        let cod_cta = fields.get(7).to_compact_string();
 
         let reg = RegistroC601 {
             nivel: 4,

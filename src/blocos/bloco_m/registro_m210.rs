@@ -1,4 +1,4 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, impl_reg_methods};
+use crate::{EFDError, EFDResult, SpedParser, StringParser, ToDecimal, impl_reg_methods};
 use compact_str::CompactString;
 use rust_decimal::Decimal;
 use std::path::Path;
@@ -62,14 +62,14 @@ impl SpedParser for RegistroM210 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_cont = fields.get(2).map(|&s| s.into());
+        let cod_cont = fields.get(2).to_compact_string();
         let vl_rec_brt = get_decimal(3, "VL_REC_BRT")?;
         let vl_bc_cont = get_decimal(4, "VL_BC_CONT")?;
         let vl_ajus_acres_bc_pis = get_decimal(5, "VL_AJUS_ACRES_BC_PIS")?;
         let vl_ajus_reduc_bc_pis = get_decimal(6, "VL_AJUS_REDUC_BC_PIS")?;
         let vl_bc_cont_ajus = get_decimal(7, "VL_BC_CONT_AJUS")?;
         let aliq_pis = get_decimal(8, "ALIQ_PIS")?;
-        let quant_bc_pis = fields.get(9).map(|&s| s.into());
+        let quant_bc_pis = fields.get(9).to_compact_string();
         let aliq_pis_quant = get_decimal(10, "ALIQ_PIS_QUANT")?;
         let vl_cont_apur = get_decimal(11, "VL_CONT_APUR")?;
         let vl_ajus_acres = get_decimal(12, "VL_AJUS_ACRES")?;

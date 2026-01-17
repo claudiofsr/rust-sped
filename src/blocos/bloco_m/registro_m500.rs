@@ -62,17 +62,17 @@ impl SpedParser for RegistroM500 {
         };
 
         let cod_cred = fields.get(2).parse_opt();
-        let ind_cred_ori = fields.get(3).map(|&s| s.into());
+        let ind_cred_ori = fields.get(3).to_compact_string();
         let vl_bc_cofins = get_decimal(4, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(5, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(6).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(6).to_compact_string();
         let aliq_cofins_quant = get_decimal(7, "ALIQ_COFINS_QUANT")?;
         let vl_cred = get_decimal(8, "VL_CRED")?;
         let vl_ajus_acres = get_decimal(9, "VL_AJUS_ACRES")?;
         let vl_ajus_reduc = get_decimal(10, "VL_AJUS_REDUC")?;
         let vl_cred_difer = get_decimal(11, "VL_CRED_DIFER")?;
         let vl_cred_disp = get_decimal(12, "VL_CRED_DISP")?;
-        let ind_desc_cred = fields.get(13).map(|&s| s.into());
+        let ind_desc_cred = fields.get(13).to_compact_string();
         let vl_cred_desc = get_decimal(14, "VL_CRED_DESC")?;
         let sld_cred = get_decimal(15, "SLD_CRED")?;
 

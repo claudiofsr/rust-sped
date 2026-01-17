@@ -64,18 +64,18 @@ impl SpedParser for RegistroF560 {
         let vl_rec_comp = get_decimal(2, "VL_REC_COMP")?;
         let cst_pis = fields.get(3).parse_opt();
         let vl_desc_pis = get_decimal(4, "VL_DESC_PIS")?;
-        let quant_bc_pis = fields.get(5).map(|&s| s.into());
+        let quant_bc_pis = fields.get(5).to_compact_string();
         let aliq_pis_quant = get_decimal(6, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(7, "VL_PIS")?;
         let cst_cofins = fields.get(8).parse_opt();
         let vl_desc_cofins = get_decimal(9, "VL_DESC_COFINS")?;
-        let quant_bc_cofins = fields.get(10).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(10).to_compact_string();
         let aliq_cofins_quant = get_decimal(11, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(12, "VL_COFINS")?;
-        let cod_mod = fields.get(13).map(|&s| s.into());
+        let cod_mod = fields.get(13).to_compact_string();
         let cfop = fields.get(14).parse_opt();
-        let cod_cta = fields.get(15).map(|&s| s.into());
-        let info_compl = fields.get(16).map(|&s| s.into());
+        let cod_cta = fields.get(15).to_compact_string();
+        let info_compl = fields.get(16).to_compact_string();
 
         let reg = RegistroF560 {
             nivel: 3,

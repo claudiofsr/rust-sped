@@ -61,7 +61,7 @@ impl SpedParser for RegistroF150 {
 
         let nat_bc_cred = fields.get(2).parse_opt();
         let vl_tot_est = get_decimal(3, "VL_TOT_EST")?;
-        let est_imp = fields.get(4).map(|&s| s.into());
+        let est_imp = fields.get(4).to_compact_string();
         let vl_bc_est = get_decimal(5, "VL_BC_EST")?;
         let vl_bc_men_est = get_decimal(6, "VL_BC_MEN_EST")?;
         let cst_pis = fields.get(7).parse_opt();
@@ -70,8 +70,8 @@ impl SpedParser for RegistroF150 {
         let cst_cofins = fields.get(10).parse_opt();
         let aliq_cofins = get_decimal(11, "ALIQ_COFINS")?;
         let vl_cred_cofins = get_decimal(12, "VL_CRED_COFINS")?;
-        let desc_est = fields.get(13).map(|&s| s.into());
-        let cod_cta = fields.get(14).map(|&s| s.into());
+        let desc_est = fields.get(13).to_compact_string();
+        let cod_cta = fields.get(14).to_compact_string();
 
         let reg = RegistroF150 {
             nivel: 3,

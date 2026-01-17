@@ -80,20 +80,20 @@ impl SpedParser for RegistroA100 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).map(|&s| s.into());
-        let ind_emit = fields.get(3).map(|&s| s.into());
-        let cod_part = fields.get(4).map(|&s| s.into());
-        let cod_sit = fields.get(5).map(|&s| s.into());
-        let ser = fields.get(6).map(|&s| s.into());
-        let sub = fields.get(7).map(|&s| s.into());
+        let ind_oper = fields.get(2).to_compact_string();
+        let ind_emit = fields.get(3).to_compact_string();
+        let cod_part = fields.get(4).to_compact_string();
+        let cod_sit = fields.get(5).to_compact_string();
+        let ser = fields.get(6).to_compact_string();
+        let sub = fields.get(7).to_compact_string();
         let num_doc = fields.get(8).parse_opt();
-        let chv_nfse = fields.get(9).map(|&s| s.into());
+        let chv_nfse = fields.get(9).to_compact_string();
 
         let dt_doc = get_date(10, "DT_DOC")?;
         let dt_exe_serv = get_date(11, "DT_EXE_SERV")?;
 
         let vl_doc = get_decimal(12, "VL_DOC")?;
-        let ind_pgto = fields.get(13).map(|&s| s.into());
+        let ind_pgto = fields.get(13).to_compact_string();
         let vl_desc = get_decimal(14, "VL_DESC")?;
         let vl_bc_pis = get_decimal(15, "VL_BC_PIS")?;
         let vl_pis = get_decimal(16, "VL_PIS")?;

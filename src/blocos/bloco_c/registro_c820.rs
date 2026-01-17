@@ -60,16 +60,16 @@ impl SpedParser for RegistroC820 {
 
         let cfop = fields.get(2).parse_opt();
         let vl_item = get_decimal(3, "VL_ITEM")?;
-        let cod_item = fields.get(4).map(|&s| s.into());
+        let cod_item = fields.get(4).to_compact_string();
         let cst_pis = fields.get(5).parse_opt();
-        let quant_bc_pis = fields.get(6).map(|&s| s.into());
+        let quant_bc_pis = fields.get(6).to_compact_string();
         let aliq_pis_quant = get_decimal(7, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(8, "VL_PIS")?;
         let cst_cofins = fields.get(9).parse_opt();
-        let quant_bc_cofins = fields.get(10).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(10).to_compact_string();
         let aliq_cofins_quant = get_decimal(11, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(12, "VL_COFINS")?;
-        let cod_cta = fields.get(13).map(|&s| s.into());
+        let cod_cta = fields.get(13).to_compact_string();
 
         let reg = RegistroC820 {
             nivel: 4,

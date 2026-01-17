@@ -66,20 +66,20 @@ impl SpedParser for RegistroC500 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_part = fields.get(2).map(|&s| s.into());
-        let cod_mod = fields.get(3).map(|&s| s.into());
-        let cod_sit = fields.get(4).map(|&s| s.into());
-        let ser = fields.get(5).map(|&s| s.into());
-        let sub = fields.get(6).map(|&s| s.into());
+        let cod_part = fields.get(2).to_compact_string();
+        let cod_mod = fields.get(3).to_compact_string();
+        let cod_sit = fields.get(4).to_compact_string();
+        let ser = fields.get(5).to_compact_string();
+        let sub = fields.get(6).to_compact_string();
         let num_doc = fields.get(7).parse_opt();
         let dt_doc = get_date(8, "DT_DOC")?;
         let dt_ent = get_date(9, "DT_ENT")?;
         let vl_doc = get_decimal(10, "VL_DOC")?;
         let vl_icms = get_decimal(11, "VL_ICMS")?;
-        let cod_inf = fields.get(12).map(|&s| s.into());
+        let cod_inf = fields.get(12).to_compact_string();
         let vl_pis = get_decimal(13, "VL_PIS")?;
         let vl_cofins = get_decimal(14, "VL_COFINS")?;
-        let chv_doce = fields.get(15).map(|&s| s.into());
+        let chv_doce = fields.get(15).to_compact_string();
 
         let reg = RegistroC500 {
             nivel: 3,

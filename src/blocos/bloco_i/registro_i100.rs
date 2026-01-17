@@ -68,7 +68,7 @@ impl SpedParser for RegistroI100 {
         let vl_bc_cofins = get_decimal(9, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(10, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(11, "VL_COFINS")?;
-        let info_compl = fields.get(12).map(|&s| s.into());
+        let info_compl = fields.get(12).to_compact_string();
 
         let reg = RegistroI100 {
             nivel: 3,

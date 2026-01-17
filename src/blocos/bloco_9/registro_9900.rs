@@ -41,7 +41,7 @@ impl SpedParser for Registro9900 {
             });
         }
 
-        let reg_blc = fields.get(2).map(|&s| s.into());
+        let reg_blc = fields.get(2).to_compact_string();
         let qtd_reg_blc = fields.get(3).parse_opt(); // Pode ser convertido para u64 se necessário
 
         let reg = Registro9900 {

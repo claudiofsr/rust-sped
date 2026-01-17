@@ -88,14 +88,14 @@ impl SpedParser for RegistroC100 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).map(|&s| s.into());
-        let ind_emit = fields.get(3).map(|&s| s.into());
-        let cod_part = fields.get(4).map(|&s| s.into());
-        let cod_mod = fields.get(5).map(|&s| s.into());
-        let cod_sit = fields.get(6).map(|&s| s.into());
-        let serie = fields.get(7).map(|&s| s.into());
+        let ind_oper = fields.get(2).to_compact_string();
+        let ind_emit = fields.get(3).to_compact_string();
+        let cod_part = fields.get(4).to_compact_string();
+        let cod_mod = fields.get(5).to_compact_string();
+        let cod_sit = fields.get(6).to_compact_string();
+        let serie = fields.get(7).to_compact_string();
         let num_doc = fields.get(8).parse_opt();
-        let chv_nfe = fields.get(9).map(|&s| s.into());
+        let chv_nfe = fields.get(9).to_compact_string();
 
         // Usando ToNaiveDate para campos de data
         let dt_doc = get_date(10, "DT_DOC")?;
@@ -103,11 +103,11 @@ impl SpedParser for RegistroC100 {
 
         // Usando ToDecimal para campos monetários (retornando Option<Decimal>)
         let vl_doc = get_decimal(12, "VL_DOC")?;
-        let ind_pgto = fields.get(13).map(|&s| s.into());
+        let ind_pgto = fields.get(13).to_compact_string();
         let vl_desc = get_decimal(14, "VL_DESC")?;
         let vl_abat_nt = get_decimal(15, "VL_ABAT_NT")?;
         let vl_merc = get_decimal(16, "VL_MERC")?;
-        let ind_frt = fields.get(17).map(|&s| s.into());
+        let ind_frt = fields.get(17).to_compact_string();
         let vl_frt = get_decimal(18, "VL_FRT")?;
         let vl_seg = get_decimal(19, "VL_SEG")?;
         let vl_out_da = get_decimal(20, "VL_OUT_DA")?;

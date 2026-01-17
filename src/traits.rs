@@ -318,12 +318,24 @@ pub trait StringParser {
     /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).
     fn to_arc(&self) -> Option<Arc<str>>;
 
-    /// Helper para converter string para Arc<str> uppercase de forma eficiente;.
+    /// Converte `Option<T>` para `Option<CompactString>`.
+    ///
+    /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).    
+    fn to_compact_string(&self) -> Option<CompactString>;
+
+    /// Helper para converter `Option<&str>` para `Option<Arc<str>` uppercase de forma eficiente.
     ///
     /// Só aloca nova string se houver alguma letra minúscula.
     /// - "NOTA 123" -> Retorna Arc(original) (Zero Copy)
     /// - "Nota 123" -> Retorna Arc("NOTA 123") (Alocação necessária)
     fn to_upper_arc(&self) -> Option<Arc<str>>;
+
+    /// Helper para converter `Option<&str>` para `Option<CompactString` uppercase de forma eficiente.
+    ///
+    /// Só aloca nova string se houver alguma letra minúscula.
+    /// - "NOTA 123" -> Retorna CompactString(original) (Zero Copy)
+    /// - "Nota 123" -> Retorna CompactString("NOTA 123") (Alocação necessária)
+    fn to_upper_compact(&self) -> Option<CompactString>;
 }
 
 impl<T> StringParser for Option<T>
@@ -345,9 +357,17 @@ where
             .map(Arc::from) // 3. Só aloca na Heap se tiver conteúdo real
     }
 
+    fn to_compact_string(&self) -> Option<CompactString> {
+        self.as_ref()
+            .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
+            .filter(|s| !s.is_empty()) // 2. CRUCIAL: Transforma Some("") em None
+            .map(|s| s.replace_multiple_whitespaces())
+            .map(CompactString::from) // 3. Só aloca na Heap se tiver conteúdo real
+    }
+
     fn to_upper_arc(&self) -> Option<Arc<str>> {
         self.as_ref()
-            .map(|t| t.as_ref().trim()) // 1. Obtém o &str de T
+            .map(|t| t.as_ref()) // 1. Obtém o &str de T
             .filter(|s| !s.is_empty()) // 2. Filtra vazios (consistência com to_arc)
             .map(|s| s.replace_multiple_whitespaces())
             .map(|s| {
@@ -360,6 +380,31 @@ where
                     // Caminho Rápido: Copia bytes do &str direto para o Arc
                     // Evita a alocação intermediária de uma String desnecessária
                     Arc::from(s)
+                }
+            })
+    }
+
+    fn to_upper_compact(&self) -> Option<CompactString> {
+        self.as_ref()
+            .map(|t| t.as_ref()) // 1. Obtém o &str de T
+            .filter(|s| !s.is_empty()) // 2. Filtra vazios
+            .map(|s| s.replace_multiple_whitespaces())
+            /*
+            .map(|s| {
+                // Verifica se há minúsculas percorrendo os caracteres
+                if s.contains("  ") {
+                    s.replace_multiple_whitespaces()
+                } else {
+                    s
+                }
+            })
+            */
+            .map(|s| {
+                // Verifica se há minúsculas percorrendo os caracteres
+                if s.chars().any(|c| c.is_lowercase()) {
+                    CompactString::from(s.to_uppercase())
+                } else {
+                    CompactString::from(s)
                 }
             })
     }

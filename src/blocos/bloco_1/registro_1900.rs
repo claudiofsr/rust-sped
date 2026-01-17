@@ -58,18 +58,18 @@ impl SpedParser for Registro1900 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cnpj = fields.get(2).map(|&s| s.into());
-        let cod_mod = fields.get(3).map(|&s| s.into());
-        let ser = fields.get(4).map(|&s| s.into());
-        let sub_ser = fields.get(5).map(|&s| s.into());
-        let cod_sit = fields.get(6).map(|&s| s.into());
+        let cnpj = fields.get(2).to_compact_string();
+        let cod_mod = fields.get(3).to_compact_string();
+        let ser = fields.get(4).to_compact_string();
+        let sub_ser = fields.get(5).to_compact_string();
+        let cod_sit = fields.get(6).to_compact_string();
         let vl_tot_rec = get_decimal(7, "VL_TOT_REC")?;
-        let quant_doc = fields.get(8).map(|&s| s.into()); // Pode ser String se a quantidade for tratada como tal, ou Decimal
+        let quant_doc = fields.get(8).to_compact_string(); // Pode ser String se a quantidade for tratada como tal, ou Decimal
         let cst_pis = fields.get(9).parse_opt();
         let cst_cofins = fields.get(10).parse_opt();
         let cfop = fields.get(11).parse_opt();
-        let inf_compl = fields.get(12).map(|&s| s.into());
-        let cod_cta = fields.get(13).map(|&s| s.into());
+        let inf_compl = fields.get(12).to_compact_string();
+        let cod_cta = fields.get(13).to_compact_string();
 
         let reg = Registro1900 {
             nivel: 2,

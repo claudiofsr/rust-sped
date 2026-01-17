@@ -55,8 +55,8 @@ impl SpedParser for RegistroM800 {
 
         let cst_cofins = fields.get(2).parse_opt();
         let vl_tot_rec = get_decimal(3, "VL_TOT_REC")?;
-        let cod_cta = fields.get(4).map(|&s| s.into());
-        let desc_compl = fields.get(5).map(|&s| s.into());
+        let cod_cta = fields.get(4).to_compact_string();
+        let desc_compl = fields.get(5).to_compact_string();
 
         let reg = RegistroM800 {
             nivel: 2,

@@ -1,4 +1,6 @@
-use crate::{EFDError, EFDResult, SpedParser, ToDecimal, ToNaiveDate, impl_reg_methods};
+use crate::{
+    EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
+};
 use chrono::NaiveDate;
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -69,16 +71,16 @@ impl SpedParser for RegistroC800 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_mod = fields.get(2).map(|&s| s.into());
-        let cod_sit = fields.get(3).map(|&s| s.into());
-        let num_cfe = fields.get(4).map(|&s| s.into());
+        let cod_mod = fields.get(2).to_compact_string();
+        let cod_sit = fields.get(3).to_compact_string();
+        let num_cfe = fields.get(4).to_compact_string();
         let dt_doc = get_date(5, "DT_DOC")?;
         let vl_cfe = get_decimal(6, "VL_CFE")?;
         let vl_pis = get_decimal(7, "VL_PIS")?;
         let vl_cofins = get_decimal(8, "VL_COFINS")?;
-        let cnpj_cpf = fields.get(9).map(|&s| s.into());
-        let nr_sat = fields.get(10).map(|&s| s.into());
-        let chv_cfe = fields.get(11).map(|&s| s.into());
+        let cnpj_cpf = fields.get(9).to_compact_string();
+        let nr_sat = fields.get(10).to_compact_string();
+        let chv_cfe = fields.get(11).to_compact_string();
         let vl_desc = get_decimal(12, "VL_DESC")?;
         let vl_merc = get_decimal(13, "VL_MERC")?;
         let vl_out_da = get_decimal(14, "VL_OUT_DA")?;

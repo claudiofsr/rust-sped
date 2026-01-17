@@ -60,7 +60,7 @@ impl SpedParser for RegistroC810 {
 
         let cfop = fields.get(2).parse_opt();
         let vl_item = get_decimal(3, "VL_ITEM")?;
-        let cod_item = fields.get(4).map(|&s| s.into());
+        let cod_item = fields.get(4).to_compact_string();
         let cst_pis = fields.get(5).parse_opt();
         let vl_bc_pis = get_decimal(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(7, "ALIQ_PIS")?;
@@ -69,7 +69,7 @@ impl SpedParser for RegistroC810 {
         let vl_bc_cofins = get_decimal(10, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(11, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(12, "VL_COFINS")?;
-        let cod_cta = fields.get(13).map(|&s| s.into());
+        let cod_cta = fields.get(13).to_compact_string();
 
         let reg = RegistroC810 {
             nivel: 4,

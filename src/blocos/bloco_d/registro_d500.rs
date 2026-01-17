@@ -78,13 +78,13 @@ impl SpedParser for RegistroD500 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).map(|&s| s.into());
-        let ind_emit = fields.get(3).map(|&s| s.into());
-        let cod_part = fields.get(4).map(|&s| s.into());
-        let cod_mod = fields.get(5).map(|&s| s.into());
-        let cod_sit = fields.get(6).map(|&s| s.into());
-        let ser = fields.get(7).map(|&s| s.into());
-        let sub = fields.get(8).map(|&s| s.into());
+        let ind_oper = fields.get(2).to_compact_string();
+        let ind_emit = fields.get(3).to_compact_string();
+        let cod_part = fields.get(4).to_compact_string();
+        let cod_mod = fields.get(5).to_compact_string();
+        let cod_sit = fields.get(6).to_compact_string();
+        let ser = fields.get(7).to_compact_string();
+        let sub = fields.get(8).to_compact_string();
         let num_doc = fields.get(9).parse_opt();
         let dt_doc = get_date(10, "DT_DOC")?;
         let dt_a_p = get_date(11, "DT_A_P")?;
@@ -96,7 +96,7 @@ impl SpedParser for RegistroD500 {
         let vl_da = get_decimal(17, "VL_DA")?;
         let vl_bc_icms = get_decimal(18, "VL_BC_ICMS")?;
         let vl_icms = get_decimal(19, "VL_ICMS")?;
-        let cod_inf = fields.get(20).map(|&s| s.into());
+        let cod_inf = fields.get(20).to_compact_string();
         let vl_pis = get_decimal(21, "VL_PIS")?;
         let vl_cofins = get_decimal(22, "VL_COFINS")?;
 

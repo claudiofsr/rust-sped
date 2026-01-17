@@ -66,16 +66,16 @@ impl SpedParser for Registro1210 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cnpj = fields.get(2).map(|&s| s.into());
+        let cnpj = fields.get(2).to_compact_string();
         let cst_pis = fields.get(3).parse_opt();
-        let cod_part = fields.get(4).map(|&s| s.into());
+        let cod_part = fields.get(4).to_compact_string();
         let dt_oper = get_date(5, "DT_OPER")?;
         let vl_oper = get_decimal(6, "VL_OPER")?;
         let vl_bc_pis = get_decimal(7, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(8, "ALIQ_PIS")?;
         let vl_pis = get_decimal(9, "VL_PIS")?;
-        let cod_cta = fields.get(10).map(|&s| s.into());
-        let desc_compl = fields.get(11).map(|&s| s.into());
+        let cod_cta = fields.get(10).to_compact_string();
+        let desc_compl = fields.get(11).to_compact_string();
 
         let reg = Registro1210 {
             nivel: 3,

@@ -59,19 +59,19 @@ impl SpedParser for RegistroC880 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let cod_item = fields.get(2).map(|&s| s.into());
+        let cod_item = fields.get(2).to_compact_string();
         let cfop = fields.get(3).parse_opt();
         let vl_item = get_decimal(4, "VL_ITEM")?;
         let vl_desc = get_decimal(5, "VL_DESC")?;
         let cst_pis = fields.get(6).parse_opt();
-        let quant_bc_pis = fields.get(7).map(|&s| s.into());
+        let quant_bc_pis = fields.get(7).to_compact_string();
         let aliq_pis_quant = get_decimal(8, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(9, "VL_PIS")?;
         let cst_cofins = fields.get(10).parse_opt();
-        let quant_bc_cofins = fields.get(11).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(11).to_compact_string();
         let aliq_cofins_quant = get_decimal(12, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(13, "VL_COFINS")?;
-        let cod_cta = fields.get(14).map(|&s| s.into());
+        let cod_cta = fields.get(14).to_compact_string();
 
         let reg = RegistroC880 {
             nivel: 4,

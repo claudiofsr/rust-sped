@@ -57,14 +57,14 @@ impl SpedParser for RegistroC385 {
         };
 
         let cst_cofins = fields.get(2).parse_opt();
-        let cod_item = fields.get(3).map(|&s| s.into());
+        let cod_item = fields.get(3).to_compact_string();
         let vl_item = get_decimal(4, "VL_ITEM")?;
         let vl_bc_cofins = get_decimal(5, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(6, "ALIQ_COFINS")?;
-        let quant_bc_cofins = fields.get(7).map(|&s| s.into());
+        let quant_bc_cofins = fields.get(7).to_compact_string();
         let aliq_cofins_quant = get_decimal(8, "ALIQ_COFINS_QUANT")?;
         let vl_cofins = get_decimal(9, "VL_COFINS")?;
-        let cod_cta = fields.get(10).map(|&s| s.into());
+        let cod_cta = fields.get(10).to_compact_string();
 
         let reg = RegistroC385 {
             nivel: 4,
