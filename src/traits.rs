@@ -395,24 +395,27 @@ where
             .map(|t| t.as_ref())
             .filter(|s| !s.is_empty())
             .map(|s| {
-                // Caminho Rápido usando std::str::contains (SIMD Accelerated)
+                // Caminho Rápido: SIMD (Otimizado pela std)
                 if !s.contains("  ") {
                     return CompactString::from(s);
                 }
 
-                // CAMINHO LENTO: Construção direta no buffer da CompactString.
-                // TÉCNICA: Se o resultado for curto, zero alocação na Heap.
+                // CAMINHO LENTO: Otimizado para evitar decodificação UTF-8
                 let mut res = CompactString::with_capacity(s.len());
                 let mut last_was_space = false;
-                for c in s.chars() {
-                    if c == ' ' {
+
+                // TÉCNICA: Iterar sobre bytes é mais rápido que chars()
+                // quando buscamos apenas caracteres ASCII (como o espaço).
+                for &b in s.as_bytes() {
+                    if b == b' ' {
                         if !last_was_space {
                             res.push(' ');
                             last_was_space = true;
                         }
-                        // Se last_was_space for true, simplesmente ignoramos (remove espaço duplo)
                     } else {
-                        res.push(c);
+                        // push byte diretamente (CompactString aceita char,
+                        // converter b:u8 para char é apenas uma expansão de bits)
+                        res.push(b as char);
                         last_was_space = false;
                     }
                 }
