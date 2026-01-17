@@ -303,9 +303,7 @@ impl DecimalExt for Option<Decimal> {
 // Conversões seguras e funcionais para tipos primitivos e Options
 // ============================================================================
 
-/// Extension para facilitar o parsing de `Option<T>` para `Option<U>`.
-///
-/// U pode ser String ou &str.
+/// Extension para facilitar o parsing e conversão de strings dentro de `Option`.
 pub trait StringParser {
     /// Parse `Option<T>` para `Option<U>`.
     ///
@@ -315,33 +313,47 @@ pub trait StringParser {
 
     /// Converte `Option<T>` para `Option<Arc<str>>`.
     ///
+    /// Útil para dados que serão compartilhados entre threads e que possuem vida longa,
+    /// mas que excedem o tamanho do buffer inline do CompactString.
+    ///
     /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).
     fn to_arc(&self) -> Option<Arc<str>>;
 
     /// Converte `Option<T>` para `Option<CompactString>`.
     ///
-    /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).    
+    /// TÉCNICA: Se a string tiver até 24 bytes, ela é armazenada na Stack (Zero Heap Allocation).
+    ///
+    /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).
     fn to_compact_string(&self) -> Option<CompactString>;
 
-    /// Helper para converter `Option<&str>` para `Option<Arc<str>` uppercase de forma eficiente.
+    /// Converte `Option<&str>` para Uppercase dentro de um `Option<Arc<str>>`.
     ///
     /// Só aloca nova string se houver alguma letra minúscula.
     /// - "NOTA 123" -> Retorna Arc(original) (Zero Copy)
     /// - "Nota 123" -> Retorna Arc("NOTA 123") (Alocação necessária)
+    ///
+    /// TÉCNICA: Caminho rápido para strings que já estão em maiúsculo.
     fn to_upper_arc(&self) -> Option<Arc<str>>;
 
-    /// Helper para converter `Option<&str>` para `Option<CompactString` uppercase de forma eficiente.
+    fn to_upper_arc_old(&self) -> Option<Arc<str>>;
+
+    /// Converte `Option<&str>` para Uppercase dentro de um `Option<CompactString>`.
     ///
     /// Só aloca nova string se houver alguma letra minúscula.
     /// - "NOTA 123" -> Retorna CompactString(original) (Zero Copy)
     /// - "Nota 123" -> Retorna CompactString("NOTA 123") (Alocação necessária)
+    ///
+    /// TÉCNICA: Caminho rápido para strings que já estão em maiúsculo.
     fn to_upper_compact(&self) -> Option<CompactString>;
+
+    fn to_upper_compact_old(&self) -> Option<CompactString>;
 }
 
 impl<T> StringParser for Option<T>
 where
     T: AsRef<str>,
 {
+    #[inline]
     fn parse_opt<U: FromStr>(&self) -> Option<U> {
         self.as_ref()
             .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
@@ -353,57 +365,225 @@ where
         self.as_ref()
             .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
             .filter(|s| !s.is_empty()) // 2. CRUCIAL: Transforma Some("") em None
-            .map(|s| s.replace_multiple_whitespaces())
-            .map(Arc::from) // 3. Só aloca na Heap se tiver conteúdo real
+            .map(|s| {
+                // TÉCNICA: Só chama a função de limpeza se detectarmos espaços duplos.
+                // Isso evita criar uma nova String temporária na maioria dos casos.
+                if s.contains("  ") {
+                    Arc::from(s.replace_multiple_whitespaces())
+                } else {
+                    Arc::from(s)
+                }
+            })
     }
 
     fn to_compact_string(&self) -> Option<CompactString> {
         self.as_ref()
             .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
             .filter(|s| !s.is_empty()) // 2. CRUCIAL: Transforma Some("") em None
-            .map(|s| s.replace_multiple_whitespaces())
-            .map(CompactString::from) // 3. Só aloca na Heap se tiver conteúdo real
+            .map(|s| {
+                // TÉCNICA: Só chama a função de limpeza se detectarmos espaços duplos.
+                // Isso evita criar uma nova String temporária na maioria dos casos.
+                if s.contains("  ") {
+                    CompactString::from(s.replace_multiple_whitespaces())
+                } else {
+                    CompactString::from(s)
+                }
+            })
     }
+
+    /*
+    Por que esta implementação é superior?
+
+    1. Redução de Alocações Intermediárias: No código original, chamadas como s.replace_multiple_whitespaces().to_uppercase()
+    criariam duas String completas na Heap. Agora, criamos apenas uma (o buffer res).
+
+    2. Aproveitamento do Arc: Para o caso de strings que já estão corretas, Arc::from(s) é a operação mais barata possível,
+    pois ela apenas aloca o espaço exato na Heap e copia os bytes do &str.
+
+    3. Fusão de Operações: Limpeza de espaços duplos e conversão para maiúsculas ocorrem no mesmo loop.
+    Isso reduz o número de vezes que a CPU precisa ler os bytes da memória (melhor uso de cache L1).
+
+    4. Segurança e Consistência: O comportamento é idêntico ao to_upper_compact, garantindo que seu sistema trate os dados
+    de forma previsível, independentemente do tipo de armazenamento escolhido.
+
+    Resumo dos Ganhos
+
+    - Strings Limpas: Passou de 1 alocação temporária + 1 alocação final para apenas 1 alocação final.
+    - Strings Sujas: Passou de 2 alocações temporárias + 1 alocação final para 1 alocação temporária (buffer) que se torna a final.
+    - Performance: Menos pressão no alocador de memória do sistema operacional e menos ciclos de CPU desperdiçados em loops repetitivos.
+
+    */
 
     fn to_upper_arc(&self) -> Option<Arc<str>> {
         self.as_ref()
-            .map(|t| t.as_ref()) // 1. Obtém o &str de T
-            .filter(|s| !s.is_empty()) // 2. Filtra vazios (consistência com to_arc)
-            .map(|s| s.replace_multiple_whitespaces())
+            .map(|t| t.as_ref())
+            .filter(|s| !s.is_empty())
             .map(|s| {
-                // Verifica se há minúsculas percorrendo os caracteres
-                if s.chars().any(|c| c.is_lowercase()) {
-                    // Caminho Lento: Aloca String (Heap) -> Move para Arc (Heap)
-                    // Arc::from(String) é eficiente pois rouba o buffer da String se possível
-                    Arc::from(s.to_uppercase())
+                let mut needs_fix = false;
+                let mut prev_is_space = false;
+
+                // TÉCNICA: Inspeção O(n) para detectar se o "Caminho Rápido" é possível
+
+                // --- PASSO 1: Inspeção Fail-Fast O(n) ---
+                for c in s.chars() {
+                    if c.is_lowercase() || (c == ' ' && prev_is_space) {
+                        needs_fix = true;
+                        break; // ENCONTROU ERRO, PARA TUDO!
+                    }
+                    prev_is_space = c == ' ';
+                }
+
+                // CAMINHO RÁPIDO: String já está limpa e em maiúsculas
+                if !needs_fix {
+                    // Aloca o Arc diretamente do slice original.
+                    // Uma única alocação na Heap, zero strings temporárias.
+                    return Arc::from(s);
+                }
+
+                // --- PASSO 2: Caminho Lento (Transformação Única) ---
+                // Se chegou aqui, não sabemos qual erro foi, então corrigimos AMBOS.
+                // Criamos uma String como buffer temporário.
+                // TÉCNICA: Usamos with_capacity para evitar realocações durante o loop.
+                let mut res = String::with_capacity(s.len());
+                let mut last_was_space = false;
+
+                for c in s.chars() {
+                    if c == ' ' {
+                        if !last_was_space {
+                            res.push(' ');
+                            last_was_space = true;
+                        }
+                        // Se last_was_space for true, simplesmente ignoramos (remove espaço duplo)
+                    } else {
+                        last_was_space = false;
+                        // TÉCNICA: Otimização ASCII dentro da transformação
+                        if c.is_ascii() {
+                            res.push(c.to_ascii_uppercase());
+                        } else {
+                            res.extend(c.to_uppercase());
+                        }
+                    }
+                }
+
+                // Converte a String final em Arc.
+                // Rust é inteligente o suficiente para tentar "reaproveitar" o buffer
+                // da String para o Arc se possível, minimizando cópias.
+                Arc::from(res)
+            })
+    }
+
+    fn to_upper_arc_old(&self) -> Option<Arc<str>> {
+        self.as_ref()
+            .map(|t| t.as_ref()) // 1. Obtém o &str de T
+            .filter(|s| !s.is_empty())
+            .map(|s| {
+                // Verificamos se há necessidade de transformação
+                let has_lower = s.chars().any(|c| c.is_lowercase());
+                let has_double_space = s.contains("  ");
+
+                if has_lower || has_double_space {
+                    // CAMINHO LENTO: Alocação necessária para limpeza e conversão
+                    Arc::from(s.replace_multiple_whitespaces().to_uppercase())
                 } else {
-                    // Caminho Rápido: Copia bytes do &str direto para o Arc
-                    // Evita a alocação intermediária de uma String desnecessária
+                    // CAMINHO RÁPIDO: Já está limpo e em Uppercase. Zero alocação de String temporária.
                     Arc::from(s)
                 }
             })
     }
 
+    /*
+    Por que isso é mais eficiente?
+
+    1. Eliminação de s.to_string() e s.to_uppercase(): No seu código anterior, s.to_string() criava uma
+     na Heap mesmo se a string fosse pequena. Agora, vamos de &str direto para CompactString.
+
+    2. Lógica Unificada: Em vez de chamar replace_multiple_whitespaces() (que criaria uma String) e
+     to_uppercase() (que criaria outra String), fazemos ambas as operações em uma única passagem de caracteres.
+
+    3. Memória Inline: Se o resultado final (após remover espaços e converter para maiúsculas) tiver até 24 bytes,
+    nenhuma memória será alocada na Heap em todo o processo de transformação.
+
+    4. Early Exit: O loop de inspeção inicial termina assim que descobre que a string precisa de "trabalho",
+    economizando ciclos de CPU em strings longas que já sabemos estarem sujas.
+
+    4 casos possiveis em has_lower com has_double_space:
+
+    Análise dos 4 Casos:
+    1. (L=false, S=false): CompactString::from(s). O caminho mais rápido.
+    2. (L=true, S=false): O loop de transformação apenas faz o to_uppercase e ignora a lógica de espaços.
+    3. (L=false, S=true): O loop apenas limpa os espaços e ignora a lógica de to_uppercase.
+    4. (L=true, S=true): O loop realiza ambas as operações simultaneamente.
+
+    Essa abordagem trata a CompactString como um buffer de destino, garantindo que os dados
+    sejam movidos e transformados com o menor número possível de operações de escrita em memória.
+    */
     fn to_upper_compact(&self) -> Option<CompactString> {
         self.as_ref()
-            .map(|t| t.as_ref()) // 1. Obtém o &str de T
-            .filter(|s| !s.is_empty()) // 2. Filtra vazios
-            .map(|s| s.replace_multiple_whitespaces())
-            /*
+            .map(|t| t.as_ref())
+            .filter(|s| !s.is_empty())
             .map(|s| {
-                // Verifica se há minúsculas percorrendo os caracteres
-                if s.contains("  ") {
-                    s.replace_multiple_whitespaces()
-                } else {
-                    s
+                let mut needs_fix = false;
+                let mut prev_is_space = false;
+
+                // --- PASSO 1: Inspeção Fail-Fast O(n) ---
+                for c in s.chars() {
+                    if c.is_lowercase() || (c == ' ' && prev_is_space) {
+                        needs_fix = true;
+                        break; // ENCONTROU ERRO, PARA TUDO!
+                    }
+                    prev_is_space = c == ' ';
                 }
+
+                // CAMINHO RÁPIDO: String perfeita.
+                if !needs_fix {
+                    return CompactString::from(s);
+                }
+
+                // --- PASSO 2: Caminho Lento (Transformação Única) ---
+                // Se chegou aqui, não sabemos qual erro foi, então corrigimos AMBOS.
+                let mut res = CompactString::with_capacity(s.len());
+                let mut last_was_space = false;
+
+                for c in s.chars() {
+                    if c == ' ' {
+                        if !last_was_space {
+                            res.push(' ');
+                            last_was_space = true;
+                        }
+                        // Se last_was_space for true, simplesmente ignoramos (remove espaço duplo)
+                    } else {
+                        last_was_space = false;
+                        // TÉCNICA: Otimização ASCII dentro da transformação
+                        if c.is_ascii() {
+                            res.push(c.to_ascii_uppercase());
+                        } else {
+                            res.extend(c.to_uppercase());
+                        }
+                    }
+                }
+                res
             })
-            */
+    }
+
+    fn to_upper_compact_old(&self) -> Option<CompactString> {
+        self.as_ref()
+            .map(|t| t.as_ref()) // 1. Obtém o &str de T
+            .filter(|s| !s.is_empty())
             .map(|s| {
-                // Verifica se há minúsculas percorrendo os caracteres
-                if s.chars().any(|c| c.is_lowercase()) {
-                    CompactString::from(s.to_uppercase())
+                // Verificamos se há necessidade de transformação
+                let has_lower = s.chars().any(|c| c.is_lowercase());
+                let has_double_space = s.contains("  ");
+
+                if has_lower || has_double_space {
+                    // Se precisar de limpeza, a CompactString cuidará da alocação na Heap apenas se necessário
+                    let cleaned = if has_double_space {
+                        s.replace_multiple_whitespaces()
+                    } else {
+                        s.to_string()
+                    };
+                    CompactString::from(cleaned.to_uppercase())
                 } else {
+                    // Já está perfeito: Se < 24 bytes, Zero alocação na Heap.
                     CompactString::from(s)
                 }
             })
