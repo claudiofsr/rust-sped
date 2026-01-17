@@ -374,18 +374,24 @@ where
                 // Caminho Lento: Só entra aqui se realmente houver erro
                 let mut res = String::with_capacity(s.len());
                 let mut last_was_space = false;
-                for c in s.chars() {
-                    if c == ' ' {
+
+                // TÉCNICA: Iterar sobre bytes é mais rápido que chars()
+                // quando buscamos apenas caracteres ASCII (como o espaço).
+                for &b in s.as_bytes() {
+                    if b == b' ' {
                         if !last_was_space {
                             res.push(' ');
                             last_was_space = true;
                         }
                         // Se last_was_space for true, simplesmente ignoramos (remove espaço duplo)
                     } else {
-                        res.push(c);
+                        // push byte diretamente (CompactString aceita char,
+                        // converter b:u8 para char é apenas uma expansão de bits)
+                        res.push(b as char);
                         last_was_space = false;
                     }
                 }
+
                 Arc::from(res)
             })
     }
@@ -412,6 +418,7 @@ where
                             res.push(' ');
                             last_was_space = true;
                         }
+                        // Se last_was_space for true, simplesmente ignoramos (remove espaço duplo)
                     } else {
                         // push byte diretamente (CompactString aceita char,
                         // converter b:u8 para char é apenas uma expansão de bits)
