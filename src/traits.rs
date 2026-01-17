@@ -319,16 +319,12 @@ pub trait StringParser {
     /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).
     fn to_arc(&self) -> Option<Arc<str>>;
 
-    fn to_arc_old(&self) -> Option<Arc<str>>;
-
     /// Converte `Option<T>` para `Option<CompactString>`.
     ///
     /// TÉCNICA: Se a string tiver até 24 bytes, ela é armazenada na Stack (Zero Heap Allocation).
     ///
     /// Retorna `None` se a entrada for `None` ou string vazia (Economia de RAM).
     fn to_compact_string(&self) -> Option<CompactString>;
-
-    fn to_compact_string_old(&self) -> Option<CompactString>;
 
     /// Converte `Option<&str>` para Uppercase dentro de um `Option<Arc<str>>`.
     ///
@@ -370,24 +366,12 @@ where
             .map(|t| t.as_ref())
             .filter(|s| !s.is_empty())
             .map(|s| {
-                let mut needs_fix = false;
-                let mut prev_is_space = false;
-
-                // --- PASSO 1: Inspeção Fail-Fast (Apenas para espaços duplos) ---
-                for c in s.chars() {
-                    if c == ' ' && prev_is_space {
-                        needs_fix = true;
-                        break;
-                    }
-                    prev_is_space = c == ' ';
-                }
-
-                // CAMINHO RÁPIDO: Não há espaços duplos.
-                if !needs_fix {
+                // Caminho Rápido usando std::str::contains (SIMD Accelerated)
+                if !s.contains("  ") {
                     return Arc::from(s);
                 }
 
-                // CAMINHO LENTO: Transformação manual para evitar String temporária.
+                // Caminho Lento: Só entra aqui se realmente houver erro
                 let mut res = String::with_capacity(s.len());
                 let mut last_was_space = false;
                 for c in s.chars() {
@@ -396,6 +380,7 @@ where
                             res.push(' ');
                             last_was_space = true;
                         }
+                        // Se last_was_space for true, simplesmente ignoramos (remove espaço duplo)
                     } else {
                         res.push(c);
                         last_was_space = false;
@@ -410,20 +395,8 @@ where
             .map(|t| t.as_ref())
             .filter(|s| !s.is_empty())
             .map(|s| {
-                let mut needs_fix = false;
-                let mut prev_is_space = false;
-
-                // --- PASSO 1: Inspeção Fail-Fast ---
-                for c in s.chars() {
-                    if c == ' ' && prev_is_space {
-                        needs_fix = true;
-                        break;
-                    }
-                    prev_is_space = c == ' ';
-                }
-
-                // CAMINHO RÁPIDO
-                if !needs_fix {
+                // Caminho Rápido usando std::str::contains (SIMD Accelerated)
+                if !s.contains("  ") {
                     return CompactString::from(s);
                 }
 
@@ -437,42 +410,13 @@ where
                             res.push(' ');
                             last_was_space = true;
                         }
+                        // Se last_was_space for true, simplesmente ignoramos (remove espaço duplo)
                     } else {
                         res.push(c);
                         last_was_space = false;
                     }
                 }
                 res
-            })
-    }
-
-    fn to_arc_old(&self) -> Option<Arc<str>> {
-        self.as_ref()
-            .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
-            .filter(|s| !s.is_empty()) // 2. CRUCIAL: Transforma Some("") em None
-            .map(|s| {
-                // TÉCNICA: Só chama a função de limpeza se detectarmos espaços duplos.
-                // Isso evita criar uma nova String temporária na maioria dos casos.
-                if s.contains("  ") {
-                    Arc::from(s.replace_multiple_whitespaces())
-                } else {
-                    Arc::from(s)
-                }
-            })
-    }
-
-    fn to_compact_string_old(&self) -> Option<CompactString> {
-        self.as_ref()
-            .map(|t| t.as_ref()) // 1. Obtém o &str (Zero Copy)
-            .filter(|s| !s.is_empty()) // 2. CRUCIAL: Transforma Some("") em None
-            .map(|s| {
-                // TÉCNICA: Só chama a função de limpeza se detectarmos espaços duplos.
-                // Isso evita criar uma nova String temporária na maioria dos casos.
-                if s.contains("  ") {
-                    CompactString::from(s.replace_multiple_whitespaces())
-                } else {
-                    CompactString::from(s)
-                }
             })
     }
 
