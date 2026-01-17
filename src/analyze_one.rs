@@ -250,10 +250,13 @@ where
         let line = get_string_utf8(trimmed, line_number, path)?;
 
         if let Some(record) = parse_sped_fields(path, line_number, &line)? {
-            if let SpedRecord::Bloco0(Bloco0::R0000(ref reg_0000)) = record {
-                update_progressbar_header(progressbar, reg_0000, file_number, total);
-                sped_file.add_record(record);
-                break; // Cursor do iterador para aqui
+            if let SpedRecord::Bloco0(boxed_bloco) = &record {
+                // 2. Desreferencia o Box (**) para chegar no enum Bloco0
+                if let Bloco0::R0000(reg_0000) = boxed_bloco.as_ref() {
+                    update_progressbar_header(progressbar, reg_0000, file_number, total);
+                    sped_file.add_record(record);
+                    break; // Cursor do iterador para aqui
+                }
             }
             // Adiciona registros que porventura venham antes do 0000 (raro, mas possível)
             sped_file.add_record(record);

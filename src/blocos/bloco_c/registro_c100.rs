@@ -2,8 +2,9 @@ use crate::{
     EFDError, EFDResult, SpedParser, StringParser, ToDecimal, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
+use compact_str::CompactString;
 use rust_decimal::Decimal;
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 const REGISTRO: &str = "C100";
 
@@ -18,39 +19,39 @@ pub struct RegistroC100 {
     pub bloco: char,
 
     /// Código de 4 caracteres do Registro
-    pub registro: Arc<str>,
+    pub registro: CompactString,
 
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_oper: Option<Arc<str>>,     // 2
-    pub ind_emit: Option<Arc<str>>,     // 3
-    pub cod_part: Option<Arc<str>>,     // 4
-    pub cod_mod: Option<Arc<str>>,      // 5
-    pub cod_sit: Option<Arc<str>>,      // 6
-    pub serie: Option<Arc<str>>,        // 7
-    pub num_doc: Option<usize>,         // 8
-    pub chv_nfe: Option<Arc<str>>,      // 9
-    pub dt_doc: Option<NaiveDate>,      // 10
-    pub dt_e_s: Option<NaiveDate>,      // 11
-    pub vl_doc: Option<Decimal>,        // 12
-    pub ind_pgto: Option<Arc<str>>,     // 13
-    pub vl_desc: Option<Decimal>,       // 14
-    pub vl_abat_nt: Option<Decimal>,    // 15
-    pub vl_merc: Option<Decimal>,       // 16
-    pub ind_frt: Option<Arc<str>>,      // 17
-    pub vl_frt: Option<Decimal>,        // 18
-    pub vl_seg: Option<Decimal>,        // 19
-    pub vl_out_da: Option<Decimal>,     // 20
-    pub vl_bc_icms: Option<Decimal>,    // 21
-    pub vl_icms: Option<Decimal>,       // 22
-    pub vl_bc_icms_st: Option<Decimal>, // 23
-    pub vl_icms_st: Option<Decimal>,    // 24
-    pub vl_ipi: Option<Decimal>,        // 25
-    pub vl_pis: Option<Decimal>,        // 26
-    pub vl_cofins: Option<Decimal>,     // 27
-    pub vl_pis_st: Option<Decimal>,     // 28
-    pub vl_cofins_st: Option<Decimal>,  // 29
+    pub ind_oper: Option<CompactString>, // 2
+    pub ind_emit: Option<CompactString>, // 3
+    pub cod_part: Option<CompactString>, // 4
+    pub cod_mod: Option<CompactString>,  // 5
+    pub cod_sit: Option<CompactString>,  // 6
+    pub serie: Option<CompactString>,    // 7
+    pub num_doc: Option<usize>,          // 8
+    pub chv_nfe: Option<CompactString>,  // 9
+    pub dt_doc: Option<NaiveDate>,       // 10
+    pub dt_e_s: Option<NaiveDate>,       // 11
+    pub vl_doc: Option<Decimal>,         // 12
+    pub ind_pgto: Option<CompactString>, // 13
+    pub vl_desc: Option<Decimal>,        // 14
+    pub vl_abat_nt: Option<Decimal>,     // 15
+    pub vl_merc: Option<Decimal>,        // 16
+    pub ind_frt: Option<CompactString>,  // 17
+    pub vl_frt: Option<Decimal>,         // 18
+    pub vl_seg: Option<Decimal>,         // 19
+    pub vl_out_da: Option<Decimal>,      // 20
+    pub vl_bc_icms: Option<Decimal>,     // 21
+    pub vl_icms: Option<Decimal>,        // 22
+    pub vl_bc_icms_st: Option<Decimal>,  // 23
+    pub vl_icms_st: Option<Decimal>,     // 24
+    pub vl_ipi: Option<Decimal>,         // 25
+    pub vl_pis: Option<Decimal>,         // 26
+    pub vl_cofins: Option<Decimal>,      // 27
+    pub vl_pis_st: Option<Decimal>,      // 28
+    pub vl_cofins_st: Option<Decimal>,   // 29
 }
 
 impl_reg_methods!(RegistroC100);
@@ -87,14 +88,14 @@ impl SpedParser for RegistroC100 {
                 .to_decimal(file_path, line_number, field_name)
         };
 
-        let ind_oper = fields.get(2).to_arc();
-        let ind_emit = fields.get(3).to_arc();
-        let cod_part = fields.get(4).to_arc();
-        let cod_mod = fields.get(5).to_arc();
-        let cod_sit = fields.get(6).to_arc();
-        let serie = fields.get(7).to_arc();
+        let ind_oper = fields.get(2).map(|&s| s.into());
+        let ind_emit = fields.get(3).map(|&s| s.into());
+        let cod_part = fields.get(4).map(|&s| s.into());
+        let cod_mod = fields.get(5).map(|&s| s.into());
+        let cod_sit = fields.get(6).map(|&s| s.into());
+        let serie = fields.get(7).map(|&s| s.into());
         let num_doc = fields.get(8).parse_opt();
-        let chv_nfe = fields.get(9).to_arc();
+        let chv_nfe = fields.get(9).map(|&s| s.into());
 
         // Usando ToNaiveDate para campos de data
         let dt_doc = get_date(10, "DT_DOC")?;
@@ -102,11 +103,11 @@ impl SpedParser for RegistroC100 {
 
         // Usando ToDecimal para campos monetários (retornando Option<Decimal>)
         let vl_doc = get_decimal(12, "VL_DOC")?;
-        let ind_pgto = fields.get(13).to_arc();
+        let ind_pgto = fields.get(13).map(|&s| s.into());
         let vl_desc = get_decimal(14, "VL_DESC")?;
         let vl_abat_nt = get_decimal(15, "VL_ABAT_NT")?;
         let vl_merc = get_decimal(16, "VL_MERC")?;
-        let ind_frt = fields.get(17).to_arc();
+        let ind_frt = fields.get(17).map(|&s| s.into());
         let vl_frt = get_decimal(18, "VL_FRT")?;
         let vl_seg = get_decimal(19, "VL_SEG")?;
         let vl_out_da = get_decimal(20, "VL_OUT_DA")?;

@@ -18,6 +18,8 @@ Ao final, estas informações são padronizadas em Excel e CSV e escritas em arq
     # uso de find + sed para alterar variáveis dos muitos registros.
     # exemplo: impl_sped_record_trait para impl_reg_methods
     find ./src/blocos -type f -name "*.rs" -exec sed -i -E 's/impl_sped_record_trait/impl_reg_methods/' {} +
+    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/Arc\<str\>/CompactString/' {} +
+    find ./src/blocos/bloco_c -type f -name "*.rs" -exec sed -i -E 's/\.to_arc\(\)/.map(|&s| s.into())/' {} +
 
     cargo test --features old
     cargo test -- --nocapture

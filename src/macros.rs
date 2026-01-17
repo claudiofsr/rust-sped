@@ -154,17 +154,17 @@ macro_rules! dispatch_sped_parsers {
             $(
                 $name => {
                     let parsed = <$struct as $crate::SpedParser>::parse_reg($path, $line, $fields)?;
-                    Ok(Some($crate::SpedRecord::$bloco($bloco::$registro(parsed.into()))))
+                    Ok(Some($crate::SpedRecord::$bloco(Box::new($bloco::$registro(parsed.into())))))
                 },
             )*
             $(
                 $reg_name => {
                     let record = if $cond {
                         let parsed = <$struct_old as $crate::SpedParser>::parse_reg($path, $line, $fields)?;
-                        $crate::SpedRecord::$bloco_name($bloco_name::$reg_old(parsed.into()))
+                        $crate::SpedRecord::$bloco_name(Box::new($bloco_name::$reg_old(parsed.into())))
                     } else {
                         let parsed = <$struct_new as $crate::SpedParser>::parse_reg($path, $line, $fields)?;
-                        $crate::SpedRecord::$bloco_name($bloco_name::$reg_new(parsed.into()))
+                        $crate::SpedRecord::$bloco_name(Box::new($bloco_name::$reg_new(parsed.into())))
                     };
                     Ok(Some(record))
                 }

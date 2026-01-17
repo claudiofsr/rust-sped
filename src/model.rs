@@ -17,16 +17,16 @@ que encerra o arquivo digital da escrituração.
 /// Enum Principal: Representa os blocos do arquivo EFD Contribuições.
 #[derive(Debug, Clone)]
 pub enum SpedRecord {
-    Bloco0(Bloco0),
-    BlocoA(BlocoA),
-    BlocoC(BlocoC),
-    BlocoD(BlocoD),
-    BlocoF(BlocoF),
-    BlocoI(BlocoI),
-    BlocoM(BlocoM),
-    BlocoP(BlocoP),
-    Bloco1(Bloco1),
-    Bloco9(Bloco9),
+    Bloco0(Box<Bloco0>),
+    BlocoA(Box<BlocoA>),
+    BlocoC(Box<BlocoC>),
+    BlocoD(Box<BlocoD>),
+    BlocoF(Box<BlocoF>),
+    BlocoI(Box<BlocoI>),
+    BlocoM(Box<BlocoM>),
+    BlocoP(Box<BlocoP>),
+    Bloco1(Box<Bloco1>),
+    Bloco9(Box<Bloco9>),
 }
 
 impl SpedRecord {
@@ -602,16 +602,16 @@ impl SpedFile {
     /// Adiciona o registro movendo-o para o vetor otimizado.
     pub fn add_record(&mut self, record: SpedRecord) {
         match record {
-            SpedRecord::Bloco0(r) => self.bloco_0.push(r),
-            SpedRecord::BlocoA(r) => self.bloco_a.push(r),
-            SpedRecord::BlocoC(r) => self.bloco_c.push(r),
-            SpedRecord::BlocoD(r) => self.bloco_d.push(r),
-            SpedRecord::BlocoF(r) => self.bloco_f.push(r),
-            SpedRecord::BlocoI(r) => self.bloco_i.push(r),
-            SpedRecord::BlocoM(r) => self.bloco_m.push(r),
-            SpedRecord::BlocoP(r) => self.bloco_p.push(r),
-            SpedRecord::Bloco1(r) => self.bloco_1.push(r),
-            SpedRecord::Bloco9(r) => self.bloco_9.push(r),
+            SpedRecord::Bloco0(r) => self.bloco_0.push(*r),
+            SpedRecord::BlocoA(r) => self.bloco_a.push(*r),
+            SpedRecord::BlocoC(r) => self.bloco_c.push(*r),
+            SpedRecord::BlocoD(r) => self.bloco_d.push(*r),
+            SpedRecord::BlocoF(r) => self.bloco_f.push(*r),
+            SpedRecord::BlocoI(r) => self.bloco_i.push(*r),
+            SpedRecord::BlocoM(r) => self.bloco_m.push(*r),
+            SpedRecord::BlocoP(r) => self.bloco_p.push(*r),
+            SpedRecord::Bloco1(r) => self.bloco_1.push(*r),
+            SpedRecord::Bloco9(r) => self.bloco_9.push(*r),
         }
     }
 
