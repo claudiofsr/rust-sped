@@ -8,7 +8,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{Bloco0, EFDResult, GrupoDeContas, blocos::*};
+use crate::{Bloco0, EFDError, EFDResult, GrupoDeContas, ResultExt, blocos::*};
 
 // ============================================================================
 // 1. Contexto Imutável (Dados Globais e Tabelas)
@@ -164,12 +164,12 @@ impl SpedContext {
 
         // --- Geração única das tabelas de frequência ---
         // CNPJ Base: 8 primeiros dígitos
-        ctx.cache_nomes_cnpj_base = Self::consolidar_nomes_mais_frequentes(&ctx.nome_do_cnpj, 8);
+        ctx.cache_nomes_cnpj_base = Self::consolidar_nomes_mais_frequentes(&ctx.nome_do_cnpj, 8)?;
 
         // CPF Base: 9 primeiros dígitos (Identificação da Pessoa Física antes do dígito verificador)
         // ou 11 para CPF completo se preferir não agrupar. Usaremos 11 para exatidão ou 9 para base.
         // Geralmente CPF não varia de dono como CNPJ de filial, mas corrige erros de digitação.
-        ctx.cache_nomes_cpf_base = Self::consolidar_nomes_mais_frequentes(&ctx.nome_do_cpf, 9);
+        ctx.cache_nomes_cpf_base = Self::consolidar_nomes_mais_frequentes(&ctx.nome_do_cpf, 9)?;
 
         Ok(ctx)
     }
@@ -349,7 +349,7 @@ impl SpedContext {
     fn consolidar_nomes_mais_frequentes(
         source: &BTreeMap<Arc<str>, Arc<str>>,
         slice_len: usize,
-    ) -> HashMap<String, Arc<str>> {
+    ) -> EFDResult<HashMap<String, Arc<str>>> {
         source
             .par_iter() // 1. Paralelismo de dados: divide o BTreeMap entre os núcleos do i9
             // 2. Filtragem inicial (paralela)
@@ -385,20 +385,18 @@ impl SpedContext {
             })
             // 5. Fase final: Seleção do vencedor por "Base" (paralela)
             .into_par_iter()
-            .map(|(base, counts_map)| {
-                // Para manter o resultado IDÊNTICO ao original:
-                // Em caso de empate de 'count', o 'max_by_key' do Rust retorna o ÚLTIMO elemento.
-                // Como o original usava BTreeMap, o último era o maior em ordem alfabética.
-                let (_, vencedor) = counts_map
+            .map(|(base, counts_map)| -> EFDResult<(String, Arc<str>)> {
+                counts_map
                     .into_iter()
-                    // Ordenamos por: (Contagem, Nome Normalizado)
-                    // Isso garante determinismo total independente da ordem das threads.
+                    // 1. Encontra o máximo sem clonar, comparando referências
                     .max_by(|(name_a, (count_a, _)), (name_b, (count_b, _))| {
                         count_a.cmp(count_b).then_with(|| name_a.cmp(name_b))
                     })
-                    .expect("counts_map nunca está vazio aqui");
-
-                (base, vencedor.1)
+                    // 2. Converte Option para Result e carimba a localização do erro
+                    // O closure |_| recebe () vindo do Option
+                    .map_loc(|_| EFDError::KeyNotFound(format!("Base CNPJ/CPF: {}", base)))
+                    // 3. Mapeia o sucesso: (NomeNorm, (Count, OriginalArc)) -> (Base, OriginalArc)
+                    .map(|(_name_norm, (_count, original_arc))| (base, original_arc))
             })
             .collect()
     }
