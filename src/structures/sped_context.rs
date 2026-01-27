@@ -93,10 +93,6 @@ impl SpedContext {
             return Ok(ctx);
         }
 
-        // Aplicar a técnica de Double-Layer Parallelism (Paralelismo de Dupla Camada) no
-        // SpedContext é uma estratégia excelente para arquivos onde o Bloco 0 é massivo
-        // (comum em empresas com dezenas de milhares de clientes/participantes e produtos).
-
         /*
         // Usamos into_iter() para CONSUMIR o vetor.
         // Cada 'registro_bloco_0' é movido para dentro do loop e destruído ao final de cada iteração.

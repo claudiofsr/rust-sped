@@ -1104,7 +1104,9 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
     where
         E: Into<EFDError>,
     {
-        self.map_err(|e| e.into().tag(Location::caller()))
+        // Captura a localização do CHAMADOR antes de entrar na closure
+        let caller = Location::caller();
+        self.map_err(|e| e.into().tag(caller))
     }
 
     #[track_caller]
@@ -1112,7 +1114,8 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
     where
         F: FnOnce(E) -> EFDError,
     {
-        self.map_err(|e| op(e).tag(Location::caller()))
+        let caller = Location::caller();
+        self.map_err(|e| op(e).tag(caller))
     }
 }
 
@@ -1120,10 +1123,8 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
 impl<T> ResultExt<T, ()> for Option<T> {
     #[track_caller]
     fn loc(self) -> Result<T, EFDError> {
-        // Para Option, .loc() usa um erro padrão de "não encontrado"
-        self.ok_or_else(|| {
-            EFDError::KeyNotFound("Valor obrigatório ausente".into()).tag(Location::caller())
-        })
+        let caller = Location::caller();
+        self.ok_or_else(|| EFDError::KeyNotFound("Valor obrigatório ausente".into()).tag(caller))
     }
 
     #[track_caller]
@@ -1131,8 +1132,13 @@ impl<T> ResultExt<T, ()> for Option<T> {
     where
         F: FnOnce(()) -> EFDError,
     {
-        // Agora funciona: Result::map_loc não exige mais que () seja Into<EFDError>
-        self.ok_or(()).map_loc(op)
+        let caller = Location::caller();
+        // IMPORTANTE: Não delegue para Result::map_loc,
+        // senão o caller passará a ser este arquivo.
+        match self {
+            Some(v) => Ok(v),
+            None => Err(op(()).tag(caller)),
+        }
     }
 }
 
@@ -1144,7 +1150,9 @@ pub trait EfdRaise<T> {
 impl<T> EfdRaise<T> for EFDError {
     #[track_caller]
     fn raise(self) -> Result<T, EFDError> {
-        Err(self.tag(Location::caller()))
+        // Captura aqui para garantir que o erro aponte para onde o .raise() foi chamado
+        let caller = Location::caller();
+        Err(self.tag(caller))
     }
 }
 
