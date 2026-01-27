@@ -452,7 +452,7 @@ mod tests_analyze_all {
         let output_name = [&config.app_name, "-output.txt"].concat();
         let output_file: PathBuf = PathBuf::from(output_name);
 
-        my_print(&write_buffer, output_file.clone())?;
+        my_print(&write_buffer, &output_file)?;
 
         let csv_file: PathBuf = [
             OUTPUT_DIRECTORY,
