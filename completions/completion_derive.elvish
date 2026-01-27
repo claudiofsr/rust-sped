@@ -1,0 +1,48 @@
+
+use builtin;
+use str;
+
+set edit:completion:arg-completer[efd_contribuicoes] = {|@words|
+    fn spaces {|n|
+        builtin:repeat $n ' ' | str:join ''
+    }
+    fn cand {|text desc|
+        edit:complex-candidate $text &display=$text' '(spaces (- 14 (wcswidth $text)))$desc
+    }
+    var command = 'efd_contribuicoes'
+    for word $words[1..-1] {
+        if (str:has-prefix $word '-') {
+            break
+        }
+        set command = $command';'$word
+    }
+    var completions = [
+        &'efd_contribuicoes'= {
+            cand -g 'Gera o arquivo de auto-complete para o shell especificado (bash, zsh, fish, etc)'
+            cand --generate 'Gera o arquivo de auto-complete para o shell especificado (bash, zsh, fish, etc)'
+            cand -r 'Selecione arquivos SPED EFD para analisar especificando o intervalo'
+            cand --range 'Selecione arquivos SPED EFD para analisar especificando o intervalo'
+            cand -c 'Limpa a tela do terminal antes de apresentar a análise'
+            cand --clear_terminal 'Limpa a tela do terminal antes de apresentar a análise'
+            cand -d 'Ativar mensagens de debug (ex: detalhes de correlações do Bloco M)'
+            cand --debug 'Ativar mensagens de debug (ex: detalhes de correlações do Bloco M)'
+            cand -e 'Exclui itens de operações de SAÍDA dos arquivos finais (Excel/CSV).'
+            cand --excluir-saidas 'Exclui itens de operações de SAÍDA dos arquivos finais (Excel/CSV).'
+            cand -t 'Excluir CST 49 do Rateio da Receita Bruta.'
+            cand --excluir-cst-49 'Excluir CST 49 do Rateio da Receita Bruta.'
+            cand -f 'Listar arquivos SPED EFD encontrados no diretório atual.'
+            cand --find 'Listar arquivos SPED EFD encontrados no diretório atual.'
+            cand -o 'Retém apenas itens que geram crédito (50 <= CST <= 66).'
+            cand --operacoes-de-creditos 'Retém apenas itens que geram crédito (50 <= CST <= 66).'
+            cand -p 'Gerar arquivo CSV.'
+            cand --csv 'Gerar arquivo CSV.'
+            cand -n 'Desativar a geração do arquivo Excel (.xlsx).'
+            cand --no-excel 'Desativar a geração do arquivo Excel (.xlsx).'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+    ]
+    $completions[$command]
+}

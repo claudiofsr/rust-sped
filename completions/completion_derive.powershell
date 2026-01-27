@@ -1,0 +1,54 @@
+
+using namespace System.Management.Automation
+using namespace System.Management.Automation.Language
+
+Register-ArgumentCompleter -Native -CommandName 'efd_contribuicoes' -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+
+    $commandElements = $commandAst.CommandElements
+    $command = @(
+        'efd_contribuicoes'
+        for ($i = 1; $i -lt $commandElements.Count; $i++) {
+            $element = $commandElements[$i]
+            if ($element -isnot [StringConstantExpressionAst] -or
+                $element.StringConstantType -ne [StringConstantType]::BareWord -or
+                $element.Value.StartsWith('-') -or
+                $element.Value -eq $wordToComplete) {
+                break
+        }
+        $element.Value
+    }) -join ';'
+
+    $completions = @(switch ($command) {
+        'efd_contribuicoes' {
+            [CompletionResult]::new('-g', '-g', [CompletionResultType]::ParameterName, 'Gera o arquivo de auto-complete para o shell especificado (bash, zsh, fish, etc)')
+            [CompletionResult]::new('--generate', '--generate', [CompletionResultType]::ParameterName, 'Gera o arquivo de auto-complete para o shell especificado (bash, zsh, fish, etc)')
+            [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'Selecione arquivos SPED EFD para analisar especificando o intervalo')
+            [CompletionResult]::new('--range', '--range', [CompletionResultType]::ParameterName, 'Selecione arquivos SPED EFD para analisar especificando o intervalo')
+            [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Limpa a tela do terminal antes de apresentar a análise')
+            [CompletionResult]::new('--clear_terminal', '--clear_terminal', [CompletionResultType]::ParameterName, 'Limpa a tela do terminal antes de apresentar a análise')
+            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Ativar mensagens de debug (ex: detalhes de correlações do Bloco M)')
+            [CompletionResult]::new('--debug', '--debug', [CompletionResultType]::ParameterName, 'Ativar mensagens de debug (ex: detalhes de correlações do Bloco M)')
+            [CompletionResult]::new('-e', '-e', [CompletionResultType]::ParameterName, 'Exclui itens de operações de SAÍDA dos arquivos finais (Excel/CSV).')
+            [CompletionResult]::new('--excluir-saidas', '--excluir-saidas', [CompletionResultType]::ParameterName, 'Exclui itens de operações de SAÍDA dos arquivos finais (Excel/CSV).')
+            [CompletionResult]::new('-t', '-t', [CompletionResultType]::ParameterName, 'Excluir CST 49 do Rateio da Receita Bruta.')
+            [CompletionResult]::new('--excluir-cst-49', '--excluir-cst-49', [CompletionResultType]::ParameterName, 'Excluir CST 49 do Rateio da Receita Bruta.')
+            [CompletionResult]::new('-f', '-f', [CompletionResultType]::ParameterName, 'Listar arquivos SPED EFD encontrados no diretório atual.')
+            [CompletionResult]::new('--find', '--find', [CompletionResultType]::ParameterName, 'Listar arquivos SPED EFD encontrados no diretório atual.')
+            [CompletionResult]::new('-o', '-o', [CompletionResultType]::ParameterName, 'Retém apenas itens que geram crédito (50 <= CST <= 66).')
+            [CompletionResult]::new('--operacoes-de-creditos', '--operacoes-de-creditos', [CompletionResultType]::ParameterName, 'Retém apenas itens que geram crédito (50 <= CST <= 66).')
+            [CompletionResult]::new('-p', '-p', [CompletionResultType]::ParameterName, 'Gerar arquivo CSV.')
+            [CompletionResult]::new('--csv', '--csv', [CompletionResultType]::ParameterName, 'Gerar arquivo CSV.')
+            [CompletionResult]::new('-n', '-n', [CompletionResultType]::ParameterName, 'Desativar a geração do arquivo Excel (.xlsx).')
+            [CompletionResult]::new('--no-excel', '--no-excel', [CompletionResultType]::ParameterName, 'Desativar a geração do arquivo Excel (.xlsx).')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
+            [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
+            break
+        }
+    })
+
+    $completions.Where{ $_.CompletionText -like "$wordToComplete*" } |
+        Sort-Object -Property ListItemText
+}
