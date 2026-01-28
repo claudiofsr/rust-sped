@@ -1366,7 +1366,7 @@ pub fn process_block_lines(
                 let docs_a: Vec<DocsFiscais> = records
                     // CAMADA 1: Agrupar por Estabelecimento (A010)
                     .chunk_by(|_, next| !matches!(next, BlocoA::RA010(_)))
-                    .collect::<Vec<_>>()
+                    .collect::<Vec<&[BlocoA]>>()
                     .into_par_iter()
                     .with_max_len(NUM_DE_ESTABELECIMENTOS) // Nº de Estabelecimentos distintos
                     .flat_map(|establ_slice| {
@@ -1379,10 +1379,16 @@ pub fn process_block_lines(
 
                         establ_slice
                             .chunk_by(|_current, next| !is_major_header(next))
-                            .collect::<Vec<_>>()
+                            .collect::<Vec<&[BlocoA]>>()
                             .into_par_iter()
                             .with_min_len(LIMITE_LINHAS) // Nº de Pais A100 distintos
                             .flat_map_iter(move |doc_chunk| {
+                                println!(
+                                    "grupo do BlocoA com {} registros: {:?}\n",
+                                    doc_chunk.len(),
+                                    doc_chunk.iter().take(10).collect::<Vec<_>>()
+                                );
+
                                 let mut local_docs = Vec::new();
                                 let mut extractor = BlocoAExtractor {
                                     current_cnpj: current_cnpj.clone(),
@@ -1429,7 +1435,7 @@ pub fn process_block_lines(
                 let docs_c: Vec<DocsFiscais> = records
                     // CAMADA 1: Agrupar por Estabelecimento (C010)
                     .chunk_by(|_current, next| !matches!(next, BlocoC::RC010(_)))
-                    .collect::<Vec<_>>()
+                    .collect::<Vec<&[BlocoC]>>()
                     .into_par_iter()
                     .with_max_len(NUM_DE_ESTABELECIMENTOS) // Nº de Estabelecimentos distintos
                     .flat_map(|establ_slice| {

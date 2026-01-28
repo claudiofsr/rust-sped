@@ -82,6 +82,10 @@ impl SpedContext {
     ///
     /// Recebe Vec<Bloco0> por valor para consumir a memória imediatamente
     pub fn new(bloco_0: Vec<Bloco0>, path: &Path) -> EFDResult<Self> {
+        // Configuração de performance: ajuste conforme o hardware (i9 costuma lidar bem com 500-2000)
+        // Se o Bloco 0 tiver 100k linhas, criará no máximo 100 tarefas, reduzindo drasticamente os merges.
+        const MIN_BATCH_SIZE: usize = 1000;
+
         let mut ctx = Self {
             path: path.to_path_buf(),
             arquivo_efd: path.to_string_lossy().into(),
@@ -117,6 +121,7 @@ impl SpedContext {
         */
 
         // 1. FASE SEQUENCIAL: Metadados Críticos (0000, 0110, 0111)
+        // Itens que definem o estado global do contexto
         // Precisamos desses dados antes de processar os demais registros em paralelo.
         for reg in bloco_0.iter() {
             match reg {
@@ -127,10 +132,11 @@ impl SpedContext {
             }
         }
 
-        // 2. PROCESSAMENTO PARALELO "FLAT" (Tabelas de Lookup)
-        // Consumimos o vetor original (into_par_iter) para liberar memória conforme processamos.
+        // 2. PROCESSAMENTO PARALELO OTIMIZADO (Tabelas de Lookup)
+        // into_par_iter() consome o Vec original liberando memória dos itens processados
         let partial_ctx = bloco_0
             .into_par_iter()
+            .with_min_len(MIN_BATCH_SIZE) // <--- O SEGREDO DA PERFORMANCE AQUI
             .fold(
                 SpedContext::default, // Estado inicial por thread
                 |mut acc, reg| {
@@ -150,7 +156,9 @@ impl SpedContext {
                 },
             )
             .reduce(SpedContext::default, |mut a, b| {
-                a.merge(b); // Une os mapas usando BTreeMap::append e HashMap::extend
+                // Une os mapas usando BTreeMap::append e HashMap::extend
+                // Mesclagem de mapas grandes (menos chamadas, mais dados por chamada)
+                a.merge(b);
                 a
             });
 
@@ -175,14 +183,18 @@ impl SpedContext {
     }
 
     /// Une dois contextos de forma eficiente (utilizado no reduce do Rayon)
+    /// Nota: BTreeMap::append move os elementos de 'other' para 'self' de forma eficiente.
     fn merge(&mut self, mut other: Self) {
+        // HashMaps (O(n) para estender)
         self.complementar.extend(other.complementar);
         self.contabil.extend(other.contabil);
         self.estabelecimentos.extend(other.estabelecimentos);
         self.nat_operacao.extend(other.nat_operacao);
+        self.unidade_de_medida.extend(other.unidade_de_medida);
+
+        // BTreeMaps (Especialmente eficientes com .append())
         self.participantes.append(&mut other.participantes);
         self.produtos.append(&mut other.produtos);
-        self.unidade_de_medida.extend(other.unidade_de_medida);
         self.nome_do_cnpj.append(&mut other.nome_do_cnpj);
         self.nome_do_cpf.append(&mut other.nome_do_cpf);
     }

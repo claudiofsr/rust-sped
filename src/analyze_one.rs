@@ -68,6 +68,8 @@ pub fn analyze_one_file(
         .map(|bloco| process_block_lines(bloco, &sped_file_arc, &context))
         .unzip();
 
+    std::process::exit(0);
+
     // 2. Gather de Documentos (Sequencial e Otimizado)
     let total_docs: usize = docs_vecs.iter().map(|v| v.len()).sum();
     let mut all_docs = Vec::with_capacity(total_docs);
