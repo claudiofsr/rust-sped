@@ -1383,10 +1383,21 @@ pub fn process_block_lines(
                             .into_par_iter()
                             .with_min_len(LIMITE_LINHAS) // Nº de Pais A100 distintos
                             .flat_map_iter(move |doc_chunk| {
-                                println!("grupo do BlocoA com {} registros:", doc_chunk.len(),);
-                                doc_chunk.iter().enumerate().take(10).for_each(|(idx, reg)| {
-                                    println!("   {n} {reg:?}", n = idx + 1);
-                                });
+                                /*
+                                println!(
+                                    "grupo do BlocoA com {n} registros (1 Pai e {f} Filhos):",
+                                    n = doc_chunk.len(),
+                                    f = doc_chunk.len() - 1
+                                );
+                                doc_chunk
+                                    .iter()
+                                    .enumerate()
+                                    .take(5)
+                                    .for_each(|(idx, reg)| {
+                                        println!(" {n} {reg:?}", n = idx + 1);
+                                    });
+                                println!();
+                                */
 
                                 let mut local_docs = Vec::new();
                                 let mut extractor = BlocoAExtractor {
