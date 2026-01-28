@@ -1383,11 +1383,10 @@ pub fn process_block_lines(
                             .into_par_iter()
                             .with_min_len(LIMITE_LINHAS) // Nº de Pais A100 distintos
                             .flat_map_iter(move |doc_chunk| {
-                                println!(
-                                    "grupo do BlocoA com {} registros: {:?}\n",
-                                    doc_chunk.len(),
-                                    doc_chunk.iter().take(10).collect::<Vec<_>>()
-                                );
+                                println!("grupo do BlocoA com {} registros:", doc_chunk.len(),);
+                                doc_chunk.iter().enumerate().take(10).for_each(|(idx, reg)| {
+                                    println!("   {n} {reg:?}", n = idx + 1);
+                                });
 
                                 let mut local_docs = Vec::new();
                                 let mut extractor = BlocoAExtractor {

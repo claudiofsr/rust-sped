@@ -83,8 +83,8 @@ impl SpedContext {
     /// Recebe Vec<Bloco0> por valor para consumir a memória imediatamente
     pub fn new(bloco_0: Vec<Bloco0>, path: &Path) -> EFDResult<Self> {
         // Configuração de performance: ajuste conforme o hardware (i9 costuma lidar bem com 500-2000)
-        // Se o Bloco 0 tiver 100k linhas, criará no máximo 100 tarefas, reduzindo drasticamente os merges.
-        const MIN_BATCH_SIZE: usize = 1000;
+        // Se o Bloco 0 tiver 100k linhas, criará no máximo 20 tarefas, reduzindo drasticamente os merges.
+        const MIN_BATCH_SIZE: usize = 5_000;
 
         let mut ctx = Self {
             path: path.to_path_buf(),
