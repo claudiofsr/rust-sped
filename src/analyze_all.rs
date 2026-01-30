@@ -414,6 +414,7 @@ mod tests_analyze_all {
         let mut write: Box<&mut dyn Write> = Box::new(&mut write_buffer);
 
         let config = AppConfig {
+            app_name: "efd_contribuicoes".to_string(),
             all_files: vec![arquivo.clone()],
             print_csv: true,
             ..Default::default()
