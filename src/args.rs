@@ -13,24 +13,21 @@ use crate::EFDResult;
 ///
 /// <https://stackoverflow.com/questions/74068168/clap-rs-not-printing-colors-during-help>
 pub fn get_styles() -> clap::builder::Styles {
+    // colors
+    let yellow = anstyle::Color::Ansi(anstyle::AnsiColor::Yellow);
+    let cyan = anstyle::Color::Ansi(anstyle::AnsiColor::Cyan);
+    let green = anstyle::Color::Ansi(anstyle::AnsiColor::Green);
+
     clap::builder::Styles::styled()
-        .placeholder(
-            anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Yellow))),
-        )
-        .usage(
-            anstyle::Style::new()
-                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Cyan)))
-                .bold(),
-        )
+        .placeholder(anstyle::Style::new().fg_color(Some(yellow)))
+        .usage(anstyle::Style::new().fg_color(Some(cyan)).bold())
         .header(
             anstyle::Style::new()
-                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Cyan)))
+                .fg_color(Some(cyan))
                 .bold()
                 .underline(),
         )
-        .literal(
-            anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Green))),
-        )
+        .literal(anstyle::Style::new().fg_color(Some(green)))
 }
 
 /// Template para customizar a exibição do Help.
