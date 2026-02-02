@@ -1,0 +1,20 @@
+// Bloco I
+pub mod registro_i001;
+pub mod registro_i010;
+pub mod registro_i100;
+pub mod registro_i199;
+pub mod registro_i200;
+pub mod registro_i299;
+pub mod registro_i300;
+pub mod registro_i399;
+pub mod registro_i990;
+
+pub use registro_i001::RegistroI001;
+pub use registro_i010::RegistroI010;
+pub use registro_i100::RegistroI100;
+pub use registro_i199::RegistroI199;
+pub use registro_i200::RegistroI200;
+pub use registro_i299::RegistroI299;
+pub use registro_i300::RegistroI300;
+pub use registro_i399::RegistroI399;
+pub use registro_i990::RegistroI990;

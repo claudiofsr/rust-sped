@@ -1,0 +1,9 @@
+/target
+/novo
+PISCOFINS*
+EFD_Contribuicoes*
+efd_contribuicoes*
+*.csv
+*.xlsx
+*.txt
+.vscode
