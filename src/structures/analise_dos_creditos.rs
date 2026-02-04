@@ -381,7 +381,7 @@ pub fn display_aliquota(valor: &Option<Decimal>) -> String {
 pub fn consolidar_natureza_da_base_de_calculo(
     config: &AppConfig,
     linhas: &[DocsFiscais],
-) -> EFDResult<(String, String, Vec<AnaliseDosCreditos>)> {
+) -> EFDResult<(Option<String>, Option<String>, Vec<AnaliseDosCreditos>)> {
     // 1. Agregação Inicial (Map-Reduce Genérico)
     let chaves_consolidadas: HashMap<Chaves, Valores> = consolidar_registros(
         linhas,
@@ -465,38 +465,50 @@ pub fn consolidar_natureza_da_base_de_calculo(
 }
 
 // Funções de geração de tabela
-fn gerar_tabela_rec<'a, T>(lines: &[T]) -> String
+fn gerar_tabela_rec<'a, T>(lines: &[T]) -> Option<String>
 where
     T: Tabled + Deserialize<'a>,
 {
+    if lines.is_empty() {
+        return None;
+    }
+
     // O limit define até qual coluna aplicaremos o alinhamento central
     let limit = 4;
 
-    Table::new(lines)
-        .with(Modify::new(Columns::new(..limit)).with(Alignment::center()))
-        .with(Modify::new(Columns::one(limit)).with(Alignment::left()))
-        .with(Modify::new(Columns::new(limit + 1..)).with(Alignment::right()))
-        .with(Modify::new(Rows::first()).with(Alignment::center()))
-        .with(Style::rounded())
-        .to_string()
+    Some(
+        Table::new(lines)
+            .with(Modify::new(Columns::new(..limit)).with(Alignment::center()))
+            .with(Modify::new(Columns::one(limit)).with(Alignment::left()))
+            .with(Modify::new(Columns::new(limit + 1..)).with(Alignment::right()))
+            .with(Modify::new(Rows::first()).with(Alignment::center()))
+            .with(Style::rounded())
+            .to_string(),
+    )
 }
 
-fn gerar_tabela_nat<'a, T>(lines: &[T]) -> String
+fn gerar_tabela_nat<'a, T>(lines: &[T]) -> Option<String>
 where
     T: Tabled + Deserialize<'a>,
 {
+    if lines.is_empty() {
+        return None;
+    }
+
     // O limit define qual coluna aplicaremos o alinhamento à esquerda
     let limit = 9;
 
-    Table::new(lines)
-        .with(Modify::new(Segment::all()).with(Alignment::center()))
-        .with(Modify::new(Columns::one(limit)).with(Alignment::left()))
-        .with(Modify::new(Columns::new(limit + 1..)).with(Alignment::right()))
-        .with(Modify::new(Rows::first()).with(Alignment::center()))
-        .with(Style::rounded())
-        //.with(Modify::new(Rows::one(0)).with(Format::new(|s| s.blue().to_string())))
-        //.with(Modify::new(Rows::new(..)).with(Format::new(|s| s.blue().to_string())))
-        .to_string()
+    Some(
+        Table::new(lines)
+            .with(Modify::new(Segment::all()).with(Alignment::center()))
+            .with(Modify::new(Columns::one(limit)).with(Alignment::left()))
+            .with(Modify::new(Columns::new(limit + 1..)).with(Alignment::right()))
+            .with(Modify::new(Rows::first()).with(Alignment::center()))
+            .with(Style::rounded())
+            //.with(Modify::new(Rows::one(0)).with(Format::new(|s| s.blue().to_string())))
+            //.with(Modify::new(Rows::new(..)).with(Format::new(|s| s.blue().to_string())))
+            .to_string(),
+    )
 }
 
 pub fn obter_chaves_valores(linha: &DocsFiscais) -> (Chaves, Valores) {

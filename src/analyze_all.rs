@@ -340,18 +340,24 @@ fn consolidar_resultados(
     let (tabela_nat, tabela_rb, consolidacao_nat) = nat_result?;
 
     if print_table {
-        let title =
-            "Receita Bruta Apurada e Segregada Conforme CST para Fins de Rateio dos Créditos";
-        writeln!(write, "{title}")?;
-        writeln!(write, "{tabela_rb}\n")?;
+        if let Some(tabela) = tabela_rb {
+            let title =
+                "Receita Bruta Apurada e Segregada Conforme CST para Fins de Rateio dos Créditos";
+            writeln!(write, "{title}")?;
+            writeln!(write, "{tabela}\n")?;
+        }
 
-        let title = "REGISTROS FISCAIS - CONSOLIDAÇÃO DAS OPERAÇÕES POR CST:";
-        writeln!(write, "{title}")?;
-        writeln!(write, "{tabela_cst}\n")?;
+        if let Some(tabela) = tabela_cst {
+            let title = "REGISTROS FISCAIS - CONSOLIDAÇÃO DAS OPERAÇÕES POR CST:";
+            writeln!(write, "{title}")?;
+            writeln!(write, "{tabela}\n")?;
+        }
 
-        let title = "Natureza da Base de Cálculo dos Créditos - CONSOLIDAÇÃO DAS OPERAÇÕES por Tipo de Crédito, CST e Alíquotas das Contribuições:";
-        writeln!(write, "{title}")?;
-        writeln!(write, "{tabela_nat}\n")?;
+        if let Some(tabela) = tabela_nat {
+            let title = "Natureza da Base de Cálculo dos Créditos - CONSOLIDAÇÃO DAS OPERAÇÕES por Tipo de Crédito, CST e Alíquotas das Contribuições:";
+            writeln!(write, "{title}")?;
+            writeln!(write, "{tabela}\n")?;
+        }
     }
 
     Ok((consolidacao_cst, consolidacao_nat))

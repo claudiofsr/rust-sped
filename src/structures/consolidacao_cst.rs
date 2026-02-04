@@ -249,7 +249,7 @@ where
 
 pub fn consolidar_operacoes_por_cst(
     linhas: &[DocsFiscais],
-) -> EFDResult<(String, Vec<ConsolidacaoCST>)> {
+) -> EFDResult<(Option<String>, Vec<ConsolidacaoCST>)> {
     // 1. Map-Reduce (Generic from Utils)
     let mut resultado = consolidar_registros(
         linhas,
@@ -314,23 +314,29 @@ fn ordenar_cst(hmap: HashMap<Keys, Values>) -> Vec<(Keys, Values)> {
     vec_from_hash
 }
 
-fn gerar_tabela_cst<T>(lines: &[T]) -> String
+fn gerar_tabela_cst<T>(lines: &[T]) -> Option<String>
 where
     T: Tabled,
 {
+    if lines.is_empty() {
+        return None;
+    }
+
     // O limit define até qual coluna aplicaremos o alinhamento central
     let limit = 5;
 
-    Table::new(lines)
-        .with(Modify::new(Segment::all()).with(Alignment::right()))
-        // Aplica centro para as colunas de identificação (CNPJ, Ano, Trim, Mes, CST)
-        .with(Modify::new(Columns::new(0..limit)).with(Alignment::center()))
-        // Aplica centro para o cabeçalho (primeira linha)
-        .with(Modify::new(Rows::first()).with(Alignment::center()))
-        //.with(Modify::new(Rows::one(0)).with(Format::new(|s| s.blue().to_string())))
-        //.with(Modify::new(Rows::new(..)).with(Format::new(|s| s.blue().to_string())))
-        .with(Style::rounded())
-        .to_string()
+    Some(
+        Table::new(lines)
+            .with(Modify::new(Segment::all()).with(Alignment::right()))
+            // Aplica centro para as colunas de identificação (CNPJ, Ano, Trim, Mes, CST)
+            .with(Modify::new(Columns::new(0..limit)).with(Alignment::center()))
+            // Aplica centro para o cabeçalho (primeira linha)
+            .with(Modify::new(Rows::first()).with(Alignment::center()))
+            //.with(Modify::new(Rows::one(0)).with(Format::new(|s| s.blue().to_string())))
+            //.with(Modify::new(Rows::new(..)).with(Format::new(|s| s.blue().to_string())))
+            .with(Style::rounded())
+            .to_string(),
+    )
 }
 
 #[cfg(test)]
