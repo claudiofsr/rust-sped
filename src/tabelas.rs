@@ -1431,6 +1431,7 @@ static ALIQUOTAS_DE_CRED_PRESUMIDO: LazyLock<HashSet<AliquotasKey>> = LazyLock::
         dec!(0.50), // Lei 10.925, Art. 8o, § 3o, inciso IV.   # pis = 0.8250 ; confins = 3.8000
         dec!(0.60), // Lei 10.925, Art. 8o, § 3o, inciso I.    # pis = 0.9900 ; confins = 4.5600
         dec!(0.80), // Lei 12.599, Art. 6o, § 2o  # pis = 1.3200 ; confins = 6.0800 --> crédito presumido - industrialização do café, aquisição dos produtos com ncm 0901.1 utilizados na elaboração dos produtos com 0901.2 e 2101.1
+        dec!(1.00), // Adição de Alíquota Básica. Alguns Contribuintes usaram esta alíquota como Cred Presumido.
     ]
     .iter() // Itera sobre referências (&Decimal)
     .map(|&p| AliquotasKey::new(p * ALIQ_BASICA_PIS, p * ALIQ_BASICA_COF)) // Transforma

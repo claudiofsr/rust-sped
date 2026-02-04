@@ -485,11 +485,11 @@ mod tests_analyze_all {
             arq_file_hash
         );
         assert_eq!(
-            "fbc27188e8702af8386969dfdaf515840aae2a4c46f5d9867a1eb3a5e7b99047",
+            "99cb92fe2e10073b9a560752c4a4b9da80bb7aca794a293cad76da81ae486e45",
             out_file_hash
         );
         assert_eq!(
-            "b467412ecee458d1dac439a3d4af507d09455ecb9054301ed6e78f8e1b11fe20",
+            "8f575fbb3a2b710749d2e875b221a1d233aed840359be8dad20bc821a7703641",
             csv_file_hash
         );
 

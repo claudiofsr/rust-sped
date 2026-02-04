@@ -209,8 +209,8 @@ impl Valores {
         cod: Option<CodigoDoCredito>,
         valor_opt: Option<Decimal>,
     ) {
-        if let (Some(c), Some(valor)) = (cod, valor_opt) {
-            *self.obter_campo_de_rateio_mut(c.rateio) = valor;
+        if let (Some(codigo_do_credito), Some(valor)) = (cod, valor_opt) {
+            *self.obter_campo_de_rateio_mut(codigo_do_credito.rateio) = valor;
         }
     }
 }
@@ -392,7 +392,7 @@ pub fn consolidar_natureza_da_base_de_calculo(
     // 2. Pré-alocação Heurística
     // Assume que nenhum grupo (Receitas ou Créditos) terá mais de 60% dos dados.
     // O '+ 1' garante que não alocamos 0 se o mapa estiver vazio.
-    let capacity = (chaves_consolidadas.len() * 3) / 5 + 1; // ~60%
+    let capacity = chaves_consolidadas.len() / 2 + 1; // 50% + 1
 
     let mut receita_bruta = HashMap::with_capacity(capacity); //  1 <= CST <= 49
     let mut base_creditos = HashMap::with_capacity(capacity); // 50 <= CST <= 66
@@ -414,27 +414,32 @@ pub fn consolidar_natureza_da_base_de_calculo(
     let informacoes_de_receita_bruta = apurar_receita_bruta(&receita_bruta);
     let tabela_da_receita_bruta = gerar_tabela_rec(&informacoes_de_receita_bruta);
 
-    // 5. Ajustes e Descontos em Paralelo
-    // Em vez de inicializar HashMaps vazios e mutáveis,
-    // o Rayon retorna os resultados diretamente.
-    let (bcparcial, (ajustes, descontos)) = rayon::join(
-        // Tarefa 1 (lado esquerdo)
-        || somar_base_de_calculo_valor_parcial(&base_creditos),
-        // Tarefa 2 (lado direito - que contém outra divisão)
-        || {
-            rayon::join(
-                || distribuir_ajustes_rateados(linhas),
-                || distribuir_descontos_rateados(linhas),
-            )
-        },
-    );
+    // 5. Ajustes e Descontos em Paralelo usando Rayon Scope
+    // Inicializamos as variáveis para capturar os resultados das threads
+    let mut bcparcial = HashMap::new();
+    let mut ajustes = HashMap::new();
+    let mut descontos = HashMap::new();
 
-    // Merge two HashMaps in Rust
+    rayon::scope(|s| {
+        // Tarefa 1: Soma da base de cálculo parcial
+        // Nota: Passamos o borrow de base_creditos, que é seguro pois o scope garante
+        // que as threads terminem antes de base_creditos ser modificado novamente.
+        s.spawn(|_| bcparcial = somar_base_de_calculo_valor_parcial(&base_creditos));
+
+        // Tarefa 2: Ajustes rateados
+        s.spawn(|_| ajustes = distribuir_ajustes_rateados(linhas));
+
+        // Tarefa 3: Descontos rateados
+        s.spawn(|_| descontos = distribuir_descontos_rateados(linhas));
+    });
+
+    // 6. Merge dos resultados (Executado após o encerramento do scope)
+    // O extend consome os HashMaps temporários e move os dados para base_creditos
     base_creditos.extend(bcparcial);
     base_creditos.extend(ajustes);
     base_creditos.extend(descontos);
 
-    // 6. Cálculos em Cadeia
+    // 7. Cálculos em Cadeia
     base_creditos.extend(apurar_credito_das_contribuicoes(&base_creditos));
     base_creditos.extend(calcular_credito_apos_ajustes(&base_creditos));
     base_creditos.extend(calcular_credito_apos_descontos(&base_creditos));
@@ -443,7 +448,7 @@ pub fn consolidar_natureza_da_base_de_calculo(
         &base_creditos,
     ));
 
-    // 7. Somas Trimestrais (usando função do utils.rs)
+    // 8. Somas Trimestrais (usando função do utils.rs)
     if verificar_periodo_multiplo(&base_creditos) {
         realizar_somas_trimestrais(&mut base_creditos);
     }
@@ -533,7 +538,7 @@ fn distribuir_creditos_rateados(
 
     for linha in linhas
         .iter()
-        .filter(|&line| line.tipo_de_operacao == Some(TipoDeOperacao::Detalhamento))
+        .filter(|&linha| linha.tipo_de_operacao == Some(TipoDeOperacao::Detalhamento))
     {
         let chaves = Chaves {
             //path: linha.arquivo_efd.to_compact_string(),
@@ -544,7 +549,7 @@ fn distribuir_creditos_rateados(
             tipo_de_operacao: Some(TipoDeOperacao::Entrada), // atualizar valor: Entrada
             tipo_de_credito: linha.tipo_de_credito,
             cst: linha.cst,
-            cfop: linha.cfop,
+            cfop: linha.cfop, // None
             aliq_pis: linha.aliq_pis,
             aliq_cofins: linha.aliq_cofins,
             natureza_bc: linha.natureza_bc,
@@ -552,10 +557,16 @@ fn distribuir_creditos_rateados(
 
         // usar base_creditos.get_mut(&chaves) para obter uma referência mutável do valor associado à chave.
 
+        //println!("chaves: {chaves:#?}");
+        //println!("cod_credito: {:?} ({:?})", linha.cod_credito, linha.cod_credito.map(|c| c.to_u16()));
         if let Some(valores) = base_creditos.get_mut(&chaves) {
+            //println!("valores: {valores:#?}\n");
             valores.distribuir_conforme_rateio(linha.cod_credito, linha.valor_bc);
         }
+        //println!("### --- ###");
     }
+
+    //std::process::exit(0);
 }
 
 /// Distribuir valores de Ajustes rateados nas colunas correspondentes: Trib, NTrib e Exportação.

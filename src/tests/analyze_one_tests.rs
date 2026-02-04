@@ -143,7 +143,7 @@ fn test_analyze_one_sped_file() -> EFDResult<()> {
 
     assert_eq!(
         all_docs[0].tipo_de_credito,
-        Some(crate::TipoDeCredito::OutrosCreditosPresumidos)
+        Some(crate::TipoDeCredito::PresumidoAgroindustria)
     );
 
     assert_eq!(
