@@ -332,8 +332,7 @@ fn test_determinar_tipo_de_credito() {
     let mut builder = DocsBuilder::new(ctx, "C170", 100, None);
 
     // Caso 1: Importação (CFOP 3xxx)
-    builder.doc.cst =
-        Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteARecTribNoMI);
+    builder.doc.cst = Some(CodigoSituacaoTributaria::CredVincExclRecTribMI);
     builder.doc.aliq_pis = Some(dec!(1.65));
     builder.doc.aliq_cofins = Some(dec!(7.6));
     builder.doc.cod_credito = None;

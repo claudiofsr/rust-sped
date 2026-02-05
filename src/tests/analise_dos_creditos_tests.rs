@@ -110,7 +110,7 @@ fn hashmap_sum_values_by_key() {
     };
     docs_fiscais1.estabelecimento_cnpj = "12.345.678/0001-23".into();
     docs_fiscais1.tipo_de_operacao = Some(TipoDeOperacao::Entrada); // 1: Entrada
-    docs_fiscais1.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
+    docs_fiscais1.cst = Some(CodigoSituacaoTributaria::CredVincExclRecTribMI);
     docs_fiscais1.cfop = Some(1234);
     docs_fiscais1.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
     docs_fiscais1.natureza_bc = NaturezaBaseCalculo::from_u16(7);
@@ -122,7 +122,7 @@ fn hashmap_sum_values_by_key() {
     };
     docs_fiscais2.estabelecimento_cnpj = "12.345.678/0001-23".into();
     docs_fiscais2.tipo_de_operacao = Some(TipoDeOperacao::Entrada); // 1: Entrada
-    docs_fiscais2.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
+    docs_fiscais2.cst = Some(CodigoSituacaoTributaria::CredVincExclRecTribMI);
     docs_fiscais2.cfop = Some(2345);
     docs_fiscais2.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
     docs_fiscais2.natureza_bc = NaturezaBaseCalculo::from_u16(12);
@@ -134,7 +134,7 @@ fn hashmap_sum_values_by_key() {
     };
     docs_fiscais3.estabelecimento_cnpj = "12.345.678/0001-23".into();
     docs_fiscais3.tipo_de_operacao = Some(TipoDeOperacao::Entrada); // 1: Entrada
-    docs_fiscais3.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
+    docs_fiscais3.cst = Some(CodigoSituacaoTributaria::CredVincExclRecTribMI);
     docs_fiscais3.cfop = Some(3456);
     docs_fiscais3.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
     docs_fiscais3.natureza_bc = NaturezaBaseCalculo::from_u16(12);
@@ -146,7 +146,7 @@ fn hashmap_sum_values_by_key() {
     };
     docs_fiscais4.estabelecimento_cnpj = "12.345.678/0001-23".into();
     docs_fiscais4.tipo_de_operacao = Some(TipoDeOperacao::Entrada); // 1: Entrada
-    docs_fiscais4.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
+    docs_fiscais4.cst = Some(CodigoSituacaoTributaria::CredVincExclRecTribMI);
     docs_fiscais4.cfop = Some(4567);
     docs_fiscais4.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
     docs_fiscais4.natureza_bc = NaturezaBaseCalculo::from_u16(7);
@@ -158,7 +158,7 @@ fn hashmap_sum_values_by_key() {
     };
     docs_fiscais5.estabelecimento_cnpj = "12.345.678/0001-23".into();
     docs_fiscais5.tipo_de_operacao = Some(TipoDeOperacao::Entrada); // 1: Entrada
-    docs_fiscais5.cst = Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI);
+    docs_fiscais5.cst = Some(CodigoSituacaoTributaria::CredVincExclRecTribMI);
     docs_fiscais5.cfop = Some(5678);
     docs_fiscais5.tipo_de_credito = Some(TipoDeCredito::AliquotaBasica);
     docs_fiscais5.natureza_bc = NaturezaBaseCalculo::from_u16(7);
@@ -185,7 +185,7 @@ fn hashmap_sum_values_by_key() {
         cnpj_base: "12.345.678".into(),
         tipo_de_operacao: Some(TipoDeOperacao::Entrada),
         tipo_de_credito: Some(TipoDeCredito::AliquotaBasica),
-        cst: Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI),
+        cst: Some(CodigoSituacaoTributaria::CredVincExclRecTribMI),
         natureza_bc: NaturezaBaseCalculo::from_u16(7),
         ..Default::default()
     };
@@ -196,7 +196,7 @@ fn hashmap_sum_values_by_key() {
         cnpj_base: "12.345.678".into(),
         tipo_de_operacao: Some(TipoDeOperacao::Entrada),
         tipo_de_credito: Some(TipoDeCredito::AliquotaBasica),
-        cst: Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI),
+        cst: Some(CodigoSituacaoTributaria::CredVincExclRecTribMI),
         natureza_bc: NaturezaBaseCalculo::from_u16(12),
         ..Default::default()
     };

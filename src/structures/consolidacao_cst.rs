@@ -378,7 +378,7 @@ mod tests {
             ano: Some(2022),
             trimestre: Some(1),
             mes: Some(MesesDoAno::Setembro),
-            cst: Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincARecTribENTribNoMIEDeExportacao),
+            cst: Some(CodigoSituacaoTributaria::CredVincRecTribENTribMIExp),
             valor_item: dec!(0.00499), // <-- desprezar este valor, pois menor que SMALL_VALUE
             valor_bc: dec!(27.56),
             valor_pis: dec!(-0.002), // <-- desprezar este valor, pois menor que SMALL_VALUE
@@ -395,7 +395,7 @@ mod tests {
             ano: Some(2022),
             trimestre: Some(1),
             mes: Some(MesesDoAno::Setembro),
-            cst: Some(CodigoSituacaoTributaria::OperacaoComDireitoACreditoVincARecTribENTribNoMIEDeExportacao),
+            cst: Some(CodigoSituacaoTributaria::CredVincRecTribENTribMIExp),
             valor_item: Decimal::ZERO,
             valor_bc: dec!(27.56),
             valor_pis: Decimal::ZERO,

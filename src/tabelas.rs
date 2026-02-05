@@ -88,9 +88,9 @@ pub enum MesesDoAno {
 }
 
 impl FromStr for MesesDoAno {
-    type Err = (); // Ou um erro customizado se preferir
+    type Err = EFDError; // Ou um erro customizado se preferir
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> EFDResult<Self> {
         // .trim() remove espaços em branco acidentais que possam vir do arquivo
         match s.trim() {
             "1" => Ok(Self::Janeiro),
@@ -106,15 +106,15 @@ impl FromStr for MesesDoAno {
             "11" => Ok(Self::Novembro),
             "12" => Ok(Self::Dezembro),
             //"" => Ok(Self::Soma),
-            _ => Err(()), // Retorna erro se não for "0" nem "1"
+            _ => Err(EFDError::InvalidDate).loc(), // Retorna erro se não for "0" nem "1"
         }
     }
 }
 
 impl TryFrom<u32> for MesesDoAno {
-    type Error = (); // Você pode criar um erro customizado se preferir
+    type Error = EFDError; // Você pode criar um erro customizado se preferir
 
-    fn try_from(v: u32) -> Result<Self, Self::Error> {
+    fn try_from(v: u32) -> EFDResult<Self> {
         match v {
             1 => Ok(Self::Janeiro),
             2 => Ok(Self::Fevereiro),
@@ -129,7 +129,7 @@ impl TryFrom<u32> for MesesDoAno {
             11 => Ok(Self::Novembro),
             12 => Ok(Self::Dezembro),
             13 => Ok(Self::Soma),
-            _ => Err(()), // Retorna erro se o mês não for 1-13
+            _ => Err(EFDError::InvalidDate).loc(), // Retorna erro se o mês não for 1-13
         }
     }
 }
@@ -1453,213 +1453,270 @@ pub fn cred_presumido(aliq_pis: Option<Decimal>, aliq_cof: Option<Decimal>) -> b
 // Código da Situação Tributária (CST)
 // ============================================================================
 
-/// 4.3.4 - Tabela Código da Situação Tributária (CST)
+/// 4.3.4 - Tabela Código da Situação Tributária (CST) para PIS/COFINS.
 ///
 /// - CSTs oficiais vão de 1 a 99.
 ///
 /// - CSTs fictícios vão de 490 a 980.
+///
+/// **Mnemônicos Adotados:**
+/// - `Oper` -> Operação | `Trib` -> Tributável | `Aliq` -> Alíquota
+/// - `Rec` -> Receita | `Cred` -> Crédito | `MI` -> Mercado Interno
+/// - `Exp` -> Exportação | `Aq` -> Aquisição | `ST` -> Subst. Tributária
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum CodigoSituacaoTributaria {
-    // ... CSTs oficiais (01 a 99) ...
+    // --- Saídas (01-49) ---
+    /// Operação Tributável com Alíquota Básica
     #[serde(rename = "Operação Tributável com Alíquota Básica")]
-    OperacaoTributavelComAliquotaBasica = 1,
+    OperTribAliqBasica = 1,
 
+    /// Operação Tributável com Alíquota Diferenciada
     #[serde(rename = "Operação Tributável com Alíquota Diferenciada")]
-    OperacaoTributavelComAliquotaDiferenciada = 2,
+    OperTribAliqDif = 2,
 
+    /// Operação Tributável com Alíquota por Unidade de Medida de Produto
     #[serde(rename = "Operação Tributável com Alíquota por Unidade de Medida de Produto")]
-    OperacaoTributavelComAliquotaPorUnidadeDeMedidaDeProduto = 3,
+    OperTribAliqUnidade = 3,
 
+    /// Operação Tributável Monofásica - Revenda a Alíquota Zero
     #[serde(rename = "Operação Tributável Monofásica - Revenda a Alíquota Zero")]
-    OperacaoTributavelMonofasicaRevendaAAliquotaZero = 4,
+    OperTribMonofasicaRevendaAliqZero = 4,
 
+    /// Operação Tributável por Substituição Tributária
     #[serde(rename = "Operação Tributável por Substituição Tributária")]
-    OperacaoTributavelPorSubstituicaoTributaria = 5,
+    OperTribST = 5,
 
+    /// Operação Tributável a Alíquota Zero
     #[serde(rename = "Operação Tributável a Alíquota Zero")]
-    OperacaoTributavelAAliquotaZero = 6,
+    OperTribAliqZero = 6,
 
+    /// Operação Isenta da Contribuição
     #[serde(rename = "Operação Isenta da Contribuição")]
-    OperacaoIsentaDaContribuicao = 7,
+    OperIsenta = 7,
 
+    /// Operação sem Incidência da Contribuição
     #[serde(rename = "Operação sem Incidência da Contribuição")]
-    OperacaoSemIncidenciaDaContribuicao = 8,
+    OperSemIncidencia = 8,
 
+    /// Operação com Suspensão da Contribuição
     #[serde(rename = "Operação com Suspensão da Contribuição")]
-    OperacaoComSuspensaoDaContribuicao = 9,
+    OperSuspensao = 9,
 
+    /// Outras Operações de Saída
     #[serde(rename = "Outras Operações de Saída")]
-    OutrasOperacoesDeSaida = 49,
+    OutrasOperSaida = 49,
 
+    // --- Entradas com Direito a Crédito (50-56) ---
+    /// Operação com Direito a Crédito - Vinculada Exclusivamente a Receita Tributada no Mercado Interno
     #[serde(
         rename = "Operação com Direito a Crédito - Vinculada Exclusivamente a Receita Tributada no Mercado Interno"
     )]
-    OperacaoComDireitoACreditoVincExclusivamenteARecTribNoMI = 50,
+    CredVincExclRecTribMI = 50,
 
+    /// Operação com Direito a Crédito - Vinculada Exclusivamente a Receita Não-Tributada no Mercado Interno
     #[serde(
         rename = "Operação com Direito a Crédito - Vinculada Exclusivamente a Receita Não-Tributada no Mercado Interno"
     )]
-    OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI = 51,
+    CredVincExclRecNTribMI = 51,
 
+    /// Operação com Direito a Crédito - Vinculada Exclusivamente a Receita de Exportação
     #[serde(
         rename = "Operação com Direito a Crédito - Vinculada Exclusivamente a Receita de Exportação"
     )]
-    OperacaoComDireitoACreditoVincExclusivamenteAReceitaDeExportacao = 52,
+    CredVincExclRecExp = 52,
 
+    /// Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno
     #[serde(
         rename = "Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno"
     )]
-    OperacaoComDireitoACreditoVincARecTribENTribNoMI = 53,
+    CredVincRecTribENTribMI = 53,
 
+    /// Operação com Direito a Crédito - Vinculada a Receitas Tributadas no Mercado Interno e de Exportação
     #[serde(
         rename = "Operação com Direito a Crédito - Vinculada a Receitas Tributadas no Mercado Interno e de Exportação"
     )]
-    OperacaoComDireitoACreditoVincARecTribNoMIEDeExportacao = 54,
+    CredVincRecTribMIExp = 54,
 
+    /// Operação com Direito a Crédito - Vinculada a Receitas Não Tributadas no Mercado Interno e de Exportação
     #[serde(
         rename = "Operação com Direito a Crédito - Vinculada a Receitas Não Tributadas no Mercado Interno e de Exportação"
     )]
-    OperacaoComDireitoACreditoVincAReceitasNTribNoMIEDeExportacao = 55,
+    CredVincRecNTribMIExp = 55,
 
+    /// Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno e de Exportação
     #[serde(
         rename = "Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno e de Exportação"
     )]
-    OperacaoComDireitoACreditoVincARecTribENTribNoMIEDeExportacao = 56,
+    CredVincRecTribENTribMIExp = 56,
 
+    // --- Crédito Presumido (60-67) ---
+    /// Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Tributada no Mercado Interno
     #[serde(
         rename = "Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Tributada no Mercado Interno"
     )]
-    CreditoPresumidoOperacaoDeAquisicaoVincExclusivamenteARecTribNoMI = 60,
+    CredPresAqExclRecTribMI = 60,
 
+    /// Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Não-Tributada no Mercado Interno
     #[serde(
         rename = "Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Não-Tributada no Mercado Interno"
     )]
-    CreditoPresumidoOperacaoDeAquisicaoVincExclusivamenteAReceitaNaoTributadaNoMI = 61,
+    CredPresAqExclRecNTribMI = 61,
 
+    /// Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita de Exportação
     #[serde(
         rename = "Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita de Exportação"
     )]
-    CreditoPresumidoOperacaoDeAquisicaoVincExclusivamenteAReceitaDeExportacao = 62,
+    CredPresAqExclRecExp = 62,
 
+    /// Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno
     #[serde(
         rename = "Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno"
     )]
-    CreditoPresumidoOperacaoDeAquisicaoVincARecTribENTribNoMI = 63,
+    CredPresAqRecTribENTribMI = 63,
 
+    /// Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas no Mercado Interno e de Exportação
     #[serde(
         rename = "Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas no Mercado Interno e de Exportação"
     )]
-    CreditoPresumidoOperacaoDeAquisicaoVincARecTribNoMIEDeExportacao = 64,
+    CredPresAqRecTribMIExp = 64,
 
+    /// Crédito Presumido - Operação de Aquisição Vinculada a Receitas Não-Tributadas no Mercado Interno e de Exportação
     #[serde(
         rename = "Crédito Presumido - Operação de Aquisição Vinculada a Receitas Não-Tributadas no Mercado Interno e de Exportação"
     )]
-    CreditoPresumidoOperacaoDeAquisicaoVincAReceitasNTribNoMIEDeExportacao = 65,
+    CredPresAqRecNTribMIExp = 65,
 
+    /// Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno e de Exportação
     #[serde(
         rename = "Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno e de Exportação"
     )]
-    CreditoPresumidoOperacaoDeAquisicaoVincARecTribENTribNoMIEDeExportacao = 66,
+    CredPresAqRecTribENTribMIExp = 66,
 
+    /// Crédito Presumido - Outras Operações
     #[serde(rename = "Crédito Presumido - Outras Operações")]
-    CreditoPresumidoOutrasOperacoes = 67,
+    CredPresOutrasOper = 67,
 
+    // --- Entradas sem Direito a Crédito (70-75) ---
+    /// Operação de Aquisição sem Direito a Crédito
     #[serde(rename = "Operação de Aquisição sem Direito a Crédito")]
-    OperacaoDeAquisicaoSemDireitoACredito = 70,
+    AqSemCred = 70,
 
+    /// Operação de Aquisição com Isenção
     #[serde(rename = "Operação de Aquisição com Isenção")]
-    OperacaoDeAquisicaoComIsencao = 71,
+    AqIsencao = 71,
 
+    /// Operação de Aquisição com Suspensão
     #[serde(rename = "Operação de Aquisição com Suspensão")]
-    OperacaoDeAquisicaoComSuspensao = 72,
+    AqSuspensao = 72,
 
+    /// Operação de Aquisição a Alíquota Zero
     #[serde(rename = "Operação de Aquisição a Alíquota Zero")]
-    OperacaoDeAquisicaoAAliquotaZero = 73,
+    AqAliqZero = 73,
 
+    /// Operação de Aquisição sem Incidência da Contribuição
     #[serde(rename = "Operação de Aquisição sem Incidência da Contribuição")]
-    OperacaoDeAquisicaoSemIncidenciaDaContribuicao = 74,
+    AqSemIncidencia = 74,
 
+    /// Operação de Aquisição por Substituição Tributária
     #[serde(rename = "Operação de Aquisição por Substituição Tributária")]
-    OperacaoDeAquisicaoPorSubstituicaoTributaria = 75,
+    AqSubstiTrib = 75,
 
+    // --- Outros (98-99) ---
+    /// Outras Operações de Entrada
     #[serde(rename = "Outras Operações de Entrada")]
-    OutrasOperacoesDeEntrada = 98,
+    OutrasOperEntrada = 98,
 
+    /// Outras Operações
     #[serde(rename = "Outras Operações")]
-    OutrasOperacoes = 99,
+    OutrasOper = 99,
 
-    // --- CSTs Fictícios para Organização/Ordenação de Relatórios ---
+    // --- CSTs Fictícios (490-980) ---
+    /// Total Receitas/Saídas
     #[serde(rename = "Total Receitas/Saídas")]
     TotalReceitasSaidas = 490,
 
-    /// 900 - Marca o início da seção de agrupamento da Base de Cálculo
+    /// Agrupador da Base de Cálculo
     #[serde(rename = "Agrupador da Base de Cálculo")]
     AgrupadorSomaBC = 900,
 
-    /// 910 - Usado especificamente para as somas parciais da Base de Cálculo
+    /// Soma Parcial da Base de Cálculo
     #[serde(rename = "Soma Parcial da Base de Cálculo")]
     SomaParcialDaBaseCalculo = 910,
 
+    /// Crédito Apurado no Período (PIS/PASEP)
     #[serde(rename = "Crédito Apurado no Período (PIS/PASEP)")]
     CSTApuradoPIS = 920,
 
+    /// Crédito Apurado no Período (COFINS)
     #[serde(rename = "Crédito Apurado no Período (COFINS)")]
     CSTApuradoCofins = 930,
 
-    /// 950 - Marca o início da seção de saldos passíveis de ressarcimento/desconto
+    /// Agrupador de Saldo Disponível
     #[serde(rename = "Agrupador de Saldo Disponível")]
-    AgrupadorSaldoDisponivel = 950,
+    AgrupadorSaldoDisp = 950,
 
+    /// Total Aquisições/Custos/Despesas
     #[serde(rename = "Total Aquisições/Custos/Despesas")]
     TotalAquisicoes = 980,
 }
 
 impl CodigoSituacaoTributaria {
-    /// Converte u16 para o CodigoSituacaoTributaria de forma segura.
+    /// Tenta converter um `u16` para `CodigoSituacaoTributaria`.
+    ///
+    /// Retorna `Some(CodigoSituacaoTributaria)` se o valor for válido,
+    /// caso contrário, retorna `None`.
     pub const fn from_u16(cod: u16) -> Option<Self> {
         match cod {
-            1 => Some(Self::OperacaoTributavelComAliquotaBasica),
-            2 => Some(Self::OperacaoTributavelComAliquotaDiferenciada),
-            3 => Some(Self::OperacaoTributavelComAliquotaPorUnidadeDeMedidaDeProduto),
-            4 => Some(Self::OperacaoTributavelMonofasicaRevendaAAliquotaZero),
-            5 => Some(Self::OperacaoTributavelPorSubstituicaoTributaria),
-            6 => Some(Self::OperacaoTributavelAAliquotaZero),
-            7 => Some(Self::OperacaoIsentaDaContribuicao),
-            8 => Some(Self::OperacaoSemIncidenciaDaContribuicao),
-            9 => Some(Self::OperacaoComSuspensaoDaContribuicao),
-            49 => Some(Self::OutrasOperacoesDeSaida),
-            50 => Some(Self::OperacaoComDireitoACreditoVincExclusivamenteARecTribNoMI),
-            51 => Some(Self::OperacaoComDireitoACreditoVincExclusivamenteAReceitaSaoTributadaNoMI),
-            52 => Some(Self::OperacaoComDireitoACreditoVincExclusivamenteAReceitaDeExportacao),
-            53 => Some(Self::OperacaoComDireitoACreditoVincARecTribENTribNoMI),
-            54 => Some(Self::OperacaoComDireitoACreditoVincARecTribNoMIEDeExportacao),
-            55 => Some(Self::OperacaoComDireitoACreditoVincAReceitasNTribNoMIEDeExportacao),
-            56 => Some(Self::OperacaoComDireitoACreditoVincARecTribENTribNoMIEDeExportacao),
-            60 => Some(Self::CreditoPresumidoOperacaoDeAquisicaoVincExclusivamenteARecTribNoMI),
-            61 => Some(
-                Self::CreditoPresumidoOperacaoDeAquisicaoVincExclusivamenteAReceitaNaoTributadaNoMI,
-            ),
-            62 => Some(
-                Self::CreditoPresumidoOperacaoDeAquisicaoVincExclusivamenteAReceitaDeExportacao,
-            ),
-            63 => Some(Self::CreditoPresumidoOperacaoDeAquisicaoVincARecTribENTribNoMI),
-            64 => Some(Self::CreditoPresumidoOperacaoDeAquisicaoVincARecTribNoMIEDeExportacao),
-            65 => {
-                Some(Self::CreditoPresumidoOperacaoDeAquisicaoVincAReceitasNTribNoMIEDeExportacao)
-            }
-            66 => {
-                Some(Self::CreditoPresumidoOperacaoDeAquisicaoVincARecTribENTribNoMIEDeExportacao)
-            }
-            67 => Some(Self::CreditoPresumidoOutrasOperacoes),
-            70 => Some(Self::OperacaoDeAquisicaoSemDireitoACredito),
-            71 => Some(Self::OperacaoDeAquisicaoComIsencao),
-            72 => Some(Self::OperacaoDeAquisicaoComSuspensao),
-            73 => Some(Self::OperacaoDeAquisicaoAAliquotaZero),
-            74 => Some(Self::OperacaoDeAquisicaoSemIncidenciaDaContribuicao),
-            75 => Some(Self::OperacaoDeAquisicaoPorSubstituicaoTributaria),
-            98 => Some(Self::OutrasOperacoesDeEntrada),
-            99 => Some(Self::OutrasOperacoes),
+            // Saídas (01-49)
+            1 => Some(Self::OperTribAliqBasica),
+            2 => Some(Self::OperTribAliqDif),
+            3 => Some(Self::OperTribAliqUnidade),
+            4 => Some(Self::OperTribMonofasicaRevendaAliqZero),
+            5 => Some(Self::OperTribST),
+            6 => Some(Self::OperTribAliqZero),
+            7 => Some(Self::OperIsenta),
+            8 => Some(Self::OperSemIncidencia),
+            9 => Some(Self::OperSuspensao),
+            49 => Some(Self::OutrasOperSaida),
+
+            // Entradas com Crédito (50-56)
+            50 => Some(Self::CredVincExclRecTribMI),
+            51 => Some(Self::CredVincExclRecNTribMI),
+            52 => Some(Self::CredVincExclRecExp),
+            53 => Some(Self::CredVincRecTribENTribMI),
+            54 => Some(Self::CredVincRecTribMIExp),
+            55 => Some(Self::CredVincRecNTribMIExp),
+            56 => Some(Self::CredVincRecTribENTribMIExp),
+
+            // Crédito Presumido (60-67)
+            60 => Some(Self::CredPresAqExclRecTribMI),
+            61 => Some(Self::CredPresAqExclRecNTribMI),
+            62 => Some(Self::CredPresAqExclRecExp),
+            63 => Some(Self::CredPresAqRecTribENTribMI),
+            64 => Some(Self::CredPresAqRecTribMIExp),
+            65 => Some(Self::CredPresAqRecNTribMIExp),
+            66 => Some(Self::CredPresAqRecTribENTribMIExp),
+            67 => Some(Self::CredPresOutrasOper),
+
+            // Entradas sem Crédito (70-75)
+            70 => Some(Self::AqSemCred),
+            71 => Some(Self::AqIsencao),
+            72 => Some(Self::AqSuspensao),
+            73 => Some(Self::AqAliqZero),
+            74 => Some(Self::AqSemIncidencia),
+            75 => Some(Self::AqSubstiTrib),
+            98 => Some(Self::OutrasOperEntrada),
+            99 => Some(Self::OutrasOper),
+
+            // Fictícios
+            490 => Some(Self::TotalReceitasSaidas),
+            900 => Some(Self::AgrupadorSomaBC),
+            910 => Some(Self::SomaParcialDaBaseCalculo),
+            920 => Some(Self::CSTApuradoPIS),
+            930 => Some(Self::CSTApuradoCofins),
+            950 => Some(Self::AgrupadorSaldoDisp),
+            980 => Some(Self::TotalAquisicoes),
             _ => None,
         }
     }
