@@ -305,7 +305,11 @@ fn ordenar_cst(hmap: HashMap<Keys, Values>) -> Vec<(Keys, Values)> {
             chaves.cnpj_base.clone(),
             chaves.ano,
             chaves.trimestre,
-            chaves.mes,
+            // CRITÉRIO DE OURO:
+            // 1. mes.is_none() -> false (0) para meses reais, true (1) para o total.
+            // Isso garante que o None (total) fique no final do trimestre.
+            chaves.mes.is_none(),
+            chaves.mes, // Ordenação secundária entre os meses (Jan, Fev...)
             chaves.ordem,
             chaves.cst,
         )

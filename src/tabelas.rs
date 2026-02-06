@@ -81,10 +81,6 @@ pub enum MesesDoAno {
 
     #[serde(rename = "Dezembro")]
     Dezembro = 12,
-
-    /// Mês fictício 13 para fins de soma e ordenação.
-    #[serde(rename = "")]
-    Soma = 13,
 }
 
 impl FromStr for MesesDoAno {
@@ -128,7 +124,6 @@ impl TryFrom<u32> for MesesDoAno {
             10 => Ok(Self::Outubro),
             11 => Ok(Self::Novembro),
             12 => Ok(Self::Dezembro),
-            13 => Ok(Self::Soma),
             _ => Err(EFDError::InvalidDate).loc(), // Retorna erro se o mês não for 1-13
         }
     }

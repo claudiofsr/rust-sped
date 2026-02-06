@@ -27,9 +27,16 @@ pub trait Ano {
 pub trait Mes {
     fn get_mes(&self) -> Option<MesesDoAno>;
     fn set_mes(&mut self, m: Option<MesesDoAno>);
-    /// Alterar mês para MesesDoAno::Soma (índice 13)
-    fn set_mes_para_soma(&mut self);
-    fn is_soma(&self) -> bool;
+
+    /// Define o mês como None para representar o total trimestral
+    fn set_mes_para_total(&mut self) {
+        self.set_mes(None);
+    }
+
+    /// Verifica se é uma linha de total (granularidade trimestral)
+    fn is_total_trimestral(&self) -> bool {
+        self.get_mes().is_none()
+    }
 }
 
 pub trait Cst {
@@ -54,13 +61,6 @@ impl Mes for Chaves {
     }
     fn set_mes(&mut self, m: Option<MesesDoAno>) {
         self.mes = m;
-    }
-    fn set_mes_para_soma(&mut self) {
-        // Define o mês como o enum "Soma" (Item 13)
-        self.mes = Some(MesesDoAno::Soma);
-    }
-    fn is_soma(&self) -> bool {
-        matches!(self.mes, Some(MesesDoAno::Soma))
     }
 }
 
@@ -90,13 +90,6 @@ impl Mes for Keys {
     }
     fn set_mes(&mut self, m: Option<MesesDoAno>) {
         self.mes = m;
-    }
-    fn set_mes_para_soma(&mut self) {
-        // Define o mês como o enum "Soma" (Item 13)
-        self.mes = Some(MesesDoAno::Soma);
-    }
-    fn is_soma(&self) -> bool {
-        matches!(self.mes, Some(MesesDoAno::Soma))
     }
 }
 

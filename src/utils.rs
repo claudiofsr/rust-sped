@@ -60,7 +60,6 @@ pub fn display_decimal(valor: &Decimal) -> String {
 
 pub fn display_mes(mes: &Option<MesesDoAno>) -> String {
     match mes {
-        Some(MesesDoAno::Soma) => String::new(),
         Some(m) => (*m as u8).to_string(),
         _ => String::new(),
     }
@@ -118,13 +117,12 @@ where
     let somas_mensais = mapa_original
         .par_iter() // 1. Itera em paralelo (várias threads)
         // Filtra para não somar linhas que JÁ SÃO somas (caso rode a função 2x)
-        .filter(|(chave, _)| !chave.is_soma())
+        .filter(|(chave, _)| !chave.is_total_trimestral()) // Filtra apenas linhas mensais
         .map(|(chave, valor)| {
-            let mut chave_soma = chave.clone();
-            // Mês fictício 13 para fins de soma e ordenação.
-            // Muda o mês de "Janeiro" para "Soma"
-            chave_soma.set_mes_para_soma();
-            (chave_soma, valor)
+            let mut chave_soma_trimestral = chave.clone();
+            // Muda o mês para None para fins de soma e ordenação.
+            chave_soma_trimestral.set_mes_para_total();
+            (chave_soma_trimestral, valor)
         })
         // 2. FOLD: Cada thread constrói um HashMap local acumulado
         .fold(HashMap::new, |mut acc, (chave, valor)| {
