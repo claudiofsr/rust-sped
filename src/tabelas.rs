@@ -193,6 +193,7 @@ impl fmt::Display for IndicadorDeOrigem {
 // Tipo de Operação
 // ============================================================================
 
+/// Define o tipo de operação para fins de apuração e ajustes.
 #[repr(u8)] // Opcional: Garante que o enum caiba em um u8 na memória
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize)]
 // Note: Não derivamos Serialize automaticamente aqui para ter controle
@@ -205,23 +206,6 @@ pub enum TipoDeOperacao {
     DescontoNoPeriodo = 5, // "Desconto da Contribuição Apurada no Próprio Período"
     DescontoPosterior = 6, // "Desconto Efetuado em Período Posterior"
     Detalhamento = 7,
-}
-
-impl FromStr for TipoDeOperacao {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim() {
-            "1" => Ok(Self::Entrada),
-            "2" => Ok(Self::Saida),
-            "3" => Ok(Self::AjusteAcrescimo),
-            "4" => Ok(Self::AjusteReducao),
-            "5" => Ok(Self::DescontoNoPeriodo),
-            "6" => Ok(Self::DescontoPosterior),
-            "7" => Ok(Self::Detalhamento),
-            _ => Err(()),
-        }
-    }
 }
 
 impl Serialize for TipoDeOperacao {
@@ -374,22 +358,17 @@ impl TipoDeCredito {
         }
     }
 
+    #[rustfmt::skip]
     /// Mapeia o Tipo de Crédito para sua respectiva Natureza de Soma (Base de Cálculo)
     pub fn para_natureza_soma(&self) -> Option<NaturezaBaseCalculo> {
         match self {
             Self::AliquotaBasica => Some(NaturezaBaseCalculo::BaseSomaAliquotaBasica),
-            Self::AliquotasDiferenciadas => {
-                Some(NaturezaBaseCalculo::BaseSomaAliquotasDiferenciadas)
-            }
+            Self::AliquotasDiferenciadas => Some(NaturezaBaseCalculo::BaseSomaAliquotasDiferenciadas),
             Self::AliquotaPorUnidadeProduto => Some(NaturezaBaseCalculo::BaseSomaAliquotaUnidade),
             Self::EstoqueAbertura => Some(NaturezaBaseCalculo::BaseSomaEstoqueAbertura),
             Self::AquisicaoEmbalagens => Some(NaturezaBaseCalculo::BaseSomaAquisicaoEmbalagens),
-            Self::PresumidoAgroindustria => {
-                Some(NaturezaBaseCalculo::BaseSomaPresumidoAgroindustria)
-            }
-            Self::OutrosCreditosPresumidos => {
-                Some(NaturezaBaseCalculo::BaseSomaOutrosCreditosPresumidos)
-            }
+            Self::PresumidoAgroindustria => Some(NaturezaBaseCalculo::BaseSomaPresumidoAgroindustria),
+            Self::OutrosCreditosPresumidos => Some(NaturezaBaseCalculo::BaseSomaOutrosCreditosPresumidos),
             Self::Importacao => Some(NaturezaBaseCalculo::BaseSomaImportacao),
             Self::AtividadeImobiliaria => Some(NaturezaBaseCalculo::BaseSomaAtividadeImobiliaria),
             Self::Outros => Some(NaturezaBaseCalculo::BaseSomaOutros),
@@ -440,6 +419,7 @@ impl CodigoDoCredito {
         let x = val / 100;
         let yy = val % 100;
 
+        // Se from_u16 retornar None, geramos o erro rico imediatamente
         let rateio = TipoDeRateio::from_u16(x).map_loc(|_| EFDError::InvalidField {
             arquivo: arquivo.to_path_buf(),
             linha_num,
@@ -457,23 +437,12 @@ impl CodigoDoCredito {
             campo: campo_nome.to_string(),
             valor: val.to_string(),
             detalhe: Some(format!(
-                "Dígitos finais (Tipo de Crédito) '{:02}' inválidos",
+                "2 Dígitos finais (Tipo de Crédito) '{:02}' inválidos",
                 yy
             )),
         })?;
 
         Ok(Self { rateio, credito })
-    }
-
-    /// Constrói a partir de um valor numérico u16 (ex: 101)
-    pub fn from_u16(val: u16) -> Option<Self> {
-        let x = val / 100;
-        let yy = val % 100;
-
-        Some(Self {
-            rateio: TipoDeRateio::from_u16(x)?,
-            credito: TipoDeCredito::from_u16(yy)?,
-        })
     }
 
     /// Converte o código de volta para a representação numérica XYY.
