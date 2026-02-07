@@ -20,9 +20,12 @@ use crate::{
 // ============================================================================
 
 /**
-Tributo constantes da SPED EFD Contribuições analisados:
+Representa os tributos federais analisados na EFD Contribuições.
 
-Contribuições de PIS/PASEP e COFINS
+Tributos (Contribuições):
+
+- PIS/PASEP
+- COFINS
 */
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Serialize, Deserialize)]
 pub enum Tributo {
@@ -84,25 +87,23 @@ pub enum MesesDoAno {
 }
 
 impl FromStr for MesesDoAno {
-    type Err = EFDError; // Ou um erro customizado se preferir
+    type Err = EFDError;
 
     fn from_str(s: &str) -> EFDResult<Self> {
-        // .trim() remove espaços em branco acidentais que possam vir do arquivo
         match s.trim() {
-            "1" => Ok(Self::Janeiro),
-            "2" => Ok(Self::Fevereiro),
-            "3" => Ok(Self::Marco),
-            "4" => Ok(Self::Abril),
-            "5" => Ok(Self::Maio),
-            "6" => Ok(Self::Junho),
-            "7" => Ok(Self::Julho),
-            "8" => Ok(Self::Agosto),
-            "9" => Ok(Self::Setembro),
+            "1" | "01" => Ok(Self::Janeiro),
+            "2" | "02" => Ok(Self::Fevereiro),
+            "3" | "03" => Ok(Self::Marco),
+            "4" | "04" => Ok(Self::Abril),
+            "5" | "05" => Ok(Self::Maio),
+            "6" | "06" => Ok(Self::Junho),
+            "7" | "07" => Ok(Self::Julho),
+            "8" | "08" => Ok(Self::Agosto),
+            "9" | "09" => Ok(Self::Setembro),
             "10" => Ok(Self::Outubro),
             "11" => Ok(Self::Novembro),
             "12" => Ok(Self::Dezembro),
-            //"" => Ok(Self::Soma),
-            _ => Err(EFDError::InvalidDate).loc(), // Retorna erro se não for "0" nem "1"
+            _ => Err(EFDError::InvalidDate).loc(),
         }
     }
 }
@@ -157,32 +158,33 @@ pub enum IndicadorDeOrigem {
 }
 
 impl FromStr for IndicadorDeOrigem {
-    type Err = (); // Ou um erro customizado se preferir
+    type Err = EFDError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> EFDResult<Self> {
         // .trim() remove espaços em branco acidentais que possam vir do arquivo
         match s.trim() {
             "0" => Ok(Self::MercadoInterno),
             "1" => Ok(Self::Importacao),
-            _ => Err(()), // Retorna erro se não for "0" nem "1"
+            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(), // Retorna erro se não for "0" nem "1"
         }
     }
 }
 
-impl IndicadorDeOrigem {
+impl TryFrom<u16> for IndicadorDeOrigem {
+    type Error = EFDError;
+
     /// Converte u16 para o IndicadorDeOrigem de forma segura
-    pub const fn from_u16(cod: u16) -> Option<Self> {
+    fn try_from(cod: u16) -> EFDResult<Self> {
         match cod {
-            8 => Some(Self::Importacao),
-            _ => None,
+            0 => Ok(Self::MercadoInterno),
+            1 => Ok(Self::Importacao),
+            _ => Err(EFDError::KeyNotFound(cod.to_string())).loc(),
         }
     }
 }
 
-// Permite usar .to_string() ou println!("{}", enum) usando a string definida no serde
 impl fmt::Display for IndicadorDeOrigem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Usa a implementação de Serialize para escrever a string (rename) no formatter
         self.serialize(f)
     }
 }

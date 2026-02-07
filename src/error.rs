@@ -59,6 +59,10 @@ pub enum EFDError {
     #[error("Fim do arquivo SPED (Registro 9999) alcançado.")]
     EndOfFile,
 
+    /// Erro genérico para falhas de conversão de campo (se não cobertas por erros de parse específicos).
+    #[error("Conversão de campo inválida!")]
+    FieldConversion,
+
     #[error("O formato/estilo '{0}' não foi encontrado no mapa de formatos do Excel.")]
     FormatNotFound(String),
 
@@ -104,6 +108,79 @@ pub enum EFDError {
 
     #[error("Arquivo nº 0: opção inválida!")]
     InvalidFileIndex,
+
+    /// Registro inválido.
+    #[error(
+        "Erro no campo '{campo}' no registro: {valor}\n\
+         Detalhes: {detalhe:?}\n\
+         Arquivo: '{arquivo:?}'\n\
+         Nº da linha: {linha_num}"
+    )]
+    InvalidField {
+        arquivo: PathBuf,
+        linha_num: usize,
+        campo: String,
+        valor: String,
+        detalhe: Option<String>,
+    },
+
+    /// Nº de campos insuficiente
+    #[error(
+        "Nº de campos insuficiente.\n\
+         Arquivo: '{arquivo:?}'\n\
+         Nº da linha: {linha_num}\n\
+         Conteúdo da linha: '{line}'"
+    )]
+    InsufficientFieldNumber {
+        arquivo: PathBuf,
+        linha_num: usize,
+        line: String,
+    },
+
+    /// Nº incorreto de campos
+    #[error(
+        "Erro: Nº incorreto de campos\n\
+         Arquivo: '{arquivo:?}'\n\
+         Nº da linha: {linha_num}\n\
+         O Registro '{registro}' possui número incorreto de campos.\n\
+         Esperado: {tamanho_esperado}\n\
+         Encontrado: {tamanho_encontrado}\n"
+    )]
+    InvalidFieldCount {
+        arquivo: PathBuf,
+        linha_num: usize,
+        registro: String,
+        tamanho_esperado: usize,
+        tamanho_encontrado: usize,
+    },
+
+    /// O período de apuração fornecido com data inválida.
+    #[error(
+        "Período de Apuração inválido. Data: '{year}-{month}-{day}'.\n\
+        Esta data fornecida não pôde ser criada."
+    )]
+    InvalidDefaultPeriodoApuracao { year: i32, month: u32, day: u32 },
+
+    /// Wrapper geral para `std::io::Error`.
+    #[error("Erro de IO: {0}")]
+    Io(#[from] io::Error), // source io::Error
+
+    /// Wrapper geral para `std::io::Error` verbose.
+    #[error("Erro de I/O em {path:?}: {source}")]
+    InOut {
+        #[source]
+        source: io::Error,
+        path: PathBuf,
+    },
+
+    /// Wrapper geral para `std::io::Error` verbose.
+    #[error("Erro de I/O em {path:?}:[linha nº {line_number}] {source}")]
+    InOutDetalhado {
+        #[source]
+        source: io::Error,
+        path: PathBuf,
+        line_number: usize,
+    },
 
     #[error("Não foi encontrado o arquivo nº {index}! Escolha um número entre 1 a {total}.")]
     FileNotFoundInIndex { index: usize, total: usize },
@@ -219,58 +296,6 @@ pub enum EFDError {
     #[error("Item não encontrado: {0:#?}")]
     KeyNotFound(String),
 
-    /// Registro inválido.
-    #[error(
-        "Erro no campo '{campo}' no registro: {valor}\n\
-         Detalhes: {detalhe:?}\n\
-         Arquivo: '{arquivo:?}'\n\
-         Nº da linha: {linha_num}"
-    )]
-    InvalidField {
-        arquivo: PathBuf,
-        linha_num: usize,
-        campo: String,
-        valor: String,
-        detalhe: Option<String>,
-    },
-
-    /// Nº de campos insuficiente
-    #[error(
-        "Nº de campos insuficiente.\n\
-         Arquivo: '{arquivo:?}'\n\
-         Nº da linha: {linha_num}\n\
-         Conteúdo da linha: '{line}'"
-    )]
-    InsufficientFieldNumber {
-        arquivo: PathBuf,
-        linha_num: usize,
-        line: String,
-    },
-
-    /// Nº incorreto de campos
-    #[error(
-        "Erro: Nº incorreto de campos\n\
-         Arquivo: '{arquivo:?}'\n\
-         Nº da linha: {linha_num}\n\
-         O Registro '{registro}' possui número incorreto de campos.\n\
-         Esperado: {tamanho_esperado}\n\
-         Encontrado: {tamanho_encontrado}\n"
-    )]
-    InvalidFieldCount {
-        arquivo: PathBuf,
-        linha_num: usize,
-        registro: String,
-        tamanho_esperado: usize,
-        tamanho_encontrado: usize,
-    },
-
-    /// O período de apuração fornecido com data inválida.
-    #[error(
-        "Período de Apuração inválido. Data: '{year}-{month}-{day}'.\n\
-        Esta data fornecida não pôde ser criada."
-    )]
-    InvalidDefaultPeriodoApuracao { year: i32, month: u32, day: u32 },
-
     /// Encontrou um tipo de registro SPED que não é suportado ou reconhecido.
     #[error(
         "Tipo de registro não suportado ou inesperado!\n\
@@ -279,31 +304,6 @@ pub enum EFDError {
          Nº da linha: {1}"
     )]
     UnsupportedRecordType(PathBuf, usize, String),
-
-    /// Erro genérico para falhas de conversão de campo (se não cobertas por erros de parse específicos).
-    #[error("Conversão de campo inválida!")]
-    FieldConversion,
-
-    /// Wrapper geral para `std::io::Error`.
-    #[error("Erro de IO: {0}")]
-    Io(#[from] io::Error), // source io::Error
-
-    /// Wrapper geral para `std::io::Error` verbose.
-    #[error("Erro de I/O em {path:?}: {source}")]
-    InOut {
-        #[source]
-        source: io::Error,
-        path: PathBuf,
-    },
-
-    /// Wrapper geral para `std::io::Error` verbose.
-    #[error("Erro de I/O em {path:?}:[linha nº {line_number}] {source}")]
-    InOutDetalhado {
-        #[source]
-        source: io::Error,
-        path: PathBuf,
-        line_number: usize,
-    },
 
     /// Wrapper geral para `glob::GlobError`.
     #[error("Erro de Glob: {0}")]
