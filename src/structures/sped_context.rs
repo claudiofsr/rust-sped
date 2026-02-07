@@ -4,11 +4,10 @@ use rust_decimal::Decimal;
 use std::{
     collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
 };
 
-use crate::{Bloco0, EFDError, EFDResult, GrupoDeContas, ResultExt, blocos::*};
+use crate::{Bloco0, EFDError, EFDResult, ResultExt, blocos::*};
 
 // ============================================================================
 // 1. Contexto Imutável (Dados Globais e Tabelas)
@@ -300,28 +299,18 @@ impl SpedContext {
     }
 
     /// Registro 0500: Plano de Contas Contábeis
-    fn handle_0500(&mut self, r: &Registro0500) {
-        if let Some(cod_conta) = r.cod_cta.as_ref().filter(|s| !s.is_empty()) {
-            // 1. Resolve o grupo de contas usando o Enum GrupoDeContas (Lógica Funcional)
-            // - as_deref(): Option<Arc<str>> -> Option<&str>
-            // - and_then(): Tenta parsear. Se der erro (código inválido), vira None.
-            // - map(): Se válido, formata a string "01 - Contas de Ativo"
-            let grupo_de_contas: Option<String> = r
-                .cod_nat_cc
-                .as_deref()
-                .and_then(|s| GrupoDeContas::from_str(s).ok())
-                .map(|g| g.descricao_com_codigo());
-
-            // 2. Match funcional para decidir o formato final
-            //    Evita alocações (format!) a menos que necessário
-            let conta_contabil: Arc<str> = match (grupo_de_contas, &r.nome_cta) {
+    fn handle_0500(&mut self, reg: &Registro0500) {
+        if let Some(cod_conta) = reg.cod_cta.as_ref().filter(|s| !s.is_empty()) {
+            // Match funcional para decidir o formato final
+            // Evita alocações (format!) a menos que necessário
+            let conta_contabil: Arc<str> = match (&reg.cod_nat_cc, &reg.nome_cta) {
                 (Some(grupo), Some(nome)) => {
                     // Caso ambos existam: Alocação necessária
-                    Arc::from(format!("{}: {}", grupo, nome))
+                    Arc::from(format!("{}: {}", grupo.descricao_com_codigo(), nome))
                 }
                 (Some(grupo), None) => {
                     // Apenas grupo: Alocação String -> Arc
-                    Arc::from(grupo)
+                    Arc::from(grupo.descricao_com_codigo())
                 }
                 (None, Some(nome)) => {
                     // Apenas nome: Zero Copy (move o Arc existente)

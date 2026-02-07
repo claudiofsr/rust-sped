@@ -466,6 +466,7 @@ impl fmt::Display for CodigoDoCredito {
 // Tipo do Item
 // ============================================================================
 
+/// 4.3.1 - Tabela Tipo do Item.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum TipoDoItem {
@@ -504,31 +505,6 @@ pub enum TipoDoItem {
 
     #[serde(rename = "Outras")]
     Outras = 99,
-}
-
-impl FromStr for TipoDoItem {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // .trim() para garantir que espaços não quebrem o parse
-        // O match verifica tanto o código "00" quanto "0" por segurança,
-        // embora o padrão SPED seja sempre 2 dígitos.
-        match s.trim() {
-            "00" | "0" => Ok(Self::MercadoriaParaRevenda),
-            "01" | "1" => Ok(Self::MateriaPrima),
-            "02" | "2" => Ok(Self::Embalagem),
-            "03" | "3" => Ok(Self::ProdutoEmProcesso),
-            "04" | "4" => Ok(Self::ProdutoAcabado),
-            "05" | "5" => Ok(Self::Subproduto),
-            "06" | "6" => Ok(Self::ProdutoIntermediario),
-            "07" | "7" => Ok(Self::MaterialDeUsoEConsumo),
-            "08" | "8" => Ok(Self::AtivoImobilizado),
-            "09" | "9" => Ok(Self::Servicos),
-            "10" => Ok(Self::OutrosInsumos),
-            "99" => Ok(Self::Outras),
-            _ => Err(format!("Código de Tipo do Item inválido: {}", s)),
-        }
-    }
 }
 
 impl TipoDoItem {
@@ -611,6 +587,24 @@ impl FromStr for GrupoDeContas {
 }
 
 impl GrupoDeContas {
+    /// Tenta criar um CodigoDoCredito a partir de um u16 bruto.
+    ///
+    /// Valida se a centena corresponde a um TipoDeRateio válido
+    /// e se as dezenas/unidades correspondem a um TipoDeCredito válido.
+    pub fn new(cod: u8, arquivo: &Path, linha_num: usize, campo_nome: &str) -> EFDResult<Self> {
+        // Se from_u8 retornar None, geramos o erro rico imediatamente
+        GrupoDeContas::from_u8(cod).map_loc(|_| EFDError::InvalidField {
+            arquivo: arquivo.to_path_buf(),
+            linha_num,
+            campo: campo_nome.to_string(),
+            valor: cod.to_string(),
+            detalhe: Some(format!(
+                "Código do Grupo de Contas '{}' inválido (esperado 1-9)",
+                cod
+            )),
+        })
+    }
+
     /// Converte u8 para o GrupoDeContas de forma segura.
     pub const fn from_u8(cod: u8) -> Option<Self> {
         match cod {
@@ -622,6 +616,11 @@ impl GrupoDeContas {
             9 => Some(Self::Outras),
             _ => None,
         }
+    }
+
+    /// Retorna o valor numérico (u8)
+    pub const fn code(self) -> u8 {
+        self as u8
     }
 
     /// Retorna a descrição formatada com o código (ex: "01 - Contas de Ativo")

@@ -15,7 +15,7 @@ use rust_decimal::Decimal;
 
 use crate::{
     AnaliseDosCreditos, CodigoDoCredito, CodigoSituacaoTributaria, ConsolidacaoCST, EFDError,
-    EFDResult, MesesDoAno, PRECISAO_FLOAT, SMALL_VALUE,
+    EFDResult, GrupoDeContas, MesesDoAno, PRECISAO_FLOAT, SMALL_VALUE,
     structures::{analise_dos_creditos::Chaves, consolidacao_cst::Keys},
 };
 
@@ -1097,6 +1097,39 @@ impl<T: AsRef<str>> ToCNPJ for Option<T> {
     ) -> EFDResult<Arc<str>> {
         self.to_optional_cnpj(file_path, line_number, registro, field_name)?
             .map_loc(|_| EFDError::KeyNotFound(field_name.to_string()))
+    }
+}
+
+pub trait ToGrupoDeContas {
+    fn to_grupo_de_contas(
+        &self,
+        arquivo: &Path,
+        linha: usize,
+        campo: &str,
+    ) -> EFDResult<Option<GrupoDeContas>>;
+}
+
+impl<T: AsRef<str>> ToGrupoDeContas for Option<T> {
+    fn to_grupo_de_contas(
+        &self,
+        arquivo: &Path,
+        linha: usize,
+        campo: &str,
+    ) -> EFDResult<Option<GrupoDeContas>> {
+        self.as_ref()
+            .map(|s| s.as_ref())
+            .filter(|s| !s.is_empty())
+            .map(|s| {
+                let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
+                    source: e,
+                    data_str: s.to_string(),
+                    campo_nome: campo.to_string(),
+                    arquivo: arquivo.to_path_buf(),
+                    line_number: linha,
+                })?;
+                GrupoDeContas::new(val, arquivo, linha, campo)
+            })
+            .transpose()
     }
 }
 

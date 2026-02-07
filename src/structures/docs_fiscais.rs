@@ -11,9 +11,9 @@ use std::sync::Arc;
 use struct_iterable::Iterable;
 
 use crate::{
-    CodigoDoCredito, CodigoSituacaoTributaria, ExcelCustomFormatter, FloatExt, IndicadorDeOrigem,
-    InfoExtension, MesesDoAno, NaturezaBaseCalculo, TipoDeCredito, TipoDeOperacao, TipoDeRateio,
-    TipoDoItem, obter_descricao_do_cfop,
+    CodigoDoCredito, CodigoSituacaoTributaria, ExcelCustomFormatter, FloatExt, GrupoDeContas,
+    IndicadorDeOrigem, InfoExtension, MesesDoAno, NaturezaBaseCalculo, TipoDeCredito,
+    TipoDeOperacao, TipoDeRateio, TipoDoItem, obter_descricao_do_cfop,
 };
 
 #[derive(Debug, Clone)]
@@ -356,6 +356,7 @@ impl DocsFiscais {
                     val as Option<usize> => { val.as_ref().map(|s| s.to_string()) },
                     val as Option<Decimal> => { val.to_some_string() },
                     val as Option<NaiveDate> => { val.as_ref().map(|s| s.to_string()) },
+                    val as Option<GrupoDeContas> => { val.as_ref().map(|&cod| cod.code().to_string()) },
                     val as Option<CodigoDoCredito> => { val.as_ref().map(|&cod| cod.to_u16().to_string()) },
                     val as Option<CodigoSituacaoTributaria> => { val.as_ref().map(|&cst| (cst as u16).to_string()) },
                     val as Option<IndicadorDeOrigem> => { val.as_ref().map(|&indicador| (indicador as u8).to_string()) },
