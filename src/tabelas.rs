@@ -165,7 +165,7 @@ impl FromStr for IndicadorDeOrigem {
         match s.trim() {
             "0" => Ok(Self::MercadoInterno),
             "1" => Ok(Self::Importacao),
-            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(), // Retorna erro se não for "0" nem "1"
+            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(),
         }
     }
 }
