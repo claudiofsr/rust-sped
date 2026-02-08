@@ -83,7 +83,7 @@ impl SpedContext {
     pub fn new(bloco_0: Vec<Bloco0>, path: &Path) -> EFDResult<Self> {
         // Configuração de performance: ajuste conforme o hardware (i9 costuma lidar bem com 500-2000)
         // Se o Bloco 0 tiver 100k linhas, criará no máximo 20 tarefas, reduzindo drasticamente os merges.
-        const MIN_BATCH_SIZE: usize = 5_000;
+        // const MIN_BATCH_SIZE: usize = 5_000;
 
         let mut ctx = Self {
             path: path.to_path_buf(),
@@ -120,8 +120,7 @@ impl SpedContext {
         */
 
         // 1. FASE SEQUENCIAL: Metadados Críticos (0000, 0110, 0111)
-        // Itens que definem o estado global do contexto
-        // Precisamos desses dados antes de processar os demais registros em paralelo.
+        // Processamos o que é global e único antes do paralelismo
         for reg in bloco_0.iter() {
             match reg {
                 Bloco0::R0000(r) => ctx.handle_0000(r),
@@ -131,29 +130,22 @@ impl SpedContext {
             }
         }
 
-        // 2. PROCESSAMENTO PARALELO OTIMIZADO (Tabelas de Lookup)
-        // into_par_iter() consome o Vec original liberando memória dos itens processados
+        // 2. PROCESSAMENTO PARALELO POR CHUNKS (Estilo Bloco A)
+        // chunk_by agrupa tudo que NÃO é um 0140 com o 0140 anterior.
+        // O primeiro chunk conterá registros antes do primeiro 0140 (como 0000, 0100).
         let partial_ctx = bloco_0
+            .chunk_by(|_, next| !matches!(next, Bloco0::R0140(_)))
+            .collect::<Vec<_>>() // Coleta apenas referências dos pedaços
             .into_par_iter()
-            .with_min_len(MIN_BATCH_SIZE) // <--- O SEGREDO DA PERFORMANCE AQUI
-            .fold(
-                SpedContext::default, // Estado inicial por thread
-                |mut acc, reg| {
-                    match reg {
-                        // Como são autocontidos, processamos diretamente sem olhar para trás/frente
-                        // Não há a relacao de registro Pai e registros filhos.
-                        Bloco0::R0140(r) => acc.handle_0140(&r),
-                        Bloco0::R0150(r) => acc.handle_0150(&r),
-                        Bloco0::R0190(r) => acc.handle_0190(&r),
-                        Bloco0::R0200(r) => acc.handle_0200(&r),
-                        Bloco0::R0400(r) => acc.handle_0400(&r),
-                        Bloco0::R0450(r) => acc.handle_0450(&r),
-                        Bloco0::R0500(r) => acc.handle_0500(&r),
-                        _ => {}
-                    }
-                    acc
-                },
-            )
+            .fold(SpedContext::default, |mut acc, chunk| {
+                // Se o chunk for massivo (ex: 1 estabelecimento com 1 milhão de itens),
+                // podemos opcionalmente paralelizar internamente, mas para Bloco 0
+                // o processamento sequencial do chunk costuma ser mais rápido devido ao baixo custo dos handlers.
+                for reg in chunk {
+                    Self::dispatch_handle(&mut acc, reg);
+                }
+                acc
+            })
             .reduce(SpedContext::default, |mut a, b| {
                 // Une os mapas usando BTreeMap::append e HashMap::extend
                 // Mesclagem de mapas grandes (menos chamadas, mais dados por chamada)
@@ -179,6 +171,20 @@ impl SpedContext {
         ctx.cache_nomes_cpf_base = Self::consolidar_nomes_mais_frequentes(&ctx.nome_do_cpf, 9)?;
 
         Ok(ctx)
+    }
+
+    /// Helper para despachar os registros para os handlers corretos
+    fn dispatch_handle(acc: &mut SpedContext, reg: &Bloco0) {
+        match reg {
+            Bloco0::R0140(r) => acc.handle_0140(r),
+            Bloco0::R0150(r) => acc.handle_0150(r),
+            Bloco0::R0190(r) => acc.handle_0190(r),
+            Bloco0::R0200(r) => acc.handle_0200(r),
+            Bloco0::R0400(r) => acc.handle_0400(r),
+            Bloco0::R0450(r) => acc.handle_0450(r),
+            Bloco0::R0500(r) => acc.handle_0500(r),
+            _ => {}
+        }
     }
 
     /// Une dois contextos de forma eficiente (utilizado no reduce do Rayon)
