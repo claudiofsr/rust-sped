@@ -149,6 +149,12 @@ panic = "abort"        # Remove traceback information
 [profile.dev]
 opt-level = 1          # Use slightly better optimizations.
 
+# Compressão Externa (Opcional)
+# Se precisar de um binário menor, usar o UPX (Ultimate Packer for eXecutables):
+# No Linux (Manjaro)
+# sudo pacman -S upx
+# upx --best --lzma target/release/efd_contribuicoes
+
 # On Manjaro Linux, install with: pacman -S mingw-w64-gcc
 # rustup target list
 # After downloading the target with `rustup target add x86_64-pc-windows-gnu`
