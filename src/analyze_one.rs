@@ -7,12 +7,11 @@ use crate::{
 use chrono::Datelike;
 use claudiofsr_lib::{FileExtension, digit_count, get_style, open_file};
 use encoding_rs::WINDOWS_1252;
-use encoding_rs_io::DecodeReaderBytesBuilder;
 use indicatif::{MultiProgress, ProgressBar};
 use rayon::prelude::*;
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Read},
+    io::{BufRead, BufReader},
     path::Path,
     sync::Arc,
 };
@@ -177,8 +176,9 @@ pub fn read_and_parse_file(
         })
         .par_bridge() // Transforma o iterador serial em paralelo. O Rayon agora só recebe linhas válidas até o |9999|
         .try_fold(
-            SpedFile::new, // Cada thread começa com um arquivo VAZIO
-            |mut acc, (idx, line_result)| -> EFDResult<SpedFile> {
+            // O "estado inicial" de cada thread é uma tupla: (O arquivo, O buffer de linha)
+            || (SpedFile::new(), String::with_capacity(1024)),
+            |(mut acc, mut line_buf), (idx, line_result)| -> EFDResult<(SpedFile, String)> {
                 let line_number = idx + 1;
 
                 // O erro já foi envelopado no scan, aqui apenas propagamos com ?
@@ -187,17 +187,14 @@ pub fn read_and_parse_file(
                 // Trim ASCII whitespace from both ends of the byte slice.
                 let trimmed = line_bytes.trim_ascii();
 
-                // If line is empty, skip this line
-                if trimmed.is_empty() {
-                    return Ok(acc);
-                }
+                if !trimmed.is_empty() {
+                    // Decode bytes to string, handling potential encoding issues.
+                    get_string_utf8(trimmed, &mut line_buf, line_number, path)?;
 
-                // Decode bytes to string, handling potential encoding issues.
-                let line = get_string_utf8(trimmed, line_number, path)?;
-
-                // Faz o parse (CPU intensivo)
-                if let Some(record) = parse_sped_fields(path, line_number, &line)? {
-                    acc.add_record(record);
+                    // Faz o parse (CPU intensivo)
+                    if let Some(record) = parse_sped_fields(path, line_number, &line_buf)? {
+                        acc.add_record(record);
+                    }
                 }
 
                 // Incrementar ProgressoBar
@@ -205,17 +202,22 @@ pub fn read_and_parse_file(
                     progressbar.inc(delta);
                 }
 
-                Ok(acc)
+                // Retorna a tupla para a próxima iteração da mesma thread
+                Ok((acc, line_buf))
             },
         )
         // REDUCER: Funde os resultados das threads
-        .try_reduce(SpedFile::new, |mut main, thread| {
-            main.merge(thread);
-            Ok(main)
-        })?;
+        .try_reduce(
+            || (SpedFile::new(), String::new()), // Identidade para a redução
+            |mut main_tuple, thread_tuple| {
+                // Unimos apenas os SpedFiles, o buffer da thread pode ser descartado
+                main_tuple.0.merge(thread_tuple.0);
+                Ok(main_tuple)
+            },
+        )?;
 
     // 4. MERGE FINAL: Unir o Header (sequencial) com o Body (paralelo)
-    sped_file.merge(parallel_results);
+    sped_file.merge(parallel_results.0);
 
     progressbar.finish();
     Ok(sped_file)
@@ -238,6 +240,9 @@ where
 {
     let mut sped_file = SpedFile::new();
 
+    // ALOCAÇÃO ÚNICA: Fora do loop
+    let mut line_buf = String::with_capacity(1024);
+
     for (idx, line_result) in lines_iter.by_ref() {
         let line_number = idx + 1;
         let bytes = line_result.map_loc(|e| EFDError::InOut {
@@ -253,9 +258,10 @@ where
         }
 
         // Decode bytes to string, handling potential encoding issues.
-        let line = get_string_utf8(trimmed, line_number, path)?;
+        // O buffer é limpo e reusado dentro de get_string_utf8
+        get_string_utf8(trimmed, &mut line_buf, line_number, path)?;
 
-        if let Some(record) = parse_sped_fields(path, line_number, &line)? {
+        if let Some(record) = parse_sped_fields(path, line_number, &line_buf)? {
             if let SpedRecord::Bloco0(boxed_bloco) = &record {
                 // 2. Desreferencia o Box (**) para chegar no enum Bloco0
                 if let Bloco0::R0000(reg_0000) = boxed_bloco.as_ref() {
@@ -315,42 +321,60 @@ fn update_progressbar_header(
     progressbar.set_message(msg);
 }
 
-/// Converts a slice of bytes to a `String`, attempting to handle different encodings.
+/// Decodifica bytes para um buffer String pré-alocado (Scratchpad).
 ///
-/// It first tries to decode the bytes as UTF-8. If that fails, it attempts to decode
-/// them using WINDOWS-1252 encoding. If both fail, it returns an `EFDError::Utf8DecodeError`.
-///
-/// # Arguments
-/// * `slice_bytes` - A slice of bytes to convert.
-/// * `line_number` - The line number (for error reporting).
-/// * `path` - The path to the file (for error reporting).
-///
-/// # Returns
-/// A `Result` containing the decoded `String` if successful, or an `EFDError` if decoding fails.
-pub fn get_string_utf8(slice_bytes: &[u8], line_number: usize, path: &Path) -> EFDResult<String> {
-    // Attempt to decode as UTF-8 first, which is the preferred and standard encoding.
+/// # Argumentos
+/// * `slice_bytes` - Os bytes brutos da linha (sem o terminador \n).
+/// * `buffer` - Referência mutável para a String que será limpa e preenchida.
+/// * `line_number` - Para fins de relatório de erro.
+/// * `path` - Caminho do arquivo para fins de relatório de erro.
+pub fn get_string_utf8(
+    slice_bytes: &[u8],
+    buffer: &mut String,
+    line_number: usize,
+    path: &Path,
+) -> EFDResult<()> {
+    // 1. Limpa o conteúdo anterior sem liberar a capacidade alocada (reuso de memória).
+    buffer.clear();
+
+    // 2. FAST PATH: Tenta decodificar como UTF-8 (Padrão mais comum).
+    // Usamos std::str::from_utf8 que é extremamente otimizado (muitas vezes via SIMD).
     match str::from_utf8(slice_bytes) {
-        Ok(s) => Ok(s.to_string()),
+        Ok(valid_str) => {
+            // Se for UTF-8 válido, apenas copiamos para o buffer existente.
+            buffer.push_str(valid_str);
+        }
         Err(utf8_error) => {
-            // If UTF-8 decoding fails, attempt WINDOWS_1252 decoding.
-            let mut decoder = DecodeReaderBytesBuilder::new()
-                .encoding(Some(WINDOWS_1252))
-                .build(slice_bytes);
+            // 3. SLOW PATH: Fallback para WINDOWS-1252 (Padrão de arquivos SPED antigos).
+            // Em vez de DecodeReaderBytesBuilder (que é para Streams), usamos
+            // encoding_rs diretamente para processar o slice de bytes em memória.
 
-            let mut buffer = String::with_capacity(slice_bytes.len());
+            // O método decode() retorna um Cow<str>.
+            // - Se o dado for apenas ASCII, ele não aloca.
+            // - Se houver caracteres especiais, ele cria uma String temporária apenas para a conversão.
+            let (decoded_res, _encoding_used, has_errors) = WINDOWS_1252.decode(slice_bytes);
 
-            match decoder.read_to_string(&mut buffer) {
-                Ok(_) => Ok(buffer),
-                Err(win_1252_error) => Err(EFDError::Utf8DecodeError {
+            if has_errors {
+                // Se nem o Windows-1252 conseguiu processar, emitimos erro estrutural.
+                return Err(EFDError::Utf8DecodeError {
                     arquivo: path.to_path_buf(),
                     linha_num: line_number,
                     utf8_error,
-                    win_1252_error,
+                    // Criamos um erro sintético para o campo win_1252_error
+                    win_1252_error: std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Falha crítica: Codificação não reconhecida (UTF-8/WIN1252)",
+                    ),
                 })
-                .loc(),
+                .loc();
             }
+
+            // Copia o resultado decodificado para o nosso scratchpad.
+            buffer.push_str(&decoded_res);
         }
     }
+
+    Ok(())
 }
 
 //----------------------------------------------------------------------------//
