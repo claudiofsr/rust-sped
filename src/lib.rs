@@ -48,4 +48,4 @@ pub const DECIMAL_VALOR: usize = 2;
 pub const DECIMAL_ALIQ: usize = 4;
 pub const NEWLINE_BYTE: u8 = b'\n';
 pub const DATE_FORMAT: &str = "%d/%m/%Y %H:%M:%S";
-pub const BUFFER_CAPACITY: usize = 2 * 1024 * 1024; // 2MB
+pub const BUFFER_CAPACITY: usize = 8 * 1024 * 1024; // 8MB
