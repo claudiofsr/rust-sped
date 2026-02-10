@@ -78,8 +78,7 @@ fn main() -> EFDResult<()> {
     // 3. Execução do programa passando os argumentos já processados
     // Padrão idiomático para lidar com erros no main
     if let Err(error) = run(&args) {
-        eprintln!();
-        log::error!("\n{}\n", format_error(&error).red().bold());
+        log::error!("\n\n{}\n", format_error(&error).red().bold());
         process::exit(1);
     }
 

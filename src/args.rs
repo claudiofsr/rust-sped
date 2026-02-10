@@ -45,7 +45,8 @@ const APPLET_TEMPLATE: &str = "\
     author,
     version,
     about,
-    long_about = "Lê, processa e consolida múltiplos arquivos TXT do SPED, gerando relatórios em Excel e CSV.",
+    long_about = "Lê, processa e consolida múltiplos arquivos TXT do SPED, \
+    gerando relatórios em Excel e CSV.",
     next_line_help = true,
     help_template = APPLET_TEMPLATE,
     styles = get_styles(),

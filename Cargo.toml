@@ -61,7 +61,7 @@ serde_derive = "1.0"
 serde-aux = "4.7"
 struct_iterable = "0.1"
 tabled = { version = "0.20", features = ["ansi"] }
-tempfile = "3.24"
+tempfile = "3.25"
 thiserror = "2.0"
 
 log = "0.4"
