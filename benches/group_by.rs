@@ -1,4 +1,4 @@
-use rand::{Rng, distr::Uniform};
+use rand::{RngExt, distr::Uniform};
 use rayon::prelude::*;
 use rust_decimal_macros::dec;
 use std::{collections::HashMap, hint::black_box, sync::Mutex};

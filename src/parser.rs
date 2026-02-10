@@ -13,41 +13,11 @@ pub trait SpedParser {
 pub fn parse_sped_fields(
     file_path: &Path,
     line_number: usize,
-    line: &str,
+    line: &str,               // String reutilizada (scratchpad)
+    reg_buffer: &mut [u8; 4], // Buffer de 4 bytes reutilizado
 ) -> EFDResult<Option<SpedRecord>> {
-    // Convertemos a string para um slice de bytes para processamento em nível de CPU.
-    // Trabalhar com bytes ([u8]) é ordens de grandeza mais rápido que trabalhar com caracteres Unicode (char).
-    let bytes = line.as_bytes();
-
-    // Buffer fixo na Stack (Pilha).
-    // É usado apenas se precisarmos consertar um registro minúsculo (ex: |c100|).
-    // Por estar na Stack, o custo de criação é virtualmente zero (não toca na Heap/RAM principal).
-    let mut reg_buffer = [0u8; 4];
-
-    let registro_uppercase: &str = match bytes.get(0..6) {
-        // Capturamos os 4 bytes do ID (a, b, c, d) diretamente para registradores.
-        // Registro segue o padrão: ADDD, tal que A é alfanumerico e D dígito.
-        Some([b'|', a, b, c, d, b'|']) => {
-            // Unificamos a lógica: se for minúsculo, bitwise UP, senão mantém.
-            // O SPED permite 0-9 e A-Z. Apenas 'a'-'z' (0x61-0x7A) precisa de fix.
-            if a.is_ascii_lowercase() {
-                reg_buffer[0] = a & !0x20; // Trick bitwise: força maiúsculo
-                reg_buffer[1] = *b; // Mantém o dígito original
-                reg_buffer[2] = *c; // Mantém o dígito original
-                reg_buffer[3] = *d; // Mantém o dígito original
-
-                // Como validamos que os bytes vêm de uma string UTF-8 e apenas aplicamos
-                // operações ASCII seguras, pulamos a validação de UTF-8 do Rust (que é cara).
-                unsafe { std::str::from_utf8_unchecked(&reg_buffer) }
-            } else {
-                &line[1..5]
-            }
-        }
-        // Se a linha não começar com "|XXXX|", é ignorada instantaneamente.
-        _ => return Ok(None),
-    };
-
-    // Tokenização por referências (&str): Não aloca novas strings na Heap.
+    // O split cria referências para a 'line'.
+    // O custo aqui é apenas alocar um pequeno vetor de ponteiros na Heap.
     // O map(str::trim) é importante para limpar espaços em branco ao redor dos campos.
     let fields: Vec<&str> = line.split(DELIMITER_CHAR).map(str::trim).collect();
 
@@ -55,6 +25,26 @@ pub fn parse_sped_fields(
     if fields.len() < 4 {
         return Ok(None);
     }
+
+    // fields[1] é o ID do registro (ex: "C100")
+    // Registro segue o padrão: ADDD, tal que A é alfanumerico e D dígito.
+    let reg_id = fields[1];
+
+    // Convertemos a string para um slice de bytes para processamento em nível de CPU.
+    // Trabalhar com bytes ([u8]) é ordens de grandeza mais rápido que trabalhar com caracteres Unicode (char).
+    let bytes = reg_id.as_bytes();
+
+    // Unificamos a lógica: se for minúsculo, bitwise UP, senão mantém.
+    // O SPED permite 0-9 e A-Z. Apenas 'a'-'z' (0x61-0x7A) precisa de fix.
+    let registro_uppercase: &str = if bytes.len() == 4 && bytes[0].is_ascii_lowercase() {
+        reg_buffer[0] = bytes[0] & !0x20; // Trick bitwise: força maiúsculo
+        reg_buffer[1] = bytes[1]; // Mantém o dígito original
+        reg_buffer[2] = bytes[2]; // Mantém o dígito original
+        reg_buffer[3] = bytes[3]; // Mantém o dígito original
+        unsafe { std::str::from_utf8_unchecked(reg_buffer) }
+    } else {
+        reg_id
+    };
 
     // Chamada da Macro com mapeamento simplificado
     // 4. Despachante principal (Match exaustivo por Bloco)

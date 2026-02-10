@@ -176,9 +176,10 @@ pub fn read_and_parse_file(
         })
         .par_bridge() // Transforma o iterador serial em paralelo. O Rayon agora só recebe linhas válidas até o |9999|
         .try_fold(
-            // O "estado inicial" de cada thread é uma tupla: (O arquivo, O buffer de linha)
-            || (SpedFile::new(), String::with_capacity(1024)),
-            |(mut acc, mut line_buf), (idx, line_result)| -> EFDResult<(SpedFile, String)> {
+            // O "estado inicial" de cada thread é uma tupla: (O arquivo, O buffer de linha e do registro)
+            || (SpedFile::new(), String::with_capacity(1024), [0u8; 4]),
+            |state, (idx, line_result)| -> EFDResult<(SpedFile, String, [u8; 4])> {
+                let (mut acc, mut line_buf, mut reg_buf) = state;
                 let line_number = idx + 1;
 
                 // O erro já foi envelopado no scan, aqui apenas propagamos com ?
@@ -189,10 +190,13 @@ pub fn read_and_parse_file(
 
                 if !trimmed.is_empty() {
                     // Decode bytes to string, handling potential encoding issues.
+                    // Reutiliza a String (Isso economiza MUITA memória)
                     get_string_utf8(trimmed, &mut line_buf, line_number, path)?;
 
                     // Faz o parse (CPU intensivo)
-                    if let Some(record) = parse_sped_fields(path, line_number, &line_buf)? {
+                    if let Some(record) =
+                        parse_sped_fields(path, line_number, &line_buf, &mut reg_buf)?
+                    {
                         acc.add_record(record);
                     }
                 }
@@ -203,12 +207,12 @@ pub fn read_and_parse_file(
                 }
 
                 // Retorna a tupla para a próxima iteração da mesma thread
-                Ok((acc, line_buf))
+                Ok((acc, line_buf, reg_buf))
             },
         )
         // REDUCER: Funde os resultados das threads
         .try_reduce(
-            || (SpedFile::new(), String::new()), // Identidade para a redução
+            || (SpedFile::new(), String::new(), [0u8; 4]), // Identidade para a redução
             |mut main_tuple, thread_tuple| {
                 // Unimos apenas os SpedFiles, o buffer da thread pode ser descartado
                 main_tuple.0.merge(thread_tuple.0);
@@ -240,37 +244,49 @@ where
 {
     let mut sped_file = SpedFile::new();
 
-    // ALOCAÇÃO ÚNICA: Fora do loop
+    // ========================================================================
+    // ALOCAÇÕES ÚNICAS (SCRATCHPADS)
+    // Inicializados fora do loop para evitar alocações repetitivas na Heap/Stack.
+    // ========================================================================
     let mut line_buf = String::with_capacity(1024);
+    let mut reg_buf = [0u8; 4]; // Buffer fixo para normalização de registros (ex: c100 -> C100)
 
     for (idx, line_result) in lines_iter.by_ref() {
         let line_number = idx + 1;
+
+        // .map_loc() é lazy e só processa o erro se ele ocorrer
         let bytes = line_result.map_loc(|e| EFDError::InOut {
             source: e,
             path: path.to_path_buf(),
         })?;
 
-        // Trim ASCII whitespace from both ends of the byte slice.
+        // Trim ASCII whitespace (rápido, sem alocação)
         let trimmed = bytes.trim_ascii();
 
         if trimmed.is_empty() {
             continue;
         }
 
-        // Decode bytes to string, handling potential encoding issues.
-        // O buffer é limpo e reusado dentro de get_string_utf8
+        // 1. Decodifica os bytes para a String (Reutiliza a memória de line_buf)
         get_string_utf8(trimmed, &mut line_buf, line_number, path)?;
 
-        if let Some(record) = parse_sped_fields(path, line_number, &line_buf)? {
+        // 2. Faz o parse usando os buffers reutilizáveis
+        // O vetor de campos (fields) será criado localmente dentro desta função,
+        // o que é seguro e performático.
+        if let Some(record) = parse_sped_fields(path, line_number, &line_buf, &mut reg_buf)? {
+            // Lógica específica para identificar o Registro 0000 (Início da EFD)
             if let SpedRecord::Bloco0(boxed_bloco) = &record {
-                // 2. Desreferencia o Box (**) para chegar no enum Bloco0
+                // Desreferencia o Box para acessar o Enum Bloco0
                 if let Bloco0::R0000(reg_0000) = boxed_bloco.as_ref() {
+                    // Atualiza a descrição da barra de progresso com os dados do arquivo
                     update_progressbar_header(progressbar, reg_0000, file_number, total);
+
                     sped_file.add_record(record);
-                    break; // Cursor do iterador para aqui
+                    break; // Interrompe o processamento sequencial após encontrar o 0000
                 }
             }
-            // Adiciona registros que porventura venham antes do 0000 (raro, mas possível)
+
+            // Adiciona registros que porventura venham antes do 0000
             sped_file.add_record(record);
         }
     }

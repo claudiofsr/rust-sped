@@ -1,6 +1,7 @@
 use super::*;
 use crate::{
-    EFDResult, SpedFile, SpedRecordTrait, create_a_temp_file, read_and_parse_file, setup_logging,
+    EFDResult, SpedFile, SpedRecordTrait, create_a_temp_file, get_string_utf8, read_and_parse_file,
+    setup_logging,
 };
 use glob::glob;
 use indicatif::MultiProgress;
@@ -64,47 +65,63 @@ fn get_efd_files() -> EFDResult<Vec<PathBuf>> {
 #[test]
 /// cargo test -- --show-output parser_serial
 fn parser_serial() -> EFDResult<()> {
-    setup_logging(); // Initialize logger for this test
+    setup_logging(); // Inicializa o logger para o teste
     let temp_file = create_a_temp_file(SPED_EFD, true)?;
     let path = temp_file.path();
     let file = File::open(path)?;
 
-    // Reading a file line by line (for large files or streaming):
-    // For large files where reading the entire content into memory is inefficient,
-    // or if you need to process the file line by line,
-    // you can use std::io::BufReader with lines().
-    let reader = BufReader::new(file);
+    // Usamos BufReader para leitura eficiente.
+    // Em vez de .lines(), usaremos um loop manual com read_until para reuso de memória.
+    let mut reader = BufReader::new(file);
 
-    let mut sped_file_data = SpedFile::new(); // Instancia a estrutura principal
+    // ========================================================================
+    // ALOCAÇÕES ÚNICAS (SCRATCHPADS / BUFFERS)
+    // ========================================================================
+    let mut sped_file_data = SpedFile::new(); // 1. Armazenamento final
+    let mut line_buf = String::with_capacity(1024); // 2. Buffer de texto reutilizável
+    let mut reg_buf = [0u8; 4]; // 3. Buffer de normalização de Registro (Stack)
+    let mut bytes_buffer = Vec::new(); // 4. Buffer de leitura bruta (Bytes)
 
-    for (index, result_line) in reader.lines().enumerate() {
-        let line_number = index + 1;
-        let line: String = result_line?;
+    let mut line_number = 0;
 
-        if line.trim().is_empty() {
+    // Lemos o arquivo em blocos de bytes até encontrar o NEWLINE_BYTE (\n)
+    while reader.read_until(crate::NEWLINE_BYTE, &mut bytes_buffer)? > 0 {
+        line_number += 1;
+
+        // Trim ASCII nos bytes brutos (rápido e sem alocação)
+        let trimmed = bytes_buffer.trim_ascii();
+
+        if trimmed.is_empty() {
+            bytes_buffer.clear();
             continue;
         }
 
-        // Now, parse_sped_fields returns Option<SpedRecord>
-        match parse_sped_fields(path, line_number, &line)? {
+        // 1. Decodifica os bytes para o buffer String (Reutiliza line_buf)
+        get_string_utf8(trimmed, &mut line_buf, line_number, path)?;
+
+        // 2. Faz o parse usando os buffers reutilizáveis
+        // O vetor de campos (fields) será criado localmente dentro do parser (Safe & Fast)
+        match parse_sped_fields(path, line_number, &line_buf, &mut reg_buf)? {
             Some(sped_record) => {
-                // Only print if a record was actually parsed
+                // Imprime apenas se um registro foi realmente processado (Debug)
                 sped_record.println();
 
-                // Adiciona o registro à estrutura SpedFile
+                // Move o registro para a estrutura de dados final
                 sped_file_data.add_record(sped_record);
             }
             None => {
-                // This line was skipped, do nothing or log that it was skipped.
-                // The warning message is already handled inside parse_sped_fields.
+                // Linha ignorada ou registro não suportado
             }
         }
+
+        // 3. Limpa o buffer de bytes para a próxima linha (Mantém a capacidade alocada)
+        bytes_buffer.clear();
     }
 
-    // Após ler todo o arquivo, ordene os registros dentro de cada bloco
+    // Após ler todo o arquivo, ordena os registros por número de linha
     sped_file_data.sort_records_by_line_number();
 
-    // Imprime a estrutura final (opcional, para verificação)
+    // Imprime a árvore hierárquica para conferência
     sped_file_data.print_structure();
 
     Ok(())
