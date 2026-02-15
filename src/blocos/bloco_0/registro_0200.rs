@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    EFDError, EFDResult, ResultExt, SpedParser, StringParser, TipoDoItem, ToDecimal,
+    impl_reg_methods,
 };
 use rust_decimal::Decimal;
 use std::{path::Path, sync::Arc};
@@ -26,7 +27,7 @@ pub struct Registro0200 {
     pub cod_barra: Option<Arc<str>>,    // 4
     pub cod_ant_item: Option<Arc<str>>, // 5
     pub unid_inv: Option<Arc<str>>,     // 6
-    pub tipo_item: Option<u8>,          // 7
+    pub tipo_item: Option<TipoDoItem>,  // 7
     pub cod_ncm: Option<Arc<str>>,      // 8
     pub ex_ipi: Option<Arc<str>>,       // 9
     pub cod_gen: Option<Arc<str>>,      // 10

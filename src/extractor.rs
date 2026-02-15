@@ -9,7 +9,7 @@ use crate::{
     ALIQ_BASICA_COF, ALIQ_BASICA_PIS, Bloco1, BlocoA, BlocoC, BlocoD, BlocoF, BlocoI, BlocoM,
     CSTOption, CodigoDoCredito, CodigoSituacaoTributaria, DECIMAL_ALIQ, DECIMAL_VALOR, DecimalExt,
     DocsFiscais, IndicadorDeOrigem, MesesDoAno, ModeloDocFiscal, NaturezaBaseCalculo, SpedContext,
-    SpedFile, SpedRecordTrait, StringParser, TipoDeCredito, TipoDeOperacao, TipoDoItem, blocos::*,
+    SpedFile, SpedRecordTrait, StringParser, TipoDeCredito, TipoDeOperacao, blocos::*,
     capture_cnpj, cred_presumido, impl_dopai, impl_filho, is_importacao, obter_natureza_da_bc,
     obter_pis_da_tabela_estatica, process_child_and_parent, process_correlations,
     process_only_child, store_pis,
@@ -1021,9 +1021,7 @@ impl<'a> DocsBuilder<'a> {
             self.doc.cod_ncm = cod_ncm.clone();
         }
 
-        if let Some(tipo) = reg_0200.tipo_item {
-            self.doc.tipo_item = TipoDoItem::from_u8(tipo);
-        }
+        self.doc.tipo_item = reg_0200.tipo_item;
 
         if let Some(desc) = &reg_0200.descr_item {
             self.doc.descr_item = desc.clone();

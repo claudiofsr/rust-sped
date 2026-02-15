@@ -589,57 +589,18 @@ where
 
 // --- Exemplo de implementação para os tipos específicos ---
 
-impl FromEFDField for GrupoDeContas {
-    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
-        let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
-            source: e,
-            data_str: s.to_string(),
-            campo_nome: campo.to_string(),
-            arquivo: arquivo.to_path_buf(),
-            line_number: linha,
-        })?;
-        Self::new(val, arquivo, linha, campo)
-    }
-}
-
-impl FromEFDField for CodigoDoCredito {
-    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
-        let val = s.parse::<u16>().map_loc(|e| EFDError::ParseIntegerError {
-            source: e,
-            data_str: s.to_string(),
-            campo_nome: campo.to_string(),
-            arquivo: arquivo.to_path_buf(),
-            line_number: linha,
-        })?;
-        Self::new(val, arquivo, linha, campo)
-    }
-}
-
-impl FromEFDField for TipoDoItem {
-    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
-        let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
-            source: e,
-            data_str: s.to_string(),
-            campo_nome: campo.to_string(),
-            arquivo: arquivo.to_path_buf(),
-            line_number: linha,
-        })?;
-        Self::new(val, arquivo, linha, campo)
-    }
-}
-
 // ============================================================================
-// IMPLEMENTAÇÕES GENÉRICAS PARA TIPOS NUMÉRICOS
+// MACROS DE IMPLEMENTAÇÃO (FromEFDField)
 // ============================================================================
 
-macro_rules! impl_from_efd_field_unsigned {
+/// Macro para implementar `FromEFDField` em tipos primitivos inteiros.
+macro_rules! impl_from_efd_field_primitive {
     ($($t:ty),*) => {
         $(
             impl FromEFDField for $t {
-                /// Converte uma string do arquivo EFD Contribuições para um tipo numérico inteiro sem sinal.
+                /// Converte uma string do arquivo EFD para um tipo numérico básico.
                 ///
-                /// Em caso de falha no parsing, retorna um erro [EFDError::ParseIntegerError]
-                /// contextualizado com o caminho do arquivo, número da linha e nome do campo.
+                /// Retorna [EFDError::ParseIntegerError] em caso de falha de formatação.
                 fn from_efd_field(
                     s: &str,
                     arquivo: &Path,
@@ -659,8 +620,49 @@ macro_rules! impl_from_efd_field_unsigned {
     };
 }
 
-// Aplica a implementação para os tipos solicitados
-impl_from_efd_field_unsigned!(u8, u16, u32, u64, usize);
+/// Macro para implementar `FromEFDField` em tipos de domínio que possuem
+/// um método construtor `new(val, arquivo, linha, campo)`.
+macro_rules! impl_from_efd_field_domain {
+    ($($target:ty => $raw:ty),*) => {
+        $(
+            impl FromEFDField for $target {
+                /// Converte uma string do arquivo EFD para um tipo de domínio validado.
+                ///
+                /// Realiza o parsing para o tipo numérico intermediário [<$raw>] e
+                /// delega a validação de negócio para o método `Self::new`.
+                fn from_efd_field(
+                    s: &str,
+                    arquivo: &Path,
+                    linha: usize,
+                    campo: &str,
+                ) -> EFDResult<Self> {
+                    let val = s.parse::<$raw>().map_loc(|e| EFDError::ParseIntegerError {
+                        source: e,
+                        data_str: s.to_string(),
+                        campo_nome: campo.to_string(),
+                        arquivo: arquivo.to_path_buf(),
+                        line_number: linha,
+                    })?;
+                    Self::new(val, arquivo, linha, campo)
+                }
+            }
+        )*
+    };
+}
+
+// ============================================================================
+// APLICAÇÃO DAS MACROS
+// ============================================================================
+
+// Tipos primitivos: parsing direto
+impl_from_efd_field_primitive!(u8, u16, u32, u64, usize);
+
+// Tipos de domínio: parsing intermediário + validação (new)
+impl_from_efd_field_domain!(
+    GrupoDeContas   => u8,
+    CodigoDoCredito => u16,
+    TipoDoItem      => u8
+);
 
 // ============================================================================
 // SpedRecordTrait
