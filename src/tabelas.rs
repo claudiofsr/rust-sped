@@ -508,6 +508,24 @@ pub enum TipoDoItem {
 }
 
 impl TipoDoItem {
+    /// Tenta criar um CodigoDoCredito a partir de um u16 bruto.
+    ///
+    /// Valida se a centena corresponde a um TipoDeRateio válido
+    /// e se as dezenas/unidades correspondem a um TipoDeCredito válido.
+    pub fn new(cod: u8, arquivo: &Path, linha_num: usize, campo_nome: &str) -> EFDResult<Self> {
+        // Se from_u8 retornar None, geramos o erro rico imediatamente
+        TipoDoItem::from_u8(cod).map_loc(|_| EFDError::InvalidField {
+            arquivo: arquivo.to_path_buf(),
+            linha_num,
+            campo: campo_nome.to_string(),
+            valor: cod.to_string(),
+            detalhe: Some(format!(
+                "Código do Grupo de Contas '{}' inválido (esperado 1-9)",
+                cod
+            )),
+        })
+    }
+
     /// Converte u8 para o TipoDoItem de forma segura.
     pub const fn from_u8(cod: u8) -> Option<Self> {
         match cod {

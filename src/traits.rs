@@ -15,7 +15,7 @@ use rust_decimal::Decimal;
 
 use crate::{
     AnaliseDosCreditos, CodigoDoCredito, CodigoSituacaoTributaria, ConsolidacaoCST, EFDError,
-    EFDResult, GrupoDeContas, MesesDoAno, PRECISAO_FLOAT, SMALL_VALUE,
+    EFDResult, GrupoDeContas, MesesDoAno, PRECISAO_FLOAT, SMALL_VALUE, TipoDoItem,
     structures::{analise_dos_creditos::Chaves, consolidacao_cst::Keys},
 };
 
@@ -605,6 +605,19 @@ impl FromEFDField for GrupoDeContas {
 impl FromEFDField for CodigoDoCredito {
     fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
         let val = s.parse::<u16>().map_loc(|e| EFDError::ParseIntegerError {
+            source: e,
+            data_str: s.to_string(),
+            campo_nome: campo.to_string(),
+            arquivo: arquivo.to_path_buf(),
+            line_number: linha,
+        })?;
+        Self::new(val, arquivo, linha, campo)
+    }
+}
+
+impl FromEFDField for TipoDoItem {
+    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
+        let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
             source: e,
             data_str: s.to_string(),
             campo_nome: campo.to_string(),
