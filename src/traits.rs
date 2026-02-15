@@ -616,6 +616,40 @@ impl FromEFDField for CodigoDoCredito {
 }
 
 // ============================================================================
+// IMPLEMENTAÇÕES GENÉRICAS PARA TIPOS NUMÉRICOS
+// ============================================================================
+
+macro_rules! impl_from_efd_field_unsigned {
+    ($($t:ty),*) => {
+        $(
+            impl FromEFDField for $t {
+                /// Converte uma string do arquivo EFD Contribuições para um tipo numérico inteiro sem sinal.
+                ///
+                /// Em caso de falha no parsing, retorna um erro [EFDError::ParseIntegerError]
+                /// contextualizado com o caminho do arquivo, número da linha e nome do campo.
+                fn from_efd_field(
+                    s: &str,
+                    arquivo: &Path,
+                    linha: usize,
+                    campo: &str,
+                ) -> EFDResult<Self> {
+                    s.parse::<$t>().map_loc(|e| EFDError::ParseIntegerError {
+                        source: e,
+                        data_str: s.to_string(),
+                        campo_nome: campo.to_string(),
+                        arquivo: arquivo.to_path_buf(),
+                        line_number: linha,
+                    })
+                }
+            }
+        )*
+    };
+}
+
+// Aplica a implementação para os tipos solicitados
+impl_from_efd_field_unsigned!(u8, u16, u32, u64, usize);
+
+// ============================================================================
 // SpedRecordTrait
 // ============================================================================
 

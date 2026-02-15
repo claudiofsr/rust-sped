@@ -64,7 +64,10 @@ impl SpedParser for Registro0200 {
         let cod_barra = fields.get(4).to_arc();
         let cod_ant_item = fields.get(5).to_arc();
         let unid_inv = fields.get(6).to_arc();
-        let tipo_item = fields.get(7).parse_opt();
+        let tipo_item = fields
+            .get(7)
+            //.parse_opt();
+            .to_efd_field(file_path, line_number, "TIPO_ITEM")?;
         let cod_ncm = fields.get(8).to_arc();
         let ex_ipi = fields.get(9).to_arc();
         let cod_gen = fields.get(10).to_arc();

@@ -65,7 +65,10 @@ impl SpedParser for Registro0001 {
             .loc();
         }
 
-        let ind_mov = fields.get(2).parse_opt();
+        let ind_mov = fields
+            .get(2)
+            //.parse_opt();
+            .to_efd_field(file_path, line_number, "IND_MOV")?;
 
         Ok(Registro0001 {
             nivel: 1,
