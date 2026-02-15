@@ -1,6 +1,6 @@
 use crate::{
-    CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToCodigoDoCredito,
-    ToDecimal, impl_reg_methods,
+    CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    ToEFDField, impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -58,7 +58,7 @@ impl SpedParser for Registro1620 {
         let orig_cred = fields.get(3).to_compact_string();
         let cod_cred = fields
             .get(4)
-            .to_codigo_do_credito(file_path, line_number, "COD_CRED")?;
+            .to_efd_field(file_path, line_number, "COD_CRED")?;
         let vl_cred = get_decimal(5, "VL_CRED")?;
 
         let reg = Registro1620 {

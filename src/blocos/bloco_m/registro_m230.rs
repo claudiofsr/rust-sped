@@ -1,6 +1,6 @@
 use crate::{
-    CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToCodigoDoCredito,
-    ToDecimal, impl_reg_methods,
+    CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    ToEFDField, impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -64,7 +64,7 @@ impl SpedParser for RegistroM230 {
         let vl_cred_dif = get_decimal(6, "VL_CRED_DIF")?;
         let cod_cred = fields
             .get(7)
-            .to_codigo_do_credito(file_path, line_number, "COD_CRED")?;
+            .to_efd_field(file_path, line_number, "COD_CRED")?;
 
         let reg = RegistroM230 {
             nivel: 4,

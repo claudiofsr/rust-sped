@@ -1,6 +1,6 @@
 use crate::{
-    CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToCodigoDoCredito,
-    ToDecimal, ToNaiveDate, impl_reg_methods,
+    CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    ToEFDField, ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
 use compact_str::CompactString;
@@ -71,7 +71,7 @@ impl SpedParser for RegistroF800 {
         let pa_cont_cred = fields.get(5).to_compact_string();
         let cod_cred = fields
             .get(6)
-            .to_codigo_do_credito(file_path, line_number, "COD_CRED")?;
+            .to_efd_field(file_path, line_number, "COD_CRED")?;
         let vl_cred_pis = get_decimal(7, "VL_CRED_PIS")?;
         let vl_cred_cofins = get_decimal(8, "VL_CRED_COFINS")?;
         let per_cred_cis = fields.get(9).to_compact_string();

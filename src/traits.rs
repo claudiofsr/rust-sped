@@ -1100,71 +1100,89 @@ impl<T: AsRef<str>> ToCNPJ for Option<T> {
     }
 }
 
-pub trait ToGrupoDeContas {
-    fn to_grupo_de_contas(
-        &self,
-        arquivo: &Path,
-        linha: usize,
-        campo: &str,
-    ) -> EFDResult<Option<GrupoDeContas>>;
+// --- FromEFDField --- //
+
+/// Define a lógica para construir um tipo estruturado a partir de uma string bruta
+/// extraída de um arquivo da EFD Contribuições.
+///
+/// Tipos que implementam este trait podem ser convertidos automaticamente
+/// através do trait [ToEFDField].
+pub trait FromEFDField: Sized {
+    /// Converte uma string em um tipo de destino, validando as regras de negócio.
+    ///
+    /// # Erros
+    /// Retorna [EFDError] caso o valor seja inválido ou o parsing falhe,
+    /// incluindo informações detalhadas sobre a localização do erro no arquivo.
+    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self>;
 }
 
-impl<T: AsRef<str>> ToGrupoDeContas for Option<T> {
-    fn to_grupo_de_contas(
+/// Trait utilitário para estender `Option<T>` com capacidades de parsing do SPED.
+///
+/// Facilita a conversão de campos brutos (opcionais) lidos do arquivo para
+/// tipos do domínio, tratando strings vazias como `None`.
+pub trait ToEFDField {
+    /// Tenta converter uma string opcional para o tipo estruturado `T`.
+    ///
+    /// Se a string estiver presente mas for vazia, retorna `Ok(None)`.
+    /// Se a string contiver dados, delega o parsing para a implementação de [FromEFDField].
+    fn to_efd_field<T: FromEFDField>(
         &self,
         arquivo: &Path,
         linha: usize,
         campo: &str,
-    ) -> EFDResult<Option<GrupoDeContas>> {
+    ) -> EFDResult<Option<T>>;
+}
+
+impl<S: AsRef<str>> ToEFDField for Option<S> {
+    fn to_efd_field<T: FromEFDField>(
+        &self,
+        arquivo: &Path,
+        linha: usize,
+        campo: &str,
+    ) -> EFDResult<Option<T>> {
         self.as_ref()
-            .map(|s| s.as_ref())
+            .map(|s| s.as_ref().trim())
             .filter(|s| !s.is_empty())
-            .map(|s| {
-                let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
-                    source: e,
-                    data_str: s.to_string(),
-                    campo_nome: campo.to_string(),
-                    arquivo: arquivo.to_path_buf(),
-                    line_number: linha,
-                })?;
-                GrupoDeContas::new(val, arquivo, linha, campo)
-            })
-            .transpose()
+            .map(|s| T::from_efd_field(s, arquivo, linha, campo))
+            .transpose() // Option<Result<T, E>> to Result<Option<T>, E>
     }
 }
 
-pub trait ToCodigoDoCredito {
-    fn to_codigo_do_credito(
-        &self,
-        arquivo: &Path,
-        linha: usize,
-        campo: &str,
-    ) -> EFDResult<Option<CodigoDoCredito>>;
-}
+// --- Implementações de FromEFDField para os tipos existentes ---
 
-impl<T: AsRef<str>> ToCodigoDoCredito for Option<T> {
-    fn to_codigo_do_credito(
-        &self,
-        arquivo: &Path,
-        linha: usize,
-        campo: &str,
-    ) -> EFDResult<Option<CodigoDoCredito>> {
-        self.as_ref()
-            .map(|s| s.as_ref())
-            .filter(|s| !s.is_empty())
-            .map(|s| {
-                let val = s.parse::<u16>().map_loc(|e| EFDError::ParseIntegerError {
-                    source: e,
-                    data_str: s.to_string(),
-                    campo_nome: campo.to_string(),
-                    arquivo: arquivo.to_path_buf(),
-                    line_number: linha,
-                })?;
-                CodigoDoCredito::new(val, arquivo, linha, campo)
-            })
-            .transpose()
+impl FromEFDField for GrupoDeContas {
+    /// Implementa a criação de um [GrupoDeContas] a partir de uma string numérica.
+    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
+        let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
+            source: e,
+            data_str: s.to_string(),
+            campo_nome: campo.to_string(),
+            arquivo: arquivo.to_path_buf(),
+            line_number: linha,
+        })?;
+        Self::new(val, arquivo, linha, campo)
     }
 }
+
+impl FromEFDField for CodigoDoCredito {
+    /// Implementa a criação de um [CodigoDoCredito] validando a estrutura do código SPED.
+    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
+        let val = s.parse::<u16>().map_loc(|e| EFDError::ParseIntegerError {
+            source: e,
+            data_str: s.to_string(),
+            campo_nome: campo.to_string(),
+            arquivo: arquivo.to_path_buf(),
+            line_number: linha,
+        })?;
+        Self::new(val, arquivo, linha, campo)
+    }
+}
+
+/*
+// Exemplo de uso
+let grupo: Option<GrupoDeContas> = fields.get(7).to_efd_field(path, 10, "COD_CTA")?;
+let credito: Option<CodigoDoCredito> = fields.get(7).to_efd_field(path, 10, "COD_CRED")?;
+*/
 
 // --- Result Extension --- //
 

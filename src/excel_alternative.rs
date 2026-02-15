@@ -674,8 +674,7 @@ fn set_max_width(
 
 pub fn month_to_str(mes: &Option<MesesDoAno>) -> String {
     match mes {
-        Some(MesesDoAno::Soma) => "".to_string(),
         Some(m) => m.to_string(),
-        _ => "".to_string(),
+        None => "".to_string(),
     }
 }

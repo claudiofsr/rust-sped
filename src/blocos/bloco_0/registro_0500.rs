@@ -1,5 +1,5 @@
 use crate::{
-    EFDError, EFDResult, GrupoDeContas, ResultExt, SpedParser, StringParser, ToGrupoDeContas,
+    EFDError, EFDResult, GrupoDeContas, ResultExt, SpedParser, StringParser, ToEFDField,
     ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
@@ -60,7 +60,7 @@ impl SpedParser for Registro0500 {
         let dt_alt = get_date(2, "DT_ALT")?;
         let cod_nat_cc = fields
             .get(3)
-            .to_grupo_de_contas(file_path, line_number, "COD_NAT_CC")?;
+            .to_efd_field(file_path, line_number, "COD_NAT_CC")?;
         let ind_cta = fields.get(4).to_arc();
         let nivel_conta = fields.get(5).to_arc();
         let cod_cta = fields.get(6).to_arc();
