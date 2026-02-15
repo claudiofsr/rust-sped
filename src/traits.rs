@@ -467,24 +467,54 @@ fn needs_normalization(s: &str) -> bool {
 }
 
 // ============================================================================
+// TRAIT: FROMEFDFIELD
+// ============================================================================
+
+/// Define como um tipo de domínio (como `GrupoDeContas` ou `CodigoDoCredito`)
+/// deve ser construído a partir de uma string bruta lida do arquivo EFD.
+pub trait FromEFDField: Sized {
+    /// Converte uma string em um tipo de destino, validando as regras de negócio do SPED.
+    ///
+    /// Recebe metadados (`arquivo`, `linha`, `campo`) para que, em caso de falha,
+    /// o erro retornado seja rico em detalhes sobre a localização do problema.
+    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self>;
+}
+
+// ============================================================================
 // PUBLIC TRAIT: STRINGPARSER
 // ============================================================================
 
 /// Trait para parsing e normalização de strings otimizada para SPED.
+///
+/// Oferece métodos para conversão de tipos primitivos, estruturados e
+/// normalização de memória usando `Arc` e `CompactString`.
 pub trait StringParser {
-    /// Converte para um tipo numérico ou estruturado sem alocação de erro.
+    /// Converte o campo para um tipo que implementa [FromStr] (como `u32`, `Decimal`).
+    ///
+    /// Ignora strings vazias e retorna `None` se o parsing falhar (silencioso).
     fn parse_opt<U: FromStr>(&self) -> Option<U>;
+
+    /// Tenta converter o campo para um tipo estruturado do SPED que implementa [FromEFDField].
+    ///
+    /// Diferente do [parse_opt], este método é ruidoso: ele propaga erros detalhados
+    /// contendo o nome do arquivo, a linha e o nome do campo se a validação falhar.
+    fn to_efd_field<U: FromEFDField>(
+        &self,
+        arquivo: &Path,
+        linha: usize,
+        campo: &str,
+    ) -> EFDResult<Option<U>>;
 
     /// Converte para `Arc<str>` com espaços colapsados. Útil para dados imutáveis globais.
     fn to_arc(&self) -> Option<Arc<str>>;
 
-    /// Converte para `CompactString` (até 24 bytes na Stack). Ideal para IDs e códigos.
+    /// Converte para `CompactString` (otimizado para stack até 24 bytes). Ideal para IDs e códigos.
     fn to_compact_string(&self) -> Option<CompactString>;
 
-    /// Uppercase + Espaços colapsados -> `Arc<str>`.
+    /// Aplica Uppercase, colapsa espaços e converte para `Arc<str>`.
     fn to_upper_arc(&self) -> Option<Arc<str>>;
 
-    /// Uppercase + Espaços colapsados -> `CompactString`.
+    /// Aplica Uppercase, colapsa espaços e converte para `CompactString`.
     fn to_upper_compact(&self) -> Option<CompactString>;
 }
 
@@ -498,6 +528,20 @@ where
             .map(|t| t.as_ref())
             .filter(|s| !s.is_empty())
             .and_then(|s| s.parse().ok())
+    }
+
+    #[inline]
+    fn to_efd_field<U: FromEFDField>(
+        &self,
+        arquivo: &Path,
+        linha: usize,
+        campo: &str,
+    ) -> EFDResult<Option<U>> {
+        self.as_ref()
+            .map(|t| t.as_ref().trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| U::from_efd_field(s, arquivo, linha, campo))
+            .transpose()
     }
 
     #[inline]
@@ -540,6 +584,34 @@ where
                     clean_and_uppercase_engine::<CompactString>(s)
                 }
             })
+    }
+}
+
+// --- Exemplo de implementação para os tipos específicos ---
+
+impl FromEFDField for GrupoDeContas {
+    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
+        let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
+            source: e,
+            data_str: s.to_string(),
+            campo_nome: campo.to_string(),
+            arquivo: arquivo.to_path_buf(),
+            line_number: linha,
+        })?;
+        Self::new(val, arquivo, linha, campo)
+    }
+}
+
+impl FromEFDField for CodigoDoCredito {
+    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
+        let val = s.parse::<u16>().map_loc(|e| EFDError::ParseIntegerError {
+            source: e,
+            data_str: s.to_string(),
+            campo_nome: campo.to_string(),
+            arquivo: arquivo.to_path_buf(),
+            line_number: linha,
+        })?;
+        Self::new(val, arquivo, linha, campo)
     }
 }
 
@@ -1099,90 +1171,6 @@ impl<T: AsRef<str>> ToCNPJ for Option<T> {
             .map_loc(|_| EFDError::KeyNotFound(field_name.to_string()))
     }
 }
-
-// --- FromEFDField --- //
-
-/// Define a lógica para construir um tipo estruturado a partir de uma string bruta
-/// extraída de um arquivo da EFD Contribuições.
-///
-/// Tipos que implementam este trait podem ser convertidos automaticamente
-/// através do trait [ToEFDField].
-pub trait FromEFDField: Sized {
-    /// Converte uma string em um tipo de destino, validando as regras de negócio.
-    ///
-    /// # Erros
-    /// Retorna [EFDError] caso o valor seja inválido ou o parsing falhe,
-    /// incluindo informações detalhadas sobre a localização do erro no arquivo.
-    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self>;
-}
-
-/// Trait utilitário para estender `Option<T>` com capacidades de parsing do SPED.
-///
-/// Facilita a conversão de campos brutos (opcionais) lidos do arquivo para
-/// tipos do domínio, tratando strings vazias como `None`.
-pub trait ToEFDField {
-    /// Tenta converter uma string opcional para o tipo estruturado `T`.
-    ///
-    /// Se a string estiver presente mas for vazia, retorna `Ok(None)`.
-    /// Se a string contiver dados, delega o parsing para a implementação de [FromEFDField].
-    fn to_efd_field<T: FromEFDField>(
-        &self,
-        arquivo: &Path,
-        linha: usize,
-        campo: &str,
-    ) -> EFDResult<Option<T>>;
-}
-
-impl<S: AsRef<str>> ToEFDField for Option<S> {
-    fn to_efd_field<T: FromEFDField>(
-        &self,
-        arquivo: &Path,
-        linha: usize,
-        campo: &str,
-    ) -> EFDResult<Option<T>> {
-        self.as_ref()
-            .map(|s| s.as_ref().trim())
-            .filter(|s| !s.is_empty())
-            .map(|s| T::from_efd_field(s, arquivo, linha, campo))
-            .transpose() // Option<Result<T, E>> to Result<Option<T>, E>
-    }
-}
-
-// --- Implementações de FromEFDField para os tipos existentes ---
-
-impl FromEFDField for GrupoDeContas {
-    /// Implementa a criação de um [GrupoDeContas] a partir de uma string numérica.
-    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
-        let val = s.parse::<u8>().map_loc(|e| EFDError::ParseIntegerError {
-            source: e,
-            data_str: s.to_string(),
-            campo_nome: campo.to_string(),
-            arquivo: arquivo.to_path_buf(),
-            line_number: linha,
-        })?;
-        Self::new(val, arquivo, linha, campo)
-    }
-}
-
-impl FromEFDField for CodigoDoCredito {
-    /// Implementa a criação de um [CodigoDoCredito] validando a estrutura do código SPED.
-    fn from_efd_field(s: &str, arquivo: &Path, linha: usize, campo: &str) -> EFDResult<Self> {
-        let val = s.parse::<u16>().map_loc(|e| EFDError::ParseIntegerError {
-            source: e,
-            data_str: s.to_string(),
-            campo_nome: campo.to_string(),
-            arquivo: arquivo.to_path_buf(),
-            line_number: linha,
-        })?;
-        Self::new(val, arquivo, linha, campo)
-    }
-}
-
-/*
-// Exemplo de uso
-let grupo: Option<GrupoDeContas> = fields.get(7).to_efd_field(path, 10, "COD_CTA")?;
-let credito: Option<CodigoDoCredito> = fields.get(7).to_efd_field(path, 10, "COD_CRED")?;
-*/
 
 // --- Result Extension --- //
 

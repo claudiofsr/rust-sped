@@ -1,6 +1,6 @@
 use crate::{
     CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
-    ToEFDField, impl_reg_methods,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;

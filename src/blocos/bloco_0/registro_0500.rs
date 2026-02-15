@@ -1,6 +1,6 @@
 use crate::{
-    EFDError, EFDResult, GrupoDeContas, ResultExt, SpedParser, StringParser, ToEFDField,
-    ToNaiveDate, impl_reg_methods,
+    EFDError, EFDResult, GrupoDeContas, ResultExt, SpedParser, StringParser, ToNaiveDate,
+    impl_reg_methods,
 };
 use chrono::NaiveDate;
 use std::{path::Path, sync::Arc};

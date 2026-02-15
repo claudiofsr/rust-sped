@@ -1,6 +1,6 @@
 use crate::{
     CodigoDoCredito, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
-    ToEFDField, ToNaiveDate, impl_reg_methods,
+    ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
 use compact_str::CompactString;
