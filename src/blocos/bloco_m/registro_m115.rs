@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToNaiveDate, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser,
+    ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
 use compact_str::CompactString;
@@ -21,14 +22,14 @@ pub struct RegistroM115 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub det_valor_aj: Option<CompactString>, // 2
-    pub cst_pis: Option<u16>,                // 3
-    pub det_bc_cred: Option<CompactString>,  // 4
-    pub det_aliq: Option<CompactString>,     // 5 (Pode ser String ou Decimal)
-    pub dt_oper_aj: Option<NaiveDate>,       // 6
-    pub desc_aj: Option<CompactString>,      // 7
-    pub cod_cta: Option<CompactString>,      // 8
-    pub info_compl: Option<CompactString>,   // 9
+    pub det_valor_aj: Option<CompactString>,       // 2
+    pub cst_pis: Option<CodigoSituacaoTributaria>, // 3
+    pub det_bc_cred: Option<CompactString>,        // 4
+    pub det_aliq: Option<CompactString>,           // 5 (Pode ser String ou Decimal)
+    pub dt_oper_aj: Option<NaiveDate>,             // 6
+    pub desc_aj: Option<CompactString>,            // 7
+    pub cod_cta: Option<CompactString>,            // 8
+    pub info_compl: Option<CompactString>,         // 9
 }
 
 impl_reg_methods!(RegistroM115);
@@ -59,7 +60,9 @@ impl SpedParser for RegistroM115 {
         };
 
         let det_valor_aj = fields.get(2).to_compact_string();
-        let cst_pis = fields.get(3).parse_opt();
+        let cst_pis = fields
+            .get(3)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let det_bc_cred = fields.get(4).to_compact_string();
         let det_aliq = fields.get(5).to_compact_string();
         let dt_oper_aj = get_date(6, "DT_OPER_AJ")?;

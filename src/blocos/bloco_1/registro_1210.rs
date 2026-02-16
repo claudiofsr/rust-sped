@@ -1,6 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, ToNaiveDate,
-    impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
 use compact_str::CompactString;
@@ -23,16 +23,16 @@ pub struct Registro1210 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cnpj: Option<CompactString>,       // 2
-    pub cst_pis: Option<u16>,              // 3
-    pub cod_part: Option<CompactString>,   // 4
-    pub dt_oper: Option<NaiveDate>,        // 5
-    pub vl_oper: Option<Decimal>,          // 6
-    pub vl_bc_pis: Option<Decimal>,        // 7
-    pub aliq_pis: Option<Decimal>,         // 8
-    pub vl_pis: Option<Decimal>,           // 9
-    pub cod_cta: Option<CompactString>,    // 10
-    pub desc_compl: Option<CompactString>, // 11
+    pub cnpj: Option<CompactString>,               // 2
+    pub cst_pis: Option<CodigoSituacaoTributaria>, // 3
+    pub cod_part: Option<CompactString>,           // 4
+    pub dt_oper: Option<NaiveDate>,                // 5
+    pub vl_oper: Option<Decimal>,                  // 6
+    pub vl_bc_pis: Option<Decimal>,                // 7
+    pub aliq_pis: Option<Decimal>,                 // 8
+    pub vl_pis: Option<Decimal>,                   // 9
+    pub cod_cta: Option<CompactString>,            // 10
+    pub desc_compl: Option<CompactString>,         // 11
 }
 
 impl_reg_methods!(Registro1210);
@@ -69,7 +69,9 @@ impl SpedParser for Registro1210 {
         };
 
         let cnpj = fields.get(2).to_compact_string();
-        let cst_pis = fields.get(3).parse_opt();
+        let cst_pis = fields
+            .get(3)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let cod_part = fields.get(4).to_compact_string();
         let dt_oper = get_date(5, "DT_OPER")?;
         let vl_oper = get_decimal(6, "VL_OPER")?;

@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,17 +22,17 @@ pub struct RegistroI100 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub vl_rec: Option<Decimal>,           // 2
-    pub cst_pis_cofins: Option<u16>,       // 3
-    pub vl_tot_ded_ger: Option<Decimal>,   // 4
-    pub vl_tot_ded_esp: Option<Decimal>,   // 5
-    pub vl_bc_pis: Option<Decimal>,        // 6
-    pub aliq_pis: Option<Decimal>,         // 7
-    pub vl_pis: Option<Decimal>,           // 8
-    pub vl_bc_cofins: Option<Decimal>,     // 9
-    pub aliq_cofins: Option<Decimal>,      // 10
-    pub vl_cofins: Option<Decimal>,        // 11
-    pub info_compl: Option<CompactString>, // 12
+    pub vl_rec: Option<Decimal>,                          // 2
+    pub cst_pis_cofins: Option<CodigoSituacaoTributaria>, // 3
+    pub vl_tot_ded_ger: Option<Decimal>,                  // 4
+    pub vl_tot_ded_esp: Option<Decimal>,                  // 5
+    pub vl_bc_pis: Option<Decimal>,                       // 6
+    pub aliq_pis: Option<Decimal>,                        // 7
+    pub vl_pis: Option<Decimal>,                          // 8
+    pub vl_bc_cofins: Option<Decimal>,                    // 9
+    pub aliq_cofins: Option<Decimal>,                     // 10
+    pub vl_cofins: Option<Decimal>,                       // 11
+    pub info_compl: Option<CompactString>,                // 12
 }
 
 impl_reg_methods!(RegistroI100);
@@ -62,7 +63,10 @@ impl SpedParser for RegistroI100 {
         };
 
         let vl_rec = get_decimal(2, "VL_REC")?;
-        let cst_pis_cofins = fields.get(3).parse_opt();
+        let cst_pis_cofins = fields
+            .get(3)
+            //.parse_opt();
+            .to_efd_field(file_path, line_number, "CST_PIS_COFINS")?;
         let vl_tot_ded_ger = get_decimal(4, "VL_TOT_DED_GER")?;
         let vl_tot_ded_esp = get_decimal(5, "VL_TOT_DED_ESP")?;
         let vl_bc_pis = get_decimal(6, "VL_BC_PIS")?;

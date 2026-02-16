@@ -155,8 +155,8 @@ macro_rules! impl_filho {
     (@map get_num_doc, $v:ident) => { fn get_num_doc(&self) -> Option<usize> { self.$v } };
 
     // Classificação Fiscal
-    (@map get_cst_pis, $v:ident) => { fn get_cst_pis(&self) -> Option<u16> { self.$v } };
-    (@map get_cst_cofins, $v:ident) => { fn get_cst_cofins(&self) -> Option<u16> { self.$v } };
+    (@map get_cst_pis, $v:ident) => { fn get_cst_pis(&self) -> Option<$crate::CodigoSituacaoTributaria> { self.$v } };
+    (@map get_cst_cofins, $v:ident) => { fn get_cst_cofins(&self) -> Option<$crate::CodigoSituacaoTributaria> { self.$v } };
     (@map get_cfop, $v:ident) => { fn get_cfop(&self) -> Option<u16> { self.$v } };
     (@map get_nat_bc_cred, $v:ident) => { fn get_nat_bc_cred(&self) -> Option<u16> { self.$v } };
     (@map get_ind_orig_cred, $v:ident) => { fn get_ind_orig_cred(&self) -> Option<&str> { self.$v.as_deref() } };

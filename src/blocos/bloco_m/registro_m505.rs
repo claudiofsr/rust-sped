@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,15 +22,15 @@ pub struct RegistroM505 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub nat_bc_cred: Option<u16>,                   // 2
-    pub cst_cofins: Option<u16>,                    // 3
-    pub vl_bc_cofins_tot: Option<Decimal>,          // 4
-    pub vl_bc_cofins_cum: Option<Decimal>,          // 5
-    pub vl_bc_cofins_nc: Option<Decimal>,           // 6
-    pub vl_bc_cofins: Option<Decimal>,              // 7
-    pub quant_bc_cofins_tot: Option<CompactString>, // 8 (Pode ser String ou Decimal)
-    pub quant_bc_cofins: Option<CompactString>,     // 9 (Pode ser String ou Decimal)
-    pub desc_cred: Option<CompactString>,           // 10
+    pub nat_bc_cred: Option<u16>,                     // 2
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 3
+    pub vl_bc_cofins_tot: Option<Decimal>,            // 4
+    pub vl_bc_cofins_cum: Option<Decimal>,            // 5
+    pub vl_bc_cofins_nc: Option<Decimal>,             // 6
+    pub vl_bc_cofins: Option<Decimal>,                // 7
+    pub quant_bc_cofins_tot: Option<CompactString>,   // 8 (Pode ser String ou Decimal)
+    pub quant_bc_cofins: Option<CompactString>,       // 9 (Pode ser String ou Decimal)
+    pub desc_cred: Option<CompactString>,             // 10
 }
 
 impl_reg_methods!(RegistroM505);
@@ -60,7 +61,9 @@ impl SpedParser for RegistroM505 {
         };
 
         let nat_bc_cred = fields.get(2).parse_opt();
-        let cst_cofins = fields.get(3).parse_opt();
+        let cst_cofins = fields
+            .get(3)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_bc_cofins_tot = get_decimal(4, "VL_BC_COFINS_TOT")?;
         let vl_bc_cofins_cum = get_decimal(5, "VL_BC_COFINS_CUM")?;
         let vl_bc_cofins_nc = get_decimal(6, "VL_BC_COFINS_NC")?;

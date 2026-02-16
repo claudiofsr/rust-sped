@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,15 +22,15 @@ pub struct Registro1900 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cnpj: Option<CompactString>,      // 2
-    pub cod_mod: Option<CompactString>,   // 3
-    pub ser: Option<CompactString>,       // 4
-    pub sub_ser: Option<CompactString>,   // 5
-    pub cod_sit: Option<CompactString>,   // 6
-    pub vl_tot_rec: Option<Decimal>,      // 7
+    pub cnpj: Option<CompactString>,                  // 2
+    pub cod_mod: Option<CompactString>,               // 3
+    pub ser: Option<CompactString>,                   // 4
+    pub sub_ser: Option<CompactString>,               // 5
+    pub cod_sit: Option<CompactString>,               // 6
+    pub vl_tot_rec: Option<Decimal>,                  // 7
     pub quant_doc: Option<CompactString>, // 8 (Assumindo que pode ser string para quantidade ou Decimal)
-    pub cst_pis: Option<u16>,             // 9
-    pub cst_cofins: Option<u16>,          // 10
+    pub cst_pis: Option<CodigoSituacaoTributaria>, // 9
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 10
     pub cfop: Option<u16>,                // 11
     pub inf_compl: Option<CompactString>, // 12
     pub cod_cta: Option<CompactString>,   // 13
@@ -68,8 +69,12 @@ impl SpedParser for Registro1900 {
         let cod_sit = fields.get(6).to_compact_string();
         let vl_tot_rec = get_decimal(7, "VL_TOT_REC")?;
         let quant_doc = fields.get(8).to_compact_string(); // Pode ser String se a quantidade for tratada como tal, ou Decimal
-        let cst_pis = fields.get(9).parse_opt();
-        let cst_cofins = fields.get(10).parse_opt();
+        let cst_pis = fields
+            .get(9)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
+        let cst_cofins = fields
+            .get(10)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let cfop = fields.get(11).parse_opt();
         let inf_compl = fields.get(12).to_compact_string();
         let cod_cta = fields.get(13).to_compact_string();

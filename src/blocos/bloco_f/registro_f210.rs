@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,16 +22,16 @@ pub struct RegistroF210 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub vl_cus_orc: Option<Decimal>,          // 2
-    pub vl_exc: Option<Decimal>,              // 3
-    pub vl_cus_orc_aju: Option<Decimal>,      // 4
-    pub vl_bc_cred: Option<Decimal>,          // 5
-    pub cst_pis: Option<u16>,                 // 6
-    pub aliq_pis: Option<Decimal>,            // 7
-    pub vl_cred_pis_util: Option<Decimal>,    // 8
-    pub cst_cofins: Option<u16>,              // 9
-    pub aliq_cofins: Option<Decimal>,         // 10
-    pub vl_cred_cofins_util: Option<Decimal>, // 11
+    pub vl_cus_orc: Option<Decimal>,                  // 2
+    pub vl_exc: Option<Decimal>,                      // 3
+    pub vl_cus_orc_aju: Option<Decimal>,              // 4
+    pub vl_bc_cred: Option<Decimal>,                  // 5
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 6
+    pub aliq_pis: Option<Decimal>,                    // 7
+    pub vl_cred_pis_util: Option<Decimal>,            // 8
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 9
+    pub aliq_cofins: Option<Decimal>,                 // 10
+    pub vl_cred_cofins_util: Option<Decimal>,         // 11
 }
 
 impl_reg_methods!(RegistroF210);
@@ -63,10 +64,14 @@ impl SpedParser for RegistroF210 {
         let vl_exc = get_decimal(3, "VL_EXC")?;
         let vl_cus_orc_aju = get_decimal(4, "VL_CUS_ORC_AJU")?;
         let vl_bc_cred = get_decimal(5, "VL_BC_CRED")?;
-        let cst_pis = fields.get(6).parse_opt();
+        let cst_pis = fields
+            .get(6)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let aliq_pis = get_decimal(7, "ALIQ_PIS")?;
         let vl_cred_pis_util = get_decimal(8, "VL_CRED_PIS_UTIL")?;
-        let cst_cofins = fields.get(9).parse_opt();
+        let cst_cofins = fields
+            .get(9)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let aliq_cofins = get_decimal(10, "ALIQ_COFINS")?;
         let vl_cred_cofins_util = get_decimal(11, "VL_CRED_COFINS_UTIL")?;
 

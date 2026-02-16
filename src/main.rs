@@ -22,11 +22,11 @@ Ao final, estas informações são padronizadas em Excel e CSV e escritas em arq
     # exemplo: impl_sped_record_trait para impl_reg_methods
     find ./src/blocos -type f -name "*.rs" -exec sed -i -E 's/impl_sped_record_trait/impl_reg_methods/' {} +
 
-    start='let cod_cred = fields\.get\(([0-9]+)\)\.parse_opt\(\);'
-    final='let cod_cred = fields.get(\1).to_codigo_do_credito(file_path, line_number, "COD_CRED")?;'
+    start='let cst_cofins = fields\.get\(([0-9]+)\)\.parse_opt\(\);'
+    final='let cst_cofins = fields.get(\1).to_efd_field(file_path, line_number, "CST_COFINS")?;'
 
-    start='pub cod_cred: Option<u16>'
-    final='pub cod_cred: Option<CodigoDoCredito>'
+    start='pub cst_cofins: Option<u16>'
+    final='pub cst_cofins: Option<CodigoSituacaoTributaria>'
 
     find ./src/blocos/bloco_[a-z1-9] -type f -name "*.rs" -exec sed -i -E "s/$start/$final/" {} +
 

@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,23 +22,23 @@ pub struct RegistroF205 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub vl_cus_inc_acum_ant: Option<Decimal>,     // 2
-    pub vl_cus_inc_per_esc: Option<Decimal>,      // 3
-    pub vl_cus_inc_acum: Option<Decimal>,         // 4
-    pub vl_exc_bc_cus_inc_acum: Option<Decimal>,  // 5
-    pub vl_bc_cus_inc: Option<Decimal>,           // 6
-    pub cst_pis: Option<u16>,                     // 7
-    pub aliq_pis: Option<Decimal>,                // 8
-    pub vl_cred_pis_acum: Option<Decimal>,        // 9
-    pub vl_cred_pis_desc_ant: Option<Decimal>,    // 10
-    pub vl_cred_pis_desc: Option<Decimal>,        // 11
-    pub vl_cred_pis_desc_fut: Option<Decimal>,    // 12
-    pub cst_cofins: Option<u16>,                  // 13
-    pub aliq_cofins: Option<Decimal>,             // 14
-    pub vl_cred_cofins_acum: Option<Decimal>,     // 15
-    pub vl_cred_cofins_desc_ant: Option<Decimal>, // 16
-    pub vl_cred_cofins_desc: Option<Decimal>,     // 17
-    pub vl_cred_cofins_desc_fut: Option<Decimal>, // 18
+    pub vl_cus_inc_acum_ant: Option<Decimal>,         // 2
+    pub vl_cus_inc_per_esc: Option<Decimal>,          // 3
+    pub vl_cus_inc_acum: Option<Decimal>,             // 4
+    pub vl_exc_bc_cus_inc_acum: Option<Decimal>,      // 5
+    pub vl_bc_cus_inc: Option<Decimal>,               // 6
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 7
+    pub aliq_pis: Option<Decimal>,                    // 8
+    pub vl_cred_pis_acum: Option<Decimal>,            // 9
+    pub vl_cred_pis_desc_ant: Option<Decimal>,        // 10
+    pub vl_cred_pis_desc: Option<Decimal>,            // 11
+    pub vl_cred_pis_desc_fut: Option<Decimal>,        // 12
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 13
+    pub aliq_cofins: Option<Decimal>,                 // 14
+    pub vl_cred_cofins_acum: Option<Decimal>,         // 15
+    pub vl_cred_cofins_desc_ant: Option<Decimal>,     // 16
+    pub vl_cred_cofins_desc: Option<Decimal>,         // 17
+    pub vl_cred_cofins_desc_fut: Option<Decimal>,     // 18
 }
 
 impl_reg_methods!(RegistroF205);
@@ -71,13 +72,17 @@ impl SpedParser for RegistroF205 {
         let vl_cus_inc_acum = get_decimal(4, "VL_CUS_INC_ACUM")?;
         let vl_exc_bc_cus_inc_acum = get_decimal(5, "VL_EXC_BC_CUS_INC_ACUM")?;
         let vl_bc_cus_inc = get_decimal(6, "VL_BC_CUS_INC")?;
-        let cst_pis = fields.get(7).parse_opt();
+        let cst_pis = fields
+            .get(7)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let aliq_pis = get_decimal(8, "ALIQ_PIS")?;
         let vl_cred_pis_acum = get_decimal(9, "VL_CRED_PIS_ACUM")?;
         let vl_cred_pis_desc_ant = get_decimal(10, "VL_CRED_PIS_DESC_ANT")?;
         let vl_cred_pis_desc = get_decimal(11, "VL_CRED_PIS_DESC")?;
         let vl_cred_pis_desc_fut = get_decimal(12, "VL_CRED_PIS_DESC_FUT")?;
-        let cst_cofins = fields.get(13).parse_opt();
+        let cst_cofins = fields
+            .get(13)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let aliq_cofins = get_decimal(14, "ALIQ_COFINS")?;
         let vl_cred_cofins_acum = get_decimal(15, "VL_CRED_COFINS_ACUM")?;
         let vl_cred_cofins_desc_ant = get_decimal(16, "VL_CRED_COFINS_DESC_ANT")?;

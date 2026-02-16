@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,21 +22,21 @@ pub struct RegistroF560 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub vl_rec_comp: Option<Decimal>,           // 2
-    pub cst_pis: Option<u16>,                   // 3
-    pub vl_desc_pis: Option<Decimal>,           // 4
-    pub quant_bc_pis: Option<CompactString>,    // 5 (Pode ser String ou Decimal)
-    pub aliq_pis_quant: Option<Decimal>,        // 6
-    pub vl_pis: Option<Decimal>,                // 7
-    pub cst_cofins: Option<u16>,                // 8
-    pub vl_desc_cofins: Option<Decimal>,        // 9
-    pub quant_bc_cofins: Option<CompactString>, // 10 (Pode ser String ou Decimal)
-    pub aliq_cofins_quant: Option<Decimal>,     // 11
-    pub vl_cofins: Option<Decimal>,             // 12
-    pub cod_mod: Option<CompactString>,         // 13
-    pub cfop: Option<u16>,                      // 14
-    pub cod_cta: Option<CompactString>,         // 15
-    pub info_compl: Option<CompactString>,      // 16
+    pub vl_rec_comp: Option<Decimal>,                 // 2
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 3
+    pub vl_desc_pis: Option<Decimal>,                 // 4
+    pub quant_bc_pis: Option<CompactString>,          // 5 (Pode ser String ou Decimal)
+    pub aliq_pis_quant: Option<Decimal>,              // 6
+    pub vl_pis: Option<Decimal>,                      // 7
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 8
+    pub vl_desc_cofins: Option<Decimal>,              // 9
+    pub quant_bc_cofins: Option<CompactString>,       // 10 (Pode ser String ou Decimal)
+    pub aliq_cofins_quant: Option<Decimal>,           // 11
+    pub vl_cofins: Option<Decimal>,                   // 12
+    pub cod_mod: Option<CompactString>,               // 13
+    pub cfop: Option<u16>,                            // 14
+    pub cod_cta: Option<CompactString>,               // 15
+    pub info_compl: Option<CompactString>,            // 16
 }
 
 impl_reg_methods!(RegistroF560);
@@ -65,12 +66,16 @@ impl SpedParser for RegistroF560 {
         };
 
         let vl_rec_comp = get_decimal(2, "VL_REC_COMP")?;
-        let cst_pis = fields.get(3).parse_opt();
+        let cst_pis = fields
+            .get(3)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let vl_desc_pis = get_decimal(4, "VL_DESC_PIS")?;
         let quant_bc_pis = fields.get(5).to_compact_string();
         let aliq_pis_quant = get_decimal(6, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(7, "VL_PIS")?;
-        let cst_cofins = fields.get(8).parse_opt();
+        let cst_cofins = fields
+            .get(8)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_desc_cofins = get_decimal(9, "VL_DESC_COFINS")?;
         let quant_bc_cofins = fields.get(10).to_compact_string();
         let aliq_cofins_quant = get_decimal(11, "ALIQ_COFINS_QUANT")?;

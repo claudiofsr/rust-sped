@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,14 +22,14 @@ pub struct RegistroD101 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub ind_nat_frt: Option<CompactString>, // 2
-    pub vl_item: Option<Decimal>,           // 3
-    pub cst_pis: Option<u16>,               // 4
-    pub nat_bc_cred: Option<u16>,           // 5
-    pub vl_bc_pis: Option<Decimal>,         // 6
-    pub aliq_pis: Option<Decimal>,          // 7
-    pub vl_pis: Option<Decimal>,            // 8
-    pub cod_cta: Option<CompactString>,     // 9
+    pub ind_nat_frt: Option<CompactString>,        // 2
+    pub vl_item: Option<Decimal>,                  // 3
+    pub cst_pis: Option<CodigoSituacaoTributaria>, // 4
+    pub nat_bc_cred: Option<u16>,                  // 5
+    pub vl_bc_pis: Option<Decimal>,                // 6
+    pub aliq_pis: Option<Decimal>,                 // 7
+    pub vl_pis: Option<Decimal>,                   // 8
+    pub cod_cta: Option<CompactString>,            // 9
 }
 
 impl_reg_methods!(RegistroD101);
@@ -60,7 +61,9 @@ impl SpedParser for RegistroD101 {
 
         let ind_nat_frt = fields.get(2).to_compact_string();
         let vl_item = get_decimal(3, "VL_ITEM")?;
-        let cst_pis = fields.get(4).parse_opt();
+        let cst_pis = fields
+            .get(4)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let nat_bc_cred = fields.get(5).parse_opt();
         let vl_bc_pis = get_decimal(6, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(7, "ALIQ_PIS")?;

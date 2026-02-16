@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,19 +22,19 @@ pub struct RegistroC396 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_item: Option<CompactString>, // 2
-    pub vl_item: Option<Decimal>,        // 3
-    pub vl_desc: Option<Decimal>,        // 4
-    pub nat_bc_cred: Option<u16>,        // 5
-    pub cst_pis: Option<u16>,            // 6
-    pub vl_bc_pis: Option<Decimal>,      // 7
-    pub aliq_pis: Option<Decimal>,       // 8
-    pub vl_pis: Option<Decimal>,         // 9
-    pub cst_cofins: Option<u16>,         // 10
-    pub vl_bc_cofins: Option<Decimal>,   // 11
-    pub aliq_cofins: Option<Decimal>,    // 12
-    pub vl_cofins: Option<Decimal>,      // 13
-    pub cod_cta: Option<CompactString>,  // 14
+    pub cod_item: Option<CompactString>,              // 2
+    pub vl_item: Option<Decimal>,                     // 3
+    pub vl_desc: Option<Decimal>,                     // 4
+    pub nat_bc_cred: Option<u16>,                     // 5
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 6
+    pub vl_bc_pis: Option<Decimal>,                   // 7
+    pub aliq_pis: Option<Decimal>,                    // 8
+    pub vl_pis: Option<Decimal>,                      // 9
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 10
+    pub vl_bc_cofins: Option<Decimal>,                // 11
+    pub aliq_cofins: Option<Decimal>,                 // 12
+    pub vl_cofins: Option<Decimal>,                   // 13
+    pub cod_cta: Option<CompactString>,               // 14
 }
 
 impl_reg_methods!(RegistroC396);
@@ -66,11 +67,17 @@ impl SpedParser for RegistroC396 {
         let vl_item = get_decimal(3, "VL_ITEM")?;
         let vl_desc = get_decimal(4, "VL_DESC")?;
         let nat_bc_cred = fields.get(5).parse_opt();
-        let cst_pis = fields.get(6).parse_opt();
+        let cst_pis = fields
+            .get(6)
+            //.parse_opt();
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let vl_bc_pis = get_decimal(7, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(8, "ALIQ_PIS")?;
         let vl_pis = get_decimal(9, "VL_PIS")?;
-        let cst_cofins = fields.get(10).parse_opt();
+        let cst_cofins = fields
+            .get(10)
+            //.parse_opt();
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_bc_cofins = get_decimal(11, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(12, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(13, "VL_COFINS")?;

@@ -84,7 +84,7 @@ struct RegMockFilho {
 
     num_item: Option<u16>,
     vl_item: Option<Decimal>,
-    cst_pis: Option<u16>,
+    cst_pis: Option<CodigoSituacaoTributaria>,
     aliq_pis: Option<Decimal>,
     vl_pis: Option<Decimal>,
     // Campos para override (sobrescrever dados do pai)
@@ -102,7 +102,7 @@ impl RegistroFilho for RegMockFilho {
     fn get_valor_item(&self) -> Option<Decimal> {
         self.vl_item
     }
-    fn get_cst_pis(&self) -> Option<u16> {
+    fn get_cst_pis(&self) -> Option<CodigoSituacaoTributaria> {
         self.cst_pis
     }
     fn get_aliq_pis(&self) -> Option<Decimal> {
@@ -129,7 +129,7 @@ impl RegistroFilho for RegMockFilho {
 fn test_correlation_manager_storage_and_retrieval() {
     let mut mgr = CorrelationManager::default();
 
-    let cst = Some(50);
+    let cst = Some(CodigoSituacaoTributaria::CredVincExclRecTribMI);
     let vl_item = dec!(1000.00);
     let cfop = Some(1102);
     let nat_bc_cred = Some(8);
@@ -161,7 +161,12 @@ fn test_correlation_manager_storage_and_retrieval() {
     };
 
     // 2. Recuperação da Chave (Com Contexto)
-    let result = mgr.resolve(Some(50), Some(vl_item), corr_ctx, None);
+    let result = mgr.resolve(
+        Some(CodigoSituacaoTributaria::CredVincExclRecTribMI),
+        Some(vl_item),
+        corr_ctx,
+        None,
+    );
 
     let value = CorrelationValue {
         aliq_pis: Some(dec!(1.65)),
@@ -179,7 +184,7 @@ fn test_correlation_manager_partial_strong_key() {
     let mut mgr = CorrelationManager::default();
 
     let key = CorrelationKey {
-        cst: Some(1),
+        cst: Some(CodigoSituacaoTributaria::OperTribAliqBasica),
         vl_item: dec!(100.0),
     };
 
@@ -206,7 +211,12 @@ fn test_correlation_manager_partial_strong_key() {
     // A chave forte (StrongKey) exige igualdade exata nos Options.
     // Como (Some(CFOP), Some(Part)) != (Some(CFOP), None), a busca forte falha.
     // O sistema deve cair no Weak Cache (CST + Valor).
-    let result = mgr.resolve(Some(1), Some(dec!(100.0)), corr_ctx, None);
+    let result = mgr.resolve(
+        Some(CodigoSituacaoTributaria::OperTribAliqBasica),
+        Some(dec!(100.0)),
+        corr_ctx,
+        None,
+    );
 
     assert!(result.is_some(), "Deve achar via fallback weak cache");
 }
@@ -240,7 +250,7 @@ fn test_builder_inheritance_logic() {
 
         num_item: Some(1),
         vl_item: Some(dec!(1000.00)),
-        cst_pis: Some(50),
+        cst_pis: Some(CodigoSituacaoTributaria::CredVincExclRecTribMI),
         aliq_pis: Some(dec!(1.65)),
         vl_pis: Some(dec!(16.50)),
         dt_emissao_override: None, // Deve herdar

@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -13,12 +14,12 @@ pub struct RegistroC495 {
     pub bloco: char,
     pub registro: CompactString,
     pub line_number: usize,
-    pub cod_item: Option<CompactString>,        // 2
-    pub cst_cofins: Option<u16>,                // 3
-    pub cfop: Option<u16>,                      // 4
-    pub vl_item: Option<Decimal>,               // 5
-    pub vl_bc_cofins: Option<Decimal>,          // 6
-    pub aliq_cofins: Option<Decimal>,           // 7
+    pub cod_item: Option<CompactString>,              // 2
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 3
+    pub cfop: Option<u16>,                            // 4
+    pub vl_item: Option<Decimal>,                     // 5
+    pub vl_bc_cofins: Option<Decimal>,                // 6
+    pub aliq_cofins: Option<Decimal>,                 // 7
     pub quant_bc_cofins: Option<CompactString>, // 8 (Pode ser Decimal dependendo do formato SPED)
     pub aliq_cofins_quant: Option<Decimal>,     // 9
     pub vl_cofins: Option<Decimal>,             // 10
@@ -51,7 +52,9 @@ impl SpedParser for RegistroC495 {
         };
 
         let cod_item = fields.get(2).to_compact_string();
-        let cst_cofins = fields.get(3).parse_opt();
+        let cst_cofins = fields
+            .get(3)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let cfop = fields.get(4).parse_opt();
         let vl_item = get_decimal(5, "VL_ITEM")?;
         let vl_bc_cofins = get_decimal(6, "VL_BC_COFINS")?;

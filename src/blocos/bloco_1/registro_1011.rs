@@ -1,6 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, ToNaiveDate,
-    impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
 use compact_str::CompactString;
@@ -23,31 +23,31 @@ pub struct Registro1011 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub reg_ref: Option<CompactString>,       // 2
-    pub chave_doc: Option<CompactString>,     // 3
-    pub cod_part: Option<CompactString>,      // 4
-    pub cod_item: Option<CompactString>,      // 5
-    pub dt_oper: Option<NaiveDate>,           // 6
-    pub vl_oper: Option<Decimal>,             // 7
-    pub cst_pis: Option<u16>,                 // 8
-    pub vl_bc_pis: Option<Decimal>,           // 9
-    pub aliq_pis: Option<Decimal>,            // 10
-    pub vl_pis: Option<Decimal>,              // 11
-    pub cst_cofins: Option<u16>,              // 12
-    pub vl_bc_cofins: Option<Decimal>,        // 13
-    pub aliq_cofins: Option<Decimal>,         // 14
-    pub vl_cofins: Option<Decimal>,           // 15
-    pub cst_pis_susp: Option<u16>,            // 16
-    pub vl_bc_pis_susp: Option<Decimal>,      // 17
-    pub aliq_pis_susp: Option<Decimal>,       // 18
-    pub vl_pis_susp: Option<Decimal>,         // 19
-    pub cst_cofins_susp: Option<u16>,         // 20
-    pub vl_bc_cofins_susp: Option<Decimal>,   // 21
-    pub aliq_cofins_susp: Option<Decimal>,    // 22
-    pub vl_cofins_susp: Option<Decimal>,      // 23
-    pub cod_cta: Option<CompactString>,       // 24
-    pub cod_ccus: Option<CompactString>,      // 25
-    pub desc_doc_oper: Option<CompactString>, // 26
+    pub reg_ref: Option<CompactString>,               // 2
+    pub chave_doc: Option<CompactString>,             // 3
+    pub cod_part: Option<CompactString>,              // 4
+    pub cod_item: Option<CompactString>,              // 5
+    pub dt_oper: Option<NaiveDate>,                   // 6
+    pub vl_oper: Option<Decimal>,                     // 7
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 8
+    pub vl_bc_pis: Option<Decimal>,                   // 9
+    pub aliq_pis: Option<Decimal>,                    // 10
+    pub vl_pis: Option<Decimal>,                      // 11
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 12
+    pub vl_bc_cofins: Option<Decimal>,                // 13
+    pub aliq_cofins: Option<Decimal>,                 // 14
+    pub vl_cofins: Option<Decimal>,                   // 15
+    pub cst_pis_susp: Option<u16>,                    // 16
+    pub vl_bc_pis_susp: Option<Decimal>,              // 17
+    pub aliq_pis_susp: Option<Decimal>,               // 18
+    pub vl_pis_susp: Option<Decimal>,                 // 19
+    pub cst_cofins_susp: Option<u16>,                 // 20
+    pub vl_bc_cofins_susp: Option<Decimal>,           // 21
+    pub aliq_cofins_susp: Option<Decimal>,            // 22
+    pub vl_cofins_susp: Option<Decimal>,              // 23
+    pub cod_cta: Option<CompactString>,               // 24
+    pub cod_ccus: Option<CompactString>,              // 25
+    pub desc_doc_oper: Option<CompactString>,         // 26
 }
 
 impl_reg_methods!(Registro1011);
@@ -89,11 +89,15 @@ impl SpedParser for Registro1011 {
         let cod_item = fields.get(5).to_compact_string();
         let dt_oper = get_date(6, "DT_OPER")?;
         let vl_oper = get_decimal(7, "VL_OPER")?;
-        let cst_pis = fields.get(8).parse_opt();
+        let cst_pis = fields
+            .get(8)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let vl_bc_pis = get_decimal(9, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(10, "ALIQ_PIS")?;
         let vl_pis = get_decimal(11, "VL_PIS")?;
-        let cst_cofins = fields.get(12).parse_opt();
+        let cst_cofins = fields
+            .get(12)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_bc_cofins = get_decimal(13, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(14, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(15, "VL_COFINS")?;

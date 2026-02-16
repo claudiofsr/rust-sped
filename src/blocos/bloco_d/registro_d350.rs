@@ -1,6 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, ToNaiveDate,
-    impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
 use compact_str::CompactString;
@@ -23,28 +23,28 @@ pub struct RegistroD350 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<CompactString>,         // 2
-    pub ecf_mod: Option<CompactString>,         // 3
-    pub ecf_fab: Option<CompactString>,         // 4
-    pub dt_doc: Option<NaiveDate>,              // 5
-    pub cro: Option<CompactString>,             // 6
-    pub crz: Option<CompactString>,             // 7
-    pub num_coo_fin: Option<CompactString>,     // 8
-    pub gt_fin: Option<CompactString>,          // 9
-    pub vl_brt: Option<Decimal>,                // 10
-    pub cst_pis: Option<u16>,                   // 11
-    pub vl_bc_pis: Option<Decimal>,             // 12
-    pub aliq_pis: Option<Decimal>,              // 13
-    pub quant_bc_pis: Option<CompactString>,    // 14
-    pub aliq_pis_quant: Option<Decimal>,        // 15
-    pub vl_pis: Option<Decimal>,                // 16
-    pub cst_cofins: Option<u16>,                // 17
-    pub vl_bc_cofins: Option<Decimal>,          // 18
-    pub aliq_cofins: Option<Decimal>,           // 19
-    pub quant_bc_cofins: Option<CompactString>, // 20
-    pub aliq_cofins_quant: Option<Decimal>,     // 21
-    pub vl_cofins: Option<Decimal>,             // 22
-    pub cod_cta: Option<CompactString>,         // 23
+    pub cod_mod: Option<CompactString>,               // 2
+    pub ecf_mod: Option<CompactString>,               // 3
+    pub ecf_fab: Option<CompactString>,               // 4
+    pub dt_doc: Option<NaiveDate>,                    // 5
+    pub cro: Option<CompactString>,                   // 6
+    pub crz: Option<CompactString>,                   // 7
+    pub num_coo_fin: Option<CompactString>,           // 8
+    pub gt_fin: Option<CompactString>,                // 9
+    pub vl_brt: Option<Decimal>,                      // 10
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 11
+    pub vl_bc_pis: Option<Decimal>,                   // 12
+    pub aliq_pis: Option<Decimal>,                    // 13
+    pub quant_bc_pis: Option<CompactString>,          // 14
+    pub aliq_pis_quant: Option<Decimal>,              // 15
+    pub vl_pis: Option<Decimal>,                      // 16
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 17
+    pub vl_bc_cofins: Option<Decimal>,                // 18
+    pub aliq_cofins: Option<Decimal>,                 // 19
+    pub quant_bc_cofins: Option<CompactString>,       // 20
+    pub aliq_cofins_quant: Option<Decimal>,           // 21
+    pub vl_cofins: Option<Decimal>,                   // 22
+    pub cod_cta: Option<CompactString>,               // 23
 }
 
 impl_reg_methods!(RegistroD350);
@@ -90,13 +90,17 @@ impl SpedParser for RegistroD350 {
         let num_coo_fin = fields.get(8).to_compact_string();
         let gt_fin = fields.get(9).to_compact_string();
         let vl_brt = get_decimal(10, "VL_BRT")?;
-        let cst_pis = fields.get(11).parse_opt();
+        let cst_pis = fields
+            .get(11)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let vl_bc_pis = get_decimal(12, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(13, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(14).to_compact_string();
         let aliq_pis_quant = get_decimal(15, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(16, "VL_PIS")?;
-        let cst_cofins = fields.get(17).parse_opt();
+        let cst_cofins = fields
+            .get(17)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_bc_cofins = get_decimal(18, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(19, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(20).to_compact_string();

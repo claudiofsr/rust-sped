@@ -1,6 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, ToNaiveDate,
-    impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    ToNaiveDate, impl_reg_methods,
 };
 use chrono::NaiveDate;
 use compact_str::CompactString;
@@ -23,24 +23,24 @@ pub struct RegistroD300 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cod_mod: Option<CompactString>,     // 2
-    pub ser: Option<CompactString>,         // 3
-    pub sub: Option<CompactString>,         // 4
-    pub num_doc_ini: Option<CompactString>, // 5
-    pub num_doc_fin: Option<CompactString>, // 6
-    pub cfop: Option<u16>,                  // 7
-    pub dt_ref: Option<NaiveDate>,          // 8
-    pub vl_doc: Option<Decimal>,            // 9
-    pub vl_desc: Option<Decimal>,           // 10
-    pub cst_pis: Option<u16>,               // 11
-    pub vl_bc_pis: Option<Decimal>,         // 12
-    pub aliq_pis: Option<Decimal>,          // 13
-    pub vl_pis: Option<Decimal>,            // 14
-    pub cst_cofins: Option<u16>,            // 15
-    pub vl_bc_cofins: Option<Decimal>,      // 16
-    pub aliq_cofins: Option<Decimal>,       // 17
-    pub vl_cofins: Option<Decimal>,         // 18
-    pub cod_cta: Option<CompactString>,     // 19
+    pub cod_mod: Option<CompactString>,               // 2
+    pub ser: Option<CompactString>,                   // 3
+    pub sub: Option<CompactString>,                   // 4
+    pub num_doc_ini: Option<CompactString>,           // 5
+    pub num_doc_fin: Option<CompactString>,           // 6
+    pub cfop: Option<u16>,                            // 7
+    pub dt_ref: Option<NaiveDate>,                    // 8
+    pub vl_doc: Option<Decimal>,                      // 9
+    pub vl_desc: Option<Decimal>,                     // 10
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 11
+    pub vl_bc_pis: Option<Decimal>,                   // 12
+    pub aliq_pis: Option<Decimal>,                    // 13
+    pub vl_pis: Option<Decimal>,                      // 14
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 15
+    pub vl_bc_cofins: Option<Decimal>,                // 16
+    pub aliq_cofins: Option<Decimal>,                 // 17
+    pub vl_cofins: Option<Decimal>,                   // 18
+    pub cod_cta: Option<CompactString>,               // 19
 }
 
 impl_reg_methods!(RegistroD300);
@@ -86,11 +86,15 @@ impl SpedParser for RegistroD300 {
         let dt_ref = get_date(8, "DT_REF")?;
         let vl_doc = get_decimal(9, "VL_DOC")?;
         let vl_desc = get_decimal(10, "VL_DESC")?;
-        let cst_pis = fields.get(11).parse_opt();
+        let cst_pis = fields
+            .get(11)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let vl_bc_pis = get_decimal(12, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(13, "ALIQ_PIS")?;
         let vl_pis = get_decimal(14, "VL_PIS")?;
-        let cst_cofins = fields.get(15).parse_opt();
+        let cst_cofins = fields
+            .get(15)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_bc_cofins = get_decimal(16, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(17, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(18, "VL_COFINS")?;

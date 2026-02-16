@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -23,42 +24,42 @@ pub struct RegistroC170 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_item: Option<u16>,                  // 2
-    pub cod_item: Option<CompactString>,        // 3
-    pub descr_compl: Option<CompactString>,     // 4
-    pub qtd: Option<Decimal>,                   // 5
-    pub unid: Option<CompactString>,            // 6
-    pub vl_item: Option<Decimal>,               // 7
-    pub vl_desc: Option<Decimal>,               // 8
-    pub ind_mov: Option<char>,                  // 9
-    pub cst_icms: Option<u16>,                  // 10
-    pub cfop: Option<u16>,                      // 11
-    pub cod_nat: Option<CompactString>,         // 12
-    pub vl_bc_icms: Option<Decimal>,            // 13
-    pub aliq_icms: Option<Decimal>,             // 14
-    pub vl_icms: Option<Decimal>,               // 15
-    pub vl_bc_icms_st: Option<Decimal>,         // 16
-    pub aliq_st: Option<Decimal>,               // 17
-    pub vl_icms_st: Option<Decimal>,            // 18
-    pub ind_apur: Option<CompactString>,        // 19
-    pub cst_ipi: Option<u16>,                   // 20
-    pub cod_enq: Option<CompactString>,         // 21
-    pub vl_bc_ipi: Option<Decimal>,             // 22
-    pub aliq_ipi: Option<Decimal>,              // 23
-    pub vl_ipi: Option<Decimal>,                // 24
-    pub cst_pis: Option<u16>,                   // 25
-    pub vl_bc_pis: Option<Decimal>,             // 26
-    pub aliq_pis: Option<Decimal>,              // 27
-    pub quant_bc_pis: Option<CompactString>,    // 28
-    pub aliq_pis_quant: Option<Decimal>,        // 29
-    pub vl_pis: Option<Decimal>,                // 30
-    pub cst_cofins: Option<u16>,                // 31
-    pub vl_bc_cofins: Option<Decimal>,          // 32
-    pub aliq_cofins: Option<Decimal>,           // 33
-    pub quant_bc_cofins: Option<CompactString>, // 34
-    pub aliq_cofins_quant: Option<Decimal>,     // 35
-    pub vl_cofins: Option<Decimal>,             // 36
-    pub cod_cta: Option<CompactString>,         // 37
+    pub num_item: Option<u16>,                        // 2
+    pub cod_item: Option<CompactString>,              // 3
+    pub descr_compl: Option<CompactString>,           // 4
+    pub qtd: Option<Decimal>,                         // 5
+    pub unid: Option<CompactString>,                  // 6
+    pub vl_item: Option<Decimal>,                     // 7
+    pub vl_desc: Option<Decimal>,                     // 8
+    pub ind_mov: Option<char>,                        // 9
+    pub cst_icms: Option<u16>,                        // 10
+    pub cfop: Option<u16>,                            // 11
+    pub cod_nat: Option<CompactString>,               // 12
+    pub vl_bc_icms: Option<Decimal>,                  // 13
+    pub aliq_icms: Option<Decimal>,                   // 14
+    pub vl_icms: Option<Decimal>,                     // 15
+    pub vl_bc_icms_st: Option<Decimal>,               // 16
+    pub aliq_st: Option<Decimal>,                     // 17
+    pub vl_icms_st: Option<Decimal>,                  // 18
+    pub ind_apur: Option<CompactString>,              // 19
+    pub cst_ipi: Option<u16>,                         // 20
+    pub cod_enq: Option<CompactString>,               // 21
+    pub vl_bc_ipi: Option<Decimal>,                   // 22
+    pub aliq_ipi: Option<Decimal>,                    // 23
+    pub vl_ipi: Option<Decimal>,                      // 24
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 25
+    pub vl_bc_pis: Option<Decimal>,                   // 26
+    pub aliq_pis: Option<Decimal>,                    // 27
+    pub quant_bc_pis: Option<CompactString>,          // 28
+    pub aliq_pis_quant: Option<Decimal>,              // 29
+    pub vl_pis: Option<Decimal>,                      // 30
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 31
+    pub vl_bc_cofins: Option<Decimal>,                // 32
+    pub aliq_cofins: Option<Decimal>,                 // 33
+    pub quant_bc_cofins: Option<CompactString>,       // 34
+    pub aliq_cofins_quant: Option<Decimal>,           // 35
+    pub vl_cofins: Option<Decimal>,                   // 36
+    pub cod_cta: Option<CompactString>,               // 37
 }
 
 impl_reg_methods!(RegistroC170);
@@ -113,13 +114,19 @@ impl SpedParser for RegistroC170 {
         let vl_bc_ipi = get_decimal(22, "VL_BC_IPI")?;
         let aliq_ipi = get_decimal(23, "ALIQ_IPI")?;
         let vl_ipi = get_decimal(24, "VL_IPI")?;
-        let cst_pis = fields.get(25).parse_opt();
+        let cst_pis = fields
+            .get(25)
+            //.parse_opt();
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let vl_bc_pis = get_decimal(26, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(27, "ALIQ_PIS")?;
         let quant_bc_pis = fields.get(28).to_compact_string(); // Pode ser String ou Decimal
         let aliq_pis_quant = get_decimal(29, "ALIQ_PIS_QUANT")?;
         let vl_pis = get_decimal(30, "VL_PIS")?;
-        let cst_cofins = fields.get(31).parse_opt();
+        let cst_cofins = fields
+            .get(31)
+            //.parse_opt();
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_bc_cofins = get_decimal(32, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(33, "ALIQ_COFINS")?;
         let quant_bc_cofins = fields.get(34).to_compact_string(); // Pode ser String ou Decimal

@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,23 +22,23 @@ pub struct RegistroA170 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub num_item: Option<u16>,                // 2
-    pub cod_item: Option<CompactString>,      // 3
-    pub descr_compl: Option<CompactString>,   // 4
-    pub vl_item: Option<Decimal>,             // 5
-    pub vl_desc: Option<Decimal>,             // 6
-    pub nat_bc_cred: Option<u16>,             // 7
-    pub ind_orig_cred: Option<CompactString>, // 8
-    pub cst_pis: Option<u16>,                 // 9
-    pub vl_bc_pis: Option<Decimal>,           // 10
-    pub aliq_pis: Option<Decimal>,            // 11
-    pub vl_pis: Option<Decimal>,              // 12
-    pub cst_cofins: Option<u16>,              // 13
-    pub vl_bc_cofins: Option<Decimal>,        // 14
-    pub aliq_cofins: Option<Decimal>,         // 15
-    pub vl_cofins: Option<Decimal>,           // 16
-    pub cod_cta: Option<CompactString>,       // 17
-    pub cod_ccus: Option<CompactString>,      // 18
+    pub num_item: Option<u16>,                        // 2
+    pub cod_item: Option<CompactString>,              // 3
+    pub descr_compl: Option<CompactString>,           // 4
+    pub vl_item: Option<Decimal>,                     // 5
+    pub vl_desc: Option<Decimal>,                     // 6
+    pub nat_bc_cred: Option<u16>,                     // 7
+    pub ind_orig_cred: Option<CompactString>,         // 8
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 9
+    pub vl_bc_pis: Option<Decimal>,                   // 10
+    pub aliq_pis: Option<Decimal>,                    // 11
+    pub vl_pis: Option<Decimal>,                      // 12
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 13
+    pub vl_bc_cofins: Option<Decimal>,                // 14
+    pub aliq_cofins: Option<Decimal>,                 // 15
+    pub vl_cofins: Option<Decimal>,                   // 16
+    pub cod_cta: Option<CompactString>,               // 17
+    pub cod_ccus: Option<CompactString>,              // 18
 }
 
 impl_reg_methods!(RegistroA170);
@@ -76,11 +77,17 @@ impl SpedParser for RegistroA170 {
         let vl_desc = get_decimal(6, "VL_DESC")?;
         let nat_bc_cred = fields.get(7).parse_opt();
         let ind_orig_cred = fields.get(8).to_compact_string();
-        let cst_pis = fields.get(9).parse_opt();
+        let cst_pis = fields
+            .get(9)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
+
         let vl_bc_pis = get_decimal(10, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(11, "ALIQ_PIS")?;
         let vl_pis = get_decimal(12, "VL_PIS")?;
-        let cst_cofins = fields.get(13).parse_opt();
+        let cst_cofins = fields
+            .get(13)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
+
         let vl_bc_cofins = get_decimal(14, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(15, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(16, "VL_COFINS")?;

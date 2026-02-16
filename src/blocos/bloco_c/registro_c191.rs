@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -21,17 +22,17 @@ pub struct RegistroC191 {
     /// Número da linha do arquivo Sped EFD Contribuições
     pub line_number: usize,
 
-    pub cnpj_cpf_part: Option<CompactString>, // 2
-    pub cst_pis: Option<u16>,                 // 3
-    pub cfop: Option<u16>,                    // 4
-    pub vl_item: Option<Decimal>,             // 5
-    pub vl_desc: Option<Decimal>,             // 6
-    pub vl_bc_pis: Option<Decimal>,           // 7
-    pub aliq_pis: Option<Decimal>,            // 8
-    pub quant_bc_pis: Option<CompactString>,  // 9
-    pub aliq_pis_quant: Option<Decimal>,      // 10
-    pub vl_pis: Option<Decimal>,              // 11
-    pub cod_cta: Option<CompactString>,       // 12
+    pub cnpj_cpf_part: Option<CompactString>,      // 2
+    pub cst_pis: Option<CodigoSituacaoTributaria>, // 3
+    pub cfop: Option<u16>,                         // 4
+    pub vl_item: Option<Decimal>,                  // 5
+    pub vl_desc: Option<Decimal>,                  // 6
+    pub vl_bc_pis: Option<Decimal>,                // 7
+    pub aliq_pis: Option<Decimal>,                 // 8
+    pub quant_bc_pis: Option<CompactString>,       // 9
+    pub aliq_pis_quant: Option<Decimal>,           // 10
+    pub vl_pis: Option<Decimal>,                   // 11
+    pub cod_cta: Option<CompactString>,            // 12
 }
 
 impl_reg_methods!(RegistroC191);
@@ -61,7 +62,9 @@ impl SpedParser for RegistroC191 {
         };
 
         let cnpj_cpf_part = fields.get(2).to_compact_string();
-        let cst_pis = fields.get(3).parse_opt();
+        let cst_pis = fields
+            .get(3)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let cfop = fields.get(4).parse_opt();
         let vl_item = get_decimal(5, "VL_ITEM")?;
         let vl_desc = get_decimal(6, "VL_DESC")?;

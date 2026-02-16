@@ -169,10 +169,10 @@ pub trait RegistroFilho: SpedRecordTrait {
     }
 
     // Classificação Fiscal
-    fn get_cst_pis(&self) -> Option<u16> {
+    fn get_cst_pis(&self) -> Option<CodigoSituacaoTributaria> {
         None
     }
-    fn get_cst_cofins(&self) -> Option<u16> {
+    fn get_cst_cofins(&self) -> Option<CodigoSituacaoTributaria> {
         None
     }
     fn get_cfop(&self) -> Option<u16> {
@@ -624,7 +624,7 @@ pub struct CorrelationValue {
 /// O Decimal é normalizado para garantir consistência (10.00 == 10.0).
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct CorrelationKey {
-    pub cst: Option<u16>,
+    pub cst: Option<CodigoSituacaoTributaria>,
     pub vl_item: Decimal,
 }
 
@@ -632,7 +632,7 @@ impl CorrelationKey {
     /// Construtor que garante a normalização dos dados.
     /// CST é dado opcional podendo ser None!
     /// Valor do Item é dado obrigatório!
-    pub fn new(cst: Option<u16>, vl_item: Option<Decimal>) -> Option<Self> {
+    pub fn new(cst: Option<CodigoSituacaoTributaria>, vl_item: Option<Decimal>) -> Option<Self> {
         let mut val = vl_item?;
 
         // CRUCIAL: Normaliza o decimal (remove zeros à direita) para garantir hash único
@@ -759,7 +759,7 @@ impl CorrelationManager {
     /// 4. Retorna a regra com o MAIOR score.
     pub fn resolve(
         &mut self,
-        cst: Option<u16>,
+        cst: Option<CodigoSituacaoTributaria>,
         vl_item: Option<Decimal>,
         ctx: CorrelationCriteria,
         aliq_cofins: Option<Decimal>,
@@ -1080,11 +1080,7 @@ impl<'a> DocsBuilder<'a> {
     {
         // 1. Identificadores e Classificação
         self.doc.num_item = filho.get_num_item();
-
-        //self.doc.cst = filho.get_cst_cofins();
-        self.doc.cst = filho
-            .get_cst_cofins()
-            .and_then(CodigoSituacaoTributaria::from_u16);
+        self.doc.cst = filho.get_cst_cofins();
 
         self.doc.natureza_bc = filho
             .get_nat_bc_cred()
@@ -2096,13 +2092,17 @@ const PESO_VL_BC: u8 = 2;
 #[derive(Debug, Clone, Copy)]
 pub struct CreditCriteria {
     pub nat_bc: Option<u16>,
-    pub cst: Option<u16>,
+    pub cst: Option<CodigoSituacaoTributaria>,
     pub vl_bc: Option<Decimal>,
 }
 
 impl CreditCriteria {
     /// Construtor único: garante que o Decimal esteja normalizado desde o nascimento.
-    pub fn new(nat_bc: Option<u16>, cst: Option<u16>, vl_bc: Option<Decimal>) -> Self {
+    pub fn new(
+        nat_bc: Option<u16>,
+        cst: Option<CodigoSituacaoTributaria>,
+        vl_bc: Option<Decimal>,
+    ) -> Self {
         Self {
             nat_bc,
             cst,
@@ -2289,7 +2289,7 @@ impl CreditCorrelationManager {
             let cst = entry
                 .criteria
                 .cst
-                .map_or("??".into(), |v| format!("{:02}", v));
+                .map_or("??".into(), |v| format!("{:02}", v.code()));
             let valor = entry
                 .criteria
                 .vl_bc

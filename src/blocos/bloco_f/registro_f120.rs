@@ -1,5 +1,6 @@
 use crate::{
-    EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal, impl_reg_methods,
+    CodigoSituacaoTributaria, EFDError, EFDResult, ResultExt, SpedParser, StringParser, ToDecimal,
+    impl_reg_methods,
 };
 use compact_str::CompactString;
 use rust_decimal::Decimal;
@@ -27,11 +28,11 @@ pub struct RegistroF120 {
     pub ind_util_bem_imob: Option<CompactString>,     // 5
     pub vl_oper_dep: Option<Decimal>,                 // 6
     pub parc_oper_nao_bc_cred: Option<CompactString>, // 7 (Assumindo String, pode ser Decimal)
-    pub cst_pis: Option<u16>,                         // 8
+    pub cst_pis: Option<CodigoSituacaoTributaria>,    // 8
     pub vl_bc_pis: Option<Decimal>,                   // 9
     pub aliq_pis: Option<Decimal>,                    // 10
     pub vl_pis: Option<Decimal>,                      // 11
-    pub cst_cofins: Option<u16>,                      // 12
+    pub cst_cofins: Option<CodigoSituacaoTributaria>, // 12
     pub vl_bc_cofins: Option<Decimal>,                // 13
     pub aliq_cofins: Option<Decimal>,                 // 14
     pub vl_cofins: Option<Decimal>,                   // 15
@@ -72,11 +73,15 @@ impl SpedParser for RegistroF120 {
         let ind_util_bem_imob = fields.get(5).to_compact_string();
         let vl_oper_dep = get_decimal(6, "VL_OPER_DEP")?;
         let parc_oper_nao_bc_cred = fields.get(7).to_compact_string();
-        let cst_pis = fields.get(8).parse_opt();
+        let cst_pis = fields
+            .get(8)
+            .to_efd_field(file_path, line_number, "CST_PIS")?;
         let vl_bc_pis = get_decimal(9, "VL_BC_PIS")?;
         let aliq_pis = get_decimal(10, "ALIQ_PIS")?;
         let vl_pis = get_decimal(11, "VL_PIS")?;
-        let cst_cofins = fields.get(12).parse_opt();
+        let cst_cofins = fields
+            .get(12)
+            .to_efd_field(file_path, line_number, "CST_COFINS")?;
         let vl_bc_cofins = get_decimal(13, "VL_BC_COFINS")?;
         let aliq_cofins = get_decimal(14, "ALIQ_COFINS")?;
         let vl_cofins = get_decimal(15, "VL_COFINS")?;
