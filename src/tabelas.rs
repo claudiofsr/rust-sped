@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt,
-    path::Path,
     str::FromStr,
     sync::LazyLock,
 };
@@ -411,40 +410,6 @@ pub struct CodigoDoCredito {
 }
 
 impl CodigoDoCredito {
-    /// Tenta criar um CodigoDoCredito a partir de um u16 bruto.
-    ///
-    /// Valida se a centena corresponde a um TipoDeRateio válido
-    /// e se as dezenas/unidades correspondem a um TipoDeCredito válido.
-    pub fn new(val: u16, arquivo: &Path, linha_num: usize, campo_nome: &str) -> EFDResult<Self> {
-        let x = val / 100;
-        let yy = val % 100;
-
-        // Se from_u16 retornar None, geramos o erro rico imediatamente
-        let rateio = TipoDeRateio::from_u16(x).map_loc(|_| EFDError::InvalidField {
-            arquivo: arquivo.to_path_buf(),
-            linha_num,
-            campo: campo_nome.to_string(),
-            valor: val.to_string(),
-            detalhe: Some(format!(
-                "Dígito da centena (Rateio) '{}' inválido (esperado 1-4)",
-                x
-            )),
-        })?;
-
-        let credito = TipoDeCredito::from_u16(yy).map_loc(|_| EFDError::InvalidField {
-            arquivo: arquivo.to_path_buf(),
-            linha_num,
-            campo: campo_nome.to_string(),
-            valor: val.to_string(),
-            detalhe: Some(format!(
-                "2 Dígitos finais (Tipo de Crédito) '{:02}' inválidos",
-                yy
-            )),
-        })?;
-
-        Ok(Self { rateio, credito })
-    }
-
     /// Converte o código de volta para a representação numérica XYY.
     pub const fn to_u16(&self) -> u16 {
         (self.rateio as u16 * 100) + (self.credito as u16)
@@ -453,6 +418,33 @@ impl CodigoDoCredito {
     /// Verifica se o código refere-se a uma operação de Importação (YY = 08).
     pub fn eh_importacao(&self) -> bool {
         matches!(self.credito, TipoDeCredito::Importacao)
+    }
+}
+
+impl FromStr for CodigoDoCredito {
+    type Err = EFDError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // 1. Parsing numérico inicial
+        let val = s
+            .trim()
+            .parse::<u16>()
+            .map_err(|e| EFDError::ParseIntError(e, s.to_string()))?;
+
+        // 2. Extração dos componentes (X e YY)
+        let x = val / 100;
+        let yy = val % 100;
+
+        // 3. Validação dos Enums componentes
+        let rateio = TipoDeRateio::from_u16(x).ok_or_else(|| {
+            EFDError::KeyNotFound(format!("Dígito de Rateio (centena) '{}' inválido", x))
+        })?;
+
+        let credito = TipoDeCredito::from_u16(yy).ok_or_else(|| {
+            EFDError::KeyNotFound(format!("Dígito de Tipo de Crédito '{:02}' inválido", yy))
+        })?;
+
+        Ok(Self { rateio, credito })
     }
 }
 
@@ -508,24 +500,6 @@ pub enum TipoDoItem {
 }
 
 impl TipoDoItem {
-    /// Tenta criar um CodigoDoCredito a partir de um u16 bruto.
-    ///
-    /// Valida se a centena corresponde a um TipoDeRateio válido
-    /// e se as dezenas/unidades correspondem a um TipoDeCredito válido.
-    pub fn new(cod: u8, arquivo: &Path, linha_num: usize, campo_nome: &str) -> EFDResult<Self> {
-        // Se from_u8 retornar None, geramos o erro rico imediatamente
-        TipoDoItem::from_u8(cod).map_loc(|_| EFDError::InvalidField {
-            arquivo: arquivo.to_path_buf(),
-            linha_num,
-            campo: campo_nome.to_string(),
-            valor: cod.to_string(),
-            detalhe: Some(format!(
-                "Código do Grupo de Contas '{}' inválido (esperado 1-9)",
-                cod
-            )),
-        })
-    }
-
     /// Converte u8 para o TipoDoItem de forma segura.
     pub const fn from_u8(cod: u8) -> Option<Self> {
         match cod {
@@ -551,6 +525,28 @@ impl TipoDoItem {
         // O cast (*self as u8) funciona por causa do #[repr(u8)]
         // O uso de 'self' na string funciona por causa do impl Display
         format!("{:02} - {}", *self as u8, self)
+    }
+}
+
+impl FromStr for TipoDoItem {
+    type Err = EFDError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "0" | "00" => Ok(Self::MercadoriaParaRevenda),
+            "1" | "01" => Ok(Self::MateriaPrima),
+            "2" | "02" => Ok(Self::Embalagem),
+            "3" | "03" => Ok(Self::ProdutoEmProcesso),
+            "4" | "04" => Ok(Self::ProdutoAcabado),
+            "5" | "05" => Ok(Self::Subproduto),
+            "6" | "06" => Ok(Self::ProdutoIntermediario),
+            "7" | "07" => Ok(Self::MaterialDeUsoEConsumo),
+            "8" | "08" => Ok(Self::AtivoImobilizado),
+            "9" | "09" => Ok(Self::Servicos),
+            "10" => Ok(Self::OutrosInsumos),
+            "99" => Ok(Self::Outras),
+            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(),
+        }
     }
 }
 
@@ -588,7 +584,7 @@ pub enum GrupoDeContas {
 }
 
 impl FromStr for GrupoDeContas {
-    type Err = String;
+    type Err = EFDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // .trim() remove espaços em branco (ex: " 01 ")
@@ -599,30 +595,12 @@ impl FromStr for GrupoDeContas {
             "04" | "4" => Ok(Self::ContasDeResultado),
             "05" | "5" => Ok(Self::ContasDeCompensacao),
             "09" | "9" => Ok(Self::Outras),
-            _ => Err(format!("Código de Grupo de Contas inválido: {}", s)),
+            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(),
         }
     }
 }
 
 impl GrupoDeContas {
-    /// Tenta criar um CodigoDoCredito a partir de um u16 bruto.
-    ///
-    /// Valida se a centena corresponde a um TipoDeRateio válido
-    /// e se as dezenas/unidades correspondem a um TipoDeCredito válido.
-    pub fn new(cod: u8, arquivo: &Path, linha_num: usize, campo_nome: &str) -> EFDResult<Self> {
-        // Se from_u8 retornar None, geramos o erro rico imediatamente
-        GrupoDeContas::from_u8(cod).map_loc(|_| EFDError::InvalidField {
-            arquivo: arquivo.to_path_buf(),
-            linha_num,
-            campo: campo_nome.to_string(),
-            valor: cod.to_string(),
-            detalhe: Some(format!(
-                "Código do Grupo de Contas '{}' inválido (esperado 1-9)",
-                cod
-            )),
-        })
-    }
-
     /// Converte u8 para o GrupoDeContas de forma segura.
     pub const fn from_u8(cod: u8) -> Option<Self> {
         match cod {
@@ -883,7 +861,7 @@ impl ModeloDocFiscal {
 }
 
 impl FromStr for ModeloDocFiscal {
-    type Err = String;
+    type Err = EFDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
@@ -925,10 +903,7 @@ impl FromStr for ModeloDocFiscal {
             "65" => Ok(Self::NFCe),
             "66" => Ok(Self::NF3e),
             "67" => Ok(Self::CTeOS),
-            _ => Err(format!(
-                "Código de Modelo de Documento Fiscal inválido: {}",
-                s
-            )),
+            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(),
         }
     }
 }
@@ -1342,15 +1317,64 @@ impl FromStr for NaturezaBaseCalculo {
     type Err = EFDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // 1. Converte e localiza o erro de parsing
-        let val = s
-            .trim()
-            .parse::<u16>()
-            .map_loc(|e| EFDError::ParseIntError(e, s.to_string()))?;
+        match s.trim() {
+            // 01 a 18: Operações Geradoras de Crédito (comum vir com ou sem zero à esquerda)
+            "1" | "01" => Ok(Self::AquisicaoBensRevenda),
+            "2" | "02" => Ok(Self::AquisicaoBensInsumo),
+            "3" | "03" => Ok(Self::AquisicaoServicosInsumo),
+            "4" | "04" => Ok(Self::EnergiaEletricaTermica),
+            "5" | "05" => Ok(Self::AlugueisPredios),
+            "6" | "06" => Ok(Self::AlugueisMaquinasEquipamentos),
+            "7" | "07" => Ok(Self::ArmazenagemFreteVenda),
+            "8" | "08" => Ok(Self::ArrendamentoMercantil),
+            "9" | "09" => Ok(Self::MaquinasEquipamentosDepreciacao),
+            "10" => Ok(Self::MaquinasEquipamentosAquisicao),
+            "11" => Ok(Self::AmortizacaoDepreciacaoEdificacoes),
+            "12" => Ok(Self::DevolucaoVendasNaoCumulativa),
+            "13" => Ok(Self::OutrasOperacoesComDireitoCredito),
+            "14" => Ok(Self::TransporteCargasSubcontratacao),
+            "15" => Ok(Self::AtividadeImobiliariaCustoIncorrido),
+            "16" => Ok(Self::AtividadeImobiliariaCustoOrcado),
+            "17" => Ok(Self::ServicosLimpezaConservacao),
+            "18" => Ok(Self::EstoqueAberturaBens),
 
-        // 2. Converte u16 para o Enum
-        Self::from_u16(val)
-            .map_loc(|_| EFDError::KeyNotFound(format!("Natureza da BC não encontrada: {val}")))
+            // Ajustes
+            "31" => Ok(Self::AjusteAcrescimoPis),
+            "35" => Ok(Self::AjusteAcrescimoCofins),
+            "41" => Ok(Self::AjusteReducaoPis),
+            "45" => Ok(Self::AjusteReducaoCofins),
+
+            // Descontos
+            "51" => Ok(Self::DescontoProprioPeriodoPis),
+            "55" => Ok(Self::DescontoProprioPeriodoCofins),
+            "61" => Ok(Self::DescontoPeriodoPosteriorPis),
+            "65" => Ok(Self::DescontoPeriodoPosteriorCofins),
+
+            // Somatórios e Agrupadores (101 a 199)
+            "101" => Ok(Self::BaseSomaAliquotaBasica),
+            "102" => Ok(Self::BaseSomaAliquotasDiferenciadas),
+            "103" => Ok(Self::BaseSomaAliquotaUnidade),
+            "104" => Ok(Self::BaseSomaEstoqueAbertura),
+            "105" => Ok(Self::BaseSomaAquisicaoEmbalagens),
+            "106" => Ok(Self::BaseSomaPresumidoAgroindustria),
+            "107" => Ok(Self::BaseSomaOutrosCreditosPresumidos),
+            "108" => Ok(Self::BaseSomaImportacao),
+            "109" => Ok(Self::BaseSomaAtividadeImobiliaria),
+            "199" => Ok(Self::BaseSomaOutros),
+
+            // Créditos e Saldos (201 a 305)
+            "201" => Ok(Self::CreditoApuradoPis),
+            "205" => Ok(Self::CreditoApuradoCofins),
+            "211" => Ok(Self::CreditoAposAjustesPis),
+            "215" => Ok(Self::CreditoAposAjustesCofins),
+            "221" => Ok(Self::CreditoAposDescontosPis),
+            "225" => Ok(Self::CreditoAposDescontosCofins),
+            "300" => Ok(Self::BaseSomaValorTotal),
+            "301" => Ok(Self::SaldoDisponivelPis),
+            "305" => Ok(Self::SaldoDisponivelCofins),
+
+            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(),
+        }
     }
 }
 
@@ -1756,6 +1780,60 @@ impl CodigoSituacaoTributaria {
         // *self as u16 obtém o valor numérico (1, 50, 99...)
         // self (Display) obtém a descrição do #[serde(rename)]
         format!("{:02} - {}", self.code(), self)
+    }
+}
+
+impl FromStr for CodigoSituacaoTributaria {
+    type Err = EFDError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            // --- Saídas (01-49) ---
+            "1" | "01" => Ok(Self::OperTribAliqBasica),
+            "2" | "02" => Ok(Self::OperTribAliqDif),
+            "3" | "03" => Ok(Self::OperTribAliqUnidade),
+            "4" | "04" => Ok(Self::OperTribMonofasicaRevendaAliqZero),
+            "5" | "05" => Ok(Self::OperTribST),
+            "6" | "06" => Ok(Self::OperTribAliqZero),
+            "7" | "07" => Ok(Self::OperIsenta),
+            "8" | "08" => Ok(Self::OperSemIncidencia),
+            "9" | "09" => Ok(Self::OperSuspensao),
+            "49" => Ok(Self::OutrasOperSaida),
+
+            // --- Entradas com Direito a Crédito (50-56) ---
+            "50" => Ok(Self::CredVincExclRecTribMI),
+            "51" => Ok(Self::CredVincExclRecNTribMI),
+            "52" => Ok(Self::CredVincExclRecExp),
+            "53" => Ok(Self::CredVincRecTribENTribMI),
+            "54" => Ok(Self::CredVincRecTribMIExp),
+            "55" => Ok(Self::CredVincRecNTribMIExp),
+            "56" => Ok(Self::CredVincRecTribENTribMIExp),
+
+            // --- Crédito Presumido (60-67) ---
+            "60" => Ok(Self::CredPresAqExclRecTribMI),
+            "61" => Ok(Self::CredPresAqExclRecNTribMI),
+            "62" => Ok(Self::CredPresAqExclRecExp),
+            "63" => Ok(Self::CredPresAqRecTribENTribMI),
+            "64" => Ok(Self::CredPresAqRecTribMIExp),
+            "65" => Ok(Self::CredPresAqRecNTribMIExp),
+            "66" => Ok(Self::CredPresAqRecTribENTribMIExp),
+            "67" => Ok(Self::CredPresOutrasOper),
+
+            // --- Entradas sem Direito a Crédito (70-75) ---
+            "70" => Ok(Self::AqSemCred),
+            "71" => Ok(Self::AqIsencao),
+            "72" => Ok(Self::AqSuspensao),
+            "73" => Ok(Self::AqAliqZero),
+            "74" => Ok(Self::AqSemIncidencia),
+            "75" => Ok(Self::AqSubstiTrib),
+
+            // --- Outros (98-99) ---
+            "98" => Ok(Self::OutrasOperEntrada),
+            "99" => Ok(Self::OutrasOper),
+
+            // Qualquer outro valor (incluindo fictícios 490-980) é rejeitado
+            _ => Err(EFDError::KeyNotFound(s.to_string())).loc(),
+        }
     }
 }
 

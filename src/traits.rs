@@ -15,7 +15,8 @@ use rust_decimal::Decimal;
 
 use crate::{
     AnaliseDosCreditos, CodigoDoCredito, CodigoSituacaoTributaria, ConsolidacaoCST, EFDError,
-    EFDResult, GrupoDeContas, MesesDoAno, PRECISAO_FLOAT, SMALL_VALUE, TipoDoItem,
+    EFDResult, GrupoDeContas, IndicadorDeOrigem, MesesDoAno, ModeloDocFiscal, NaturezaBaseCalculo,
+    PRECISAO_FLOAT, SMALL_VALUE, TipoDoItem,
     structures::{analise_dos_creditos::Chaves, consolidacao_cst::Keys},
 };
 
@@ -595,7 +596,7 @@ where
 
 /// Macro para implementar `FromEFDField` em tipos primitivos inteiros.
 macro_rules! impl_from_efd_field_primitive {
-    ($($t:ty),*) => {
+    ($($t:ty),* $(,)?) => {
         $(
             impl FromEFDField for $t {
                 /// Converte uma string do arquivo EFD para um tipo numérico básico.
@@ -622,28 +623,25 @@ macro_rules! impl_from_efd_field_primitive {
 
 /// Macro para implementar `FromEFDField` em tipos de domínio que possuem
 /// um método construtor `new(val, arquivo, linha, campo)`.
-macro_rules! impl_from_efd_field_domain {
-    ($($target:ty => $raw:ty),*) => {
+macro_rules! bridge_from_str_to_efd {
+    ($($target:ty),* $(,)?) => {
         $(
             impl FromEFDField for $target {
-                /// Converte uma string do arquivo EFD para um tipo de domínio validado.
-                ///
-                /// Realiza o parsing para o tipo numérico intermediário [<$raw>] e
-                /// delega a validação de negócio para o método `Self::new`.
+                /// Bridge automática entre FromStr e FromEFDField.
+                /// Adiciona contexto de localização (arquivo/linha/campo) ao erro original.
                 fn from_efd_field(
                     s: &str,
                     arquivo: &Path,
                     linha: usize,
                     campo: &str,
                 ) -> EFDResult<Self> {
-                    let val = s.parse::<$raw>().map_loc(|e| EFDError::ParseIntegerError {
-                        source: e,
-                        data_str: s.to_string(),
-                        campo_nome: campo.to_string(),
+                    Self::from_str(s).map_loc(|_| EFDError::InvalidField {
                         arquivo: arquivo.to_path_buf(),
-                        line_number: linha,
-                    })?;
-                    Self::new(val, arquivo, linha, campo)
+                        linha_num: linha,
+                        campo: campo.to_string(),
+                        valor: s.to_string(),
+                        detalhe: Some(format!("Valor inválido para o tipo {}", stringify!($t))),
+                    })
                 }
             }
         )*
@@ -657,11 +655,16 @@ macro_rules! impl_from_efd_field_domain {
 // Tipos primitivos: parsing direto
 impl_from_efd_field_primitive!(u8, u16, u32, u64, usize);
 
-// Tipos de domínio: parsing intermediário + validação (new)
-impl_from_efd_field_domain!(
-    GrupoDeContas   => u8,
-    CodigoDoCredito => u16,
-    TipoDoItem      => u8
+// Aplicação para os Enums que possuem FromStr
+bridge_from_str_to_efd!(
+    MesesDoAno,
+    IndicadorDeOrigem,
+    CodigoDoCredito,
+    TipoDoItem,
+    GrupoDeContas,
+    ModeloDocFiscal,
+    NaturezaBaseCalculo,
+    CodigoSituacaoTributaria
 );
 
 // ============================================================================
