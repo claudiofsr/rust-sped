@@ -297,6 +297,7 @@ where
             Ok(())
         })?;
 
+    progressbar.finish();
     auto_fit(&mut worksheet, lines, headers, sheet_type)?;
     Ok(worksheet)
 }
