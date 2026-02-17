@@ -16,7 +16,7 @@ use struct_iterable::Iterable;
 
 use crate::{
     CodigoDoCredito, CodigoSituacaoTributaria, EFDResult, FORMAT_REGEX_SET, IndicadorDeOrigem,
-    NaturezaBaseCalculo, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst,
+    NaturezaBaseCalculo, SheetType, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst,
 };
 
 // --- Macros ---
@@ -155,12 +155,12 @@ impl FormatRegistry {
 // --- Funções Auxiliares de Formatação ---
 
 /// Identifica a chave de formatação baseada no nome da coluna (Regex).
-fn get_format_key(col_name: &str, sheet_name: &str) -> FormatKey {
+fn get_format_key(col_name: &str, sheet_type: SheetType) -> FormatKey {
     // 1. Casos específicos com short-circuit (mais rápidos que Regex)
     if col_name.starts_with("Código de Situação Tributária")
         || col_name.starts_with("Tipo de Crédito")
     {
-        return if sheet_name.contains("Itens") {
+        return if sheet_type.is_itens() {
             FormatKey::Default
         } else {
             FormatKey::Center
@@ -186,11 +186,11 @@ fn get_format_key(col_name: &str, sheet_name: &str) -> FormatKey {
 
 // --- Lógica Principal ---
 
-/// Gera uma ou mais Worksheets a partir de uma coleção de dados,
-/// respeitando o limite de linhas do Excel.
+/// Gera uma coleção de Worksheets para um conjunto de dados.
+/// Se os dados excederem o limite do Excel, divide em várias abas numeradas.
 pub fn get_worksheets<'de, T>(
     lines: &[T],
-    sheet_name: &str,
+    sheet_type: SheetType,
     multiprogressbar: &MultiProgress,
     index: usize,
 ) -> EFDResult<Vec<Worksheet>>
@@ -203,7 +203,7 @@ where
 
     let pb = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
     pb.set_style(get_style(0, 0, 35)?);
-    pb.set_message(format!("Excel: {sheet_name}"));
+    pb.set_message(format!("Excel: {}", sheet_type.as_str()));
 
     let worksheets = lines
         .chunks(MAX_NUMBER_OF_ROWS)
@@ -211,11 +211,11 @@ where
         .par_bridge() // Rayon: Processa os chunks em paralelo
         .map(|(k, data)| {
             let name = if k == 0 {
-                sheet_name.to_owned()
+                sheet_type.as_str().to_owned()
             } else {
-                format!("{sheet_name} {}", k + 1)
+                format!("{} {}", sheet_type.as_str(), k + 1)
             };
-            get_worksheet(data, &name, &pb)
+            get_worksheet(data, sheet_type, &name, &pb)
         })
         .collect::<EFDResult<Vec<_>>>()?;
 
@@ -226,6 +226,7 @@ where
 /// Constrói uma Worksheet individual, aplicando serialização automática e estilos customizados.
 fn get_worksheet<'de, T>(
     lines: &[T],
+    sheet_type: SheetType,
     sheet_name: &str,
     progressbar: &ProgressBar,
 ) -> EFDResult<Worksheet>
@@ -238,14 +239,14 @@ where
     let num_cols = headers.len();
     let num_lines = lines.len();
 
-    // Otimização: Pre-cache dos grupos de formatação para evitar lookup no loop
+    // Mapeamento prévio dos formatos de coluna para evitar processamento dentro do loop de linhas
     let col_configs: Vec<(u16, &FormatGroup)> = headers
         .par_iter()
         .enumerate()
         .map(|(i, &col_name)| {
             (
                 i as u16,
-                registry.get_group(get_format_key(col_name, sheet_name)),
+                registry.get_group(get_format_key(col_name, sheet_type)),
             )
         })
         .collect();
@@ -263,12 +264,18 @@ where
     // Aplica cabeçalhos e formatos de coluna padrão
     worksheet.deserialize_headers::<T>(0, 0)?;
 
+    // Define a frequência de atualização da barra de progresso (ex: a cada 1%)
+    let delta: usize = (num_lines / 100).max(1);
+
+    // Converte usize para u64 de forma segura uma única vez
+    let delta_u64: u64 = delta.try_into()?;
+
     // Processamento funcional das linhas
     lines
         .iter()
         .enumerate()
-        .try_for_each(|(i, line)| -> EFDResult<()> {
-            let row_idx = (i + 1) as u32;
+        .try_for_each(|(idx, line)| -> EFDResult<()> {
+            let row_idx = (idx + 1) as u32;
             let style = line.row_style();
 
             // 1. Serialização base (escreve os dados conforme o #[serde])
@@ -282,15 +289,15 @@ where
                 }
             }
 
-            // Incrementar Progresso
-            if i.is_multiple_of(100) {
-                progressbar.inc(100);
+            // Atualização incremental da barra de progresso
+            if idx.is_multiple_of(delta) {
+                progressbar.inc(delta_u64);
             }
 
             Ok(())
         })?;
 
-    auto_fit(&mut worksheet, lines, headers)?;
+    auto_fit(&mut worksheet, lines, headers, sheet_type)?;
     Ok(worksheet)
 }
 
@@ -325,7 +332,12 @@ fn setup_worksheet_styles(
 }
 
 /// Ajusta a largura das colunas dinamicamente em paralelo usando Rayon.
-fn auto_fit<'de, T>(worksheet: &mut Worksheet, lines: &[T], headers: &[&str]) -> EFDResult<()>
+fn auto_fit<'de, T>(
+    worksheet: &mut Worksheet,
+    lines: &[T],
+    headers: &[&str],
+    sheet_type: SheetType,
+) -> EFDResult<()>
 where
     T: Serialize + Deserialize<'de> + InfoExtension + Iterable + Sync,
 {
@@ -334,12 +346,10 @@ where
         .map(|h| AtomicUsize::new(WIDTH_MIN.max(h.len().div_ceil(5))))
         .collect();
 
-    let sheet_name = worksheet.name();
-
     lines.par_iter().for_each(|line| {
         line.iter().enumerate().for_each(|(i, (_name, val))| {
             if let Some(atomic) = widths.get(i) {
-                atomic.fetch_max(calculate_value_len(&sheet_name, val), Ordering::Relaxed);
+                atomic.fetch_max(calculate_value_len(sheet_type, val), Ordering::Relaxed);
             }
         });
     });
@@ -358,12 +368,12 @@ fn decimal_len(d: &Decimal) -> usize {
 }
 
 /// Calcula o comprimento visual de qualquer valor suportado para ajuste automático de coluna.
-fn calculate_value_len(sheet_name: &str, field_value: &dyn std::any::Any) -> usize {
+fn calculate_value_len(sheet_type: SheetType, field_value: &dyn std::any::Any) -> usize {
     let len = match_cast!(field_value {
         // Tratamento do CST
         val as Option<CodigoSituacaoTributaria> => {
             val.as_ref().map_or(2, |cst| {
-                if sheet_name.contains("Itens") {
+                if sheet_type.is_itens() {
                     // Planilha Detalhada: "01 - Operação Tributável..."
                     // Multiplicamos por 110% porque fontes proporcionais (Calibri)
                     // são levemente mais largas que a contagem de caracteres monoespaçados.

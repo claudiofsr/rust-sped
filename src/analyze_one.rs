@@ -131,7 +131,10 @@ pub fn read_and_parse_file(
     let (progressbar, number_of_lines) = initialize_progressbar(multiprogressbar, index, path)?;
 
     // Define a frequência de atualização da barra de progresso (ex: a cada 1%)
-    let delta = (number_of_lines / 100).max(1);
+    let delta: u64 = (number_of_lines / 100).max(1);
+
+    // Converte u64 para usize de forma segura uma única vez
+    let delta_usize: usize = delta.try_into()?;
 
     // 1. ITERADOR SEQUENCIAL INICIAL
     let mut lines_iter = BufReader::with_capacity(BUFFER_CAPACITY, file)
@@ -202,7 +205,7 @@ pub fn read_and_parse_file(
                 }
 
                 // Incrementar ProgressoBar
-                if line_number.is_multiple_of(delta as usize) {
+                if line_number.is_multiple_of(delta_usize) {
                     progressbar.inc(delta);
                 }
 
