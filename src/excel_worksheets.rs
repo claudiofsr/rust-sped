@@ -44,7 +44,6 @@ const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
 const WIDTH_MIN: usize = 8;
 const WIDTH_MAX: usize = 100;
 const ADJUSTMENT: f64 = 1.2;
-const MANY_COLS: usize = 40;
 
 // cores: 0xBFBFBF, 0xE6B8B7, 0xF8CBAD, 0xCCC0DA
 const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
@@ -129,6 +128,7 @@ impl FormatRegistry {
             .set_align(FormatAlign::VerticalCenter)
             .set_font_size(FONT_SIZE);
         let base_l = Format::new()
+            .set_align(FormatAlign::Left)
             .set_align(FormatAlign::VerticalCenter)
             .set_font_size(FONT_SIZE);
 
@@ -155,12 +155,12 @@ impl FormatRegistry {
 // --- Funções Auxiliares de Formatação ---
 
 /// Identifica a chave de formatação baseada no nome da coluna (Regex).
-fn get_format_key(col_name: &str, num_cols: usize) -> FormatKey {
+fn get_format_key(col_name: &str, sheet_name: &str) -> FormatKey {
     // 1. Casos específicos com short-circuit (mais rápidos que Regex)
     if col_name.starts_with("Código de Situação Tributária")
         || col_name.starts_with("Tipo de Crédito")
     {
-        return if num_cols > MANY_COLS {
+        return if sheet_name.contains("Itens") {
             FormatKey::Default
         } else {
             FormatKey::Center
@@ -186,7 +186,8 @@ fn get_format_key(col_name: &str, num_cols: usize) -> FormatKey {
 
 // --- Lógica Principal ---
 
-/// Gera uma ou mais Worksheets a partir de uma coleção de dados, respeitando o limite de linhas do Excel.
+/// Gera uma ou mais Worksheets a partir de uma coleção de dados,
+/// respeitando o limite de linhas do Excel.
 pub fn get_worksheets<'de, T>(
     lines: &[T],
     sheet_name: &str,
@@ -244,7 +245,7 @@ where
         .map(|(i, &col_name)| {
             (
                 i as u16,
-                registry.get_group(get_format_key(col_name, num_cols)),
+                registry.get_group(get_format_key(col_name, sheet_name)),
             )
         })
         .collect();
@@ -333,10 +334,12 @@ where
         .map(|h| AtomicUsize::new(WIDTH_MIN.max(h.len().div_ceil(5))))
         .collect();
 
+    let sheet_name = worksheet.name();
+
     lines.par_iter().for_each(|line| {
         line.iter().enumerate().for_each(|(i, (_name, val))| {
             if let Some(atomic) = widths.get(i) {
-                atomic.fetch_max(calculate_value_len(headers.len(), val), Ordering::Relaxed);
+                atomic.fetch_max(calculate_value_len(&sheet_name, val), Ordering::Relaxed);
             }
         });
     });
@@ -355,12 +358,12 @@ fn decimal_len(d: &Decimal) -> usize {
 }
 
 /// Calcula o comprimento visual de qualquer valor suportado para ajuste automático de coluna.
-fn calculate_value_len(num_cols: usize, field_value: &dyn std::any::Any) -> usize {
+fn calculate_value_len(sheet_name: &str, field_value: &dyn std::any::Any) -> usize {
     let len = match_cast!(field_value {
         // Tratamento do CST
         val as Option<CodigoSituacaoTributaria> => {
             val.as_ref().map_or(2, |cst| {
-                if num_cols > MANY_COLS {
+                if sheet_name.contains("Itens") {
                     // Planilha Detalhada: "01 - Operação Tributável..."
                     // Multiplicamos por 110% porque fontes proporcionais (Calibri)
                     // são levemente mais largas que a contagem de caracteres monoespaçados.
