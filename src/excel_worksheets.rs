@@ -5,9 +5,8 @@ use indicatif::{MultiProgress, ProgressBar};
 use itertools::Itertools;
 use rayon::prelude::*;
 use rust_decimal::Decimal;
-use rust_xlsxwriter::{Color, Format, FormatAlign, Table, Worksheet};
+use rust_xlsxwriter::{Format, FormatAlign, Table, Worksheet};
 use serde::{Deserialize, Serialize};
-use serde_aux::prelude::serde_introspect;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -16,7 +15,7 @@ use struct_iterable::Iterable;
 
 use crate::{
     CodigoDoCredito, CodigoSituacaoTributaria, EFDResult, FORMAT_REGEX_SET, IndicadorDeOrigem,
-    NaturezaBaseCalculo, SheetType, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst,
+    NaturezaBaseCalculo, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst, excel_comum::*,
 };
 
 // --- Macros ---
@@ -37,48 +36,11 @@ macro_rules! match_cast {
 }
 
 // --- Constantes Estéticas ---
-
-const FONT_SIZE: f64 = 11.0;
-const HEADER_FONT_SIZE: f64 = 10.0;
-const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
-const WIDTH_MIN: usize = 8;
+const WIDTH_MIN: usize = 10;
 const WIDTH_MAX: usize = 100;
 const ADJUSTMENT: f64 = 1.2;
 
-// cores: 0xBFBFBF, 0xE6B8B7, 0xF8CBAD, 0xCCC0DA
-const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
-const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
-const COLOR_DESCONTO: Color = Color::RGB(0xCCC0DA);
-
 // --- Traits e Enums ---
-
-/// Extensão para obter metadados de headers via Serde Introspection.
-pub trait InfoExtension {
-    fn get_headers<'de>() -> &'static [&'static str]
-    where
-        Self: Deserialize<'de>,
-    {
-        serde_introspect::<Self>()
-    }
-}
-
-/// Define as variantes de estilo visual que uma linha pode assumir.
-/// O `repr(usize)` permite conversão direta para índice de array em tempo recorde.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(usize)]
-pub enum RowStyle {
-    Normal = 0,
-    Soma = 1,
-    Desconto = 2,
-    Saldo = 3,
-}
-
-/// Trait para permitir que registros individuais decidam seu próprio estilo visual no Excel.
-pub trait ExcelCustomFormatter {
-    fn row_style(&self) -> RowStyle {
-        RowStyle::Normal
-    }
-}
 
 /// Identificadores internos para tipos de formatação de coluna.
 #[derive(Debug, Clone, Copy)]
@@ -123,21 +85,27 @@ struct FormatRegistry {
 impl FormatRegistry {
     /// Inicializa a matriz de formatos (Tipos de Coluna x Estilos de Linha).
     fn new() -> Self {
-        let base_c = Format::new()
+        let center = Format::new()
             .set_align(FormatAlign::Center)
             .set_align(FormatAlign::VerticalCenter)
             .set_font_size(FONT_SIZE);
-        let base_l = Format::new()
+
+        let left = Format::new()
             .set_align(FormatAlign::Left)
             .set_align(FormatAlign::VerticalCenter)
             .set_font_size(FONT_SIZE);
 
+        let right = Format::new()
+            .set_align(FormatAlign::Right)
+            .set_align(FormatAlign::VerticalCenter)
+            .set_font_size(FONT_SIZE);
+
         let keys = [
-            base_l.clone(),                              // Default
-            base_c.clone(),                              // Center
-            base_l.clone().set_num_format("#,##0.00"),   // Value
-            base_c.clone().set_num_format("#,##0.0000"), // Aliq
-            base_c.clone().set_num_format("dd/mm/yyyy"), // Date
+            left.clone(),                                // Default
+            center.clone(),                              // Center
+            right.clone().set_num_format("#,##0.00"),    // Value
+            center.clone().set_num_format("#,##0.0000"), // Aliq
+            center.clone().set_num_format("dd/mm/yyyy"), // Date
         ];
 
         Self {
@@ -378,7 +346,7 @@ fn calculate_value_len(sheet_type: SheetType, field_value: &dyn std::any::Any) -
                     // Planilha Detalhada: "01 - Operação Tributável..."
                     // Multiplicamos por 110% porque fontes proporcionais (Calibri)
                     // são levemente mais largas que a contagem de caracteres monoespaçados.
-                    cst.descricao_com_codigo().len() * 72 / 100
+                    cst.descricao_com_codigo().len() * 70 / 100
                 } else {
                     // Planilha Compacta: Apenas os dígitos "01"
                     display_cst(&Some(*cst)).len() * 82 / 100

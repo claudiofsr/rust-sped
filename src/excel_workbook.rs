@@ -1,10 +1,10 @@
 use indicatif::MultiProgress;
-use rust_xlsxwriter::{DocProperties, ExcelDateTime, Workbook, Worksheet};
+use rust_xlsxwriter::{Workbook, Worksheet};
 use std::{fs::File, io::BufWriter, path::Path};
 
 use crate::{
     AnaliseDosCreditos, BUFFER_CAPACITY, ConsolidacaoCST, DocsFiscais, EFDError, EFDResult,
-    ResultExt, SheetType, get_worksheets,
+    ResultExt, SheetType, get_properties, get_worksheets,
 };
 
 /// Create excel xlsx file from data_efd, data_cst, data_nat.
@@ -43,23 +43,6 @@ pub fn create_xlsx(
     // Otimização final: salvar para o buffer otimizado
     workbook.save_to_writer(buffer)?;
     Ok(())
-}
-
-fn get_properties() -> EFDResult<DocProperties> {
-    // Create a datetime object.
-    let date = ExcelDateTime::from_ymd(2026, 1, 1)?.and_hms(0, 0, 0)?;
-
-    // Add it to the document metadata.
-    let properties = DocProperties::new()
-        .set_title("SPED EFD Contribuições em Excel")
-        .set_subject("Informações extraídas de arquivos de SPED EFD Contribuições")
-        .set_author("Claudio FSR (https://github.com/claudiofsr/rust-sped)")
-        .set_keywords("SPED EFD Contribuições, Rust, Excel")
-        .set_comment("Created with Rust and rust_xlsxwriter")
-        .set_hyperlink_base("https://github.com/claudiofsr/rust-sped")
-        .set_creation_datetime(&date);
-
-    Ok(properties)
 }
 
 /// Generate worksheets using Rayon scope for heterogeneous tasks
