@@ -2,7 +2,6 @@ use chrono::NaiveDate;
 use claudiofsr_lib::{IntegerDigits, OptionExtension, get_style};
 use csv::StringRecord;
 use indicatif::{MultiProgress, ProgressBar};
-use rayon::prelude::*;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -10,7 +9,6 @@ use std::{
     io::BufWriter,
     path::Path,
     sync::Arc,
-    thread,
 };
 
 use rust_xlsxwriter::{
@@ -19,13 +17,9 @@ use rust_xlsxwriter::{
 
 use crate::{
     AnaliseDosCreditos, BUFFER_CAPACITY, CSTOption, ConsolidacaoCST, DECIMAL_VALOR, DocsFiscais,
-    EFDError, EFDResult, MesesDoAno, ResultExt, display_aliquota, display_cst,
+    EFDError, EFDResult, MesesDoAno, ResultExt, display_aliquota, display_cst, excel_comum::*,
     obter_descricao_do_cfop,
 };
-
-const FONT_SIZE: f64 = 12.0;
-const HEADER_FONT_SIZE: f64 = 11.0;
-const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
 
 // --------------- Trait --------------
 
@@ -231,28 +225,39 @@ fn get_all_worksheets(
     formats: &HashMap<String, Format>,
     multiprogressbar: &MultiProgress,
 ) -> EFDResult<Vec<Worksheet>> {
-    // Use std::thread in the following functions (these functions are independent of each other):
-    let results = thread::scope(|s| {
-        let thread_efd = s.spawn(|| add_worksheet_efd(data_efd, formats, multiprogressbar, 0));
-        let thread_cst = s.spawn(|| add_worksheet_cst(data_cst, formats, multiprogressbar, 1));
-        let thread_nat = s.spawn(|| add_worksheet_nat(data_nat, formats, multiprogressbar, 2));
+    // Inicializamos os resultados como Sucesso vazio.
+    // O Rayon scope garantirá que as atribuições ocorram antes de lermos os valores.
+    let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+    let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+    let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(vec![]);
 
-        // Wait for background thread to complete.
-        // Call join() on each handle to make sure all the threads finish.
-        // join() returns immediately when the associated thread completes.
+    // Rayon Scope: Aproveita o pool de threads global (mais eficiente que thread::spawn do SO)
+    // Permite que as threads acessem dados na stack (slices e referências) sem Arc.
+    rayon::scope(|s| {
+        // Cada spawn executa uma tarefa heterogênea em paralelo.
+        // Capturamos a referência mutável de cada resultado específico.
+        s.spawn(|_| {
+            res_efd = add_worksheet_efd(data_efd, formats, multiprogressbar, 0);
+        });
 
-        [thread_efd, thread_cst, thread_nat]
-            .into_iter()
-            .flat_map(|scoped_join_handle| scoped_join_handle.join())
-            .collect::<Vec<_>>()
+        s.spawn(|_| {
+            res_cst = add_worksheet_cst(data_cst, formats, multiprogressbar, 1);
+        });
+
+        s.spawn(|_| {
+            res_nat = add_worksheet_nat(data_nat, formats, multiprogressbar, 2);
+        });
     });
 
-    let worksheets: Vec<Worksheet> = results
-        .into_par_iter() // rayon: parallel iterator
-        .flat_map(|res| res.expect("Failed to generate worksheet!"))
-        .collect();
-
-    Ok(worksheets)
+    // Processamento funcional dos resultados:
+    // 1. Coletamos os resultados em um array.
+    // 2. O collect para Result<Vec<Vec<T>>> implementa o "short-circuit":
+    //    Se qualquer um for Erro, o resultado final será o primeiro Erro encontrado.
+    // 3. Flatten achata a estrutura de Vec<Vec<Worksheet>> para Vec<Worksheet>.
+    [res_efd, res_cst, res_nat]
+        .into_iter()
+        .collect::<EFDResult<Vec<Vec<Worksheet>>>>()
+        .map(|v| v.into_iter().flatten().collect())
 }
 
 fn add_worksheet_efd(
