@@ -291,7 +291,7 @@ where
 
     let pb = mpb.insert(pb_idx, ProgressBar::new(data.len() as u64));
     pb.set_style(get_style(0, 0, 35)?);
-    pb.set_message(format!("Write Excel: {}", sheet_type));
+    pb.set_message(format!("Excel: {}", sheet_type));
 
     for (k, chunk) in data.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
         let sheet_name = if k == 0 {
