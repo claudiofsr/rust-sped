@@ -4,6 +4,7 @@ mod args;
 mod blocos;
 mod config;
 mod error;
+mod excel_sheet_type;
 mod excel_worksheets;
 mod extractor;
 mod macros;
@@ -20,8 +21,9 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 pub use self::{
-    analyze_all::*, analyze_one::*, args::*, blocos::*, config::*, error::*, excel_worksheets::*,
-    extractor::*, model::*, parser::*, regex::*, structures::*, tabelas::*, traits::*, utils::*,
+    analyze_all::*, analyze_one::*, args::*, blocos::*, config::*, error::*, excel_sheet_type::*,
+    excel_worksheets::*, extractor::*, model::*, parser::*, regex::*, structures::*, tabelas::*,
+    traits::*, utils::*,
 };
 
 // https://crates.io/crates/cfg-if
