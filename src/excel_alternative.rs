@@ -1,8 +1,8 @@
 use chrono::NaiveDate;
 use claudiofsr_lib::{IntegerDigits, OptionExtension, get_style};
-use csv::StringRecord;
 use indicatif::{MultiProgress, ProgressBar};
 use rust_decimal::{Decimal, prelude::ToPrimitive};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
     fs::File,
@@ -11,9 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use rust_xlsxwriter::{
-    Color, DocProperties, ExcelDateTime, Format, FormatAlign, Workbook, Worksheet,
-};
+use rust_xlsxwriter::{Color, Format, FormatAlign, Workbook, Worksheet};
 
 use crate::{
     AnaliseDosCreditos, BUFFER_CAPACITY, CSTOption, ConsolidacaoCST, DECIMAL_VALOR, DocsFiscais,
@@ -202,22 +200,6 @@ pub fn create_xlsx(
     Ok(())
 }
 
-fn get_properties() -> EFDResult<DocProperties> {
-    // Create a datetime object.
-    let date = ExcelDateTime::from_ymd(2025, 1, 1)?.and_hms(0, 0, 0)?;
-
-    let properties = DocProperties::new()
-        .set_title("SPED EFD Contribuições em Excel")
-        .set_subject("Informações extraídas de arquivos de SPED EFD Contribuições")
-        .set_author("Claudio FSR (https://github.com/claudiofsr/rust-sped)")
-        .set_keywords("SPED EFD Contribuições, Rust, Excel")
-        .set_comment("Created with Rust and rust_xlsxwriter")
-        .set_hyperlink_base("https://github.com/claudiofsr/rust-sped")
-        .set_creation_datetime(&date);
-
-    Ok(properties)
-}
-
 fn get_all_worksheets(
     data_efd: &[DocsFiscais],
     data_cst: &[ConsolidacaoCST],
@@ -237,15 +219,36 @@ fn get_all_worksheets(
         // Cada spawn executa uma tarefa heterogênea em paralelo.
         // Capturamos a referência mutável de cada resultado específico.
         s.spawn(|_| {
-            res_efd = add_worksheet_efd(data_efd, formats, multiprogressbar, 0);
+            res_efd = generate_worksheets(
+                data_efd,
+                SheetType::ItensDocsFiscais,
+                formats,
+                multiprogressbar,
+                0,
+                add_row_efd,
+            );
         });
 
         s.spawn(|_| {
-            res_cst = add_worksheet_cst(data_cst, formats, multiprogressbar, 1);
+            res_cst = generate_worksheets(
+                data_cst,
+                SheetType::ConsolidacaoCST,
+                formats,
+                multiprogressbar,
+                1,
+                add_row_cst,
+            );
         });
 
         s.spawn(|_| {
-            res_nat = add_worksheet_nat(data_nat, formats, multiprogressbar, 2);
+            res_nat = generate_worksheets(
+                data_nat,
+                SheetType::AnaliseCreditos,
+                formats,
+                multiprogressbar,
+                2,
+                add_row_nat,
+            );
         });
     });
 
@@ -260,131 +263,112 @@ fn get_all_worksheets(
         .map(|v| v.into_iter().flatten().collect())
 }
 
-fn add_worksheet_efd(
-    data_efd: &[DocsFiscais],
+#[allow(clippy::type_complexity)]
+/// Função Genérica que encapsula a lógica de chunking (divisão de abas),
+/// barra de progresso e headers.
+fn generate_worksheets<'de, T>(
+    data: &[T],
+    sheet_type: SheetType,
     formats: &HashMap<String, Format>,
-    multiprogressbar: &MultiProgress,
-    index: usize,
-) -> EFDResult<Vec<Worksheet>> {
+    mpb: &MultiProgress,
+    pb_idx: usize,
+    row_fn: fn(
+        u32,
+        &T,
+        &mut Worksheet,
+        &HashMap<String, Format>,
+        &mut BTreeMap<u16, usize>,
+    ) -> EFDResult<()>,
+) -> EFDResult<Vec<Worksheet>>
+where
+    T: InfoExtension + ExcelCustomFormatter + Serialize + Deserialize<'de>,
+{
     let mut worksheets = Vec::new();
-    let progressbar = multiprogressbar.insert(index, ProgressBar::new(data_efd.len() as u64));
-    progressbar.set_style(get_style(0, 0, 35)?);
 
-    for (k, data) in data_efd.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
+    if data.is_empty() {
+        return Ok(worksheets);
+    }
+
+    let pb = mpb.insert(pb_idx, ProgressBar::new(data.len() as u64));
+    pb.set_style(get_style(0, 0, 35)?);
+    pb.set_message(format!("Write Excel: {}", sheet_type));
+
+    for (k, chunk) in data.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
         let sheet_name = if k == 0 {
-            "Itens de Docs Fiscais".to_string()
+            sheet_type.to_string()
         } else {
-            format!("Itens de Docs Fiscais {}", k + 1)
+            format!("{} {}", sheet_type, k + 1)
         };
-        progressbar.set_message(format!("Write Excel: {sheet_name}"));
-
         let mut ws = Worksheet::new();
         ws.set_name(&sheet_name)?;
+
         let mut width_map = BTreeMap::new();
+        let headers = T::get_headers();
 
-        create_headers(
-            &DocsFiscais::get_headers(),
-            &mut ws,
-            &mut width_map,
-            formats,
-            "data_efd",
-        )?;
+        create_headers(headers, &mut ws, &mut width_map, formats, sheet_type)?;
 
-        for (j, colunas) in data.iter().enumerate() {
-            add_row_efd(j as u32, colunas, &mut ws, formats, &mut width_map)?;
-            progressbar.inc(1);
+        for (j, item) in chunk.iter().enumerate() {
+            row_fn(j as u32, item, &mut ws, formats, &mut width_map)?;
+            pb.inc(1);
         }
 
-        set_max_width(&mut ws, &width_map, 1.04)?;
+        // Ajuste fino do fator de largura baseado no tipo de aba
+        let fator = if sheet_type.is_itens() { 1.05 } else { 1.0 };
+        set_max_width(&mut ws, &width_map, fator)?;
         worksheets.push(ws);
     }
-    progressbar.finish();
+    pb.finish();
     Ok(worksheets)
 }
 
-// CST: CONSOLIDAÇÃO DAS OPERAÇÕES POR CST
-fn add_worksheet_cst(
-    data_cst: &[ConsolidacaoCST],
-    formats: &HashMap<String, Format>,
-    multiprogressbar: &MultiProgress,
-    index: usize,
-) -> EFDResult<Vec<Worksheet>> {
-    let mut worksheets = Vec::new();
-    let progressbar = multiprogressbar.insert(index, ProgressBar::new(data_cst.len() as u64));
-    progressbar.set_style(get_style(0, 0, 35)?);
+fn create_headers(
+    headers: &[&str],
+    sheet: &mut Worksheet,
+    width_map: &mut BTreeMap<u16, usize>,
+    fmt: &HashMap<String, Format>,
+    sheet_type: SheetType,
+) -> EFDResult<()> {
+    let fmt_header = fmt
+        .get("header")
+        .map_loc(|_| EFDError::FormatNotFound("header".into()))?;
+    let mut last_col = 0;
 
-    for (k, data) in data_cst.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
-        let sheet_name = if k == 0 {
-            "Consolidação CST".to_string()
-        } else {
-            format!("Consolidação CST {}", k + 1)
-        };
-        progressbar.set_message(format!("Write Excel: {sheet_name}"));
+    for (idx, &header) in headers.iter().enumerate() {
+        let col = idx as u16;
+        sheet.write_string_with_format(0, col, header, fmt_header)?;
 
-        let mut ws = Worksheet::new();
-        ws.set_name(&sheet_name)?;
-        let mut width_map = BTreeMap::new();
+        let mut width = header.len();
+        match sheet_type {
+            SheetType::ItensDocsFiscais => {
+                // definir largura mínima de colunas específicas
+                let valor_ou_aliquota = header.contains("Valor") || header.contains("Alíquota");
 
-        create_headers(
-            &ConsolidacaoCST::get_headers(),
-            &mut ws,
-            &mut width_map,
-            formats,
-            "data_cst",
-        )?;
-
-        for (j, colunas) in data.iter().enumerate() {
-            add_row_cst(j as u32, colunas, &mut ws, formats, &mut width_map)?;
-            progressbar.inc(1);
+                if idx == 2 || header.contains("Período de Apuração") || valor_ou_aliquota {
+                    width = 12;
+                } else if header.contains("CNPJ") || header.contains("Data") {
+                    width = 18;
+                }
+            }
+            SheetType::ConsolidacaoCST => width = 12,
+            SheetType::AnaliseCreditos => {
+                // definir largura mínima
+                width = 12;
+                // definir largura mínima de colunas específicas
+                if idx == 5 {
+                    width = 6;
+                } else if idx >= 9 {
+                    width = 18;
+                }
+            }
         }
 
-        set_max_width(&mut ws, &width_map, 1.00)?;
-        worksheets.push(ws);
+        width_map.insert(col, width);
+        last_col = col;
     }
-    progressbar.finish();
-    Ok(worksheets)
-}
 
-fn add_worksheet_nat(
-    data_nat: &[AnaliseDosCreditos],
-    formats: &HashMap<String, Format>,
-    multiprogressbar: &MultiProgress,
-    index: usize,
-) -> EFDResult<Vec<Worksheet>> {
-    let mut worksheets = Vec::new();
-    let progressbar = multiprogressbar.insert(index, ProgressBar::new(data_nat.len() as u64));
-    progressbar.set_style(get_style(0, 0, 35)?);
-
-    for (k, data) in data_nat.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
-        let sheet_name = if k == 0 {
-            "Análise dos Créditos".to_string()
-        } else {
-            format!("Análise dos Créditos {}", k + 1)
-        };
-        progressbar.set_message(format!("Write Excel: {sheet_name}"));
-
-        let mut ws = Worksheet::new();
-        ws.set_name(&sheet_name)?;
-        let mut width_map = BTreeMap::new();
-
-        create_headers(
-            &AnaliseDosCreditos::get_headers(),
-            &mut ws,
-            &mut width_map,
-            formats,
-            "data_nat",
-        )?;
-
-        for (j, colunas) in data.iter().enumerate() {
-            add_row_nat(j as u32, colunas, &mut ws, formats, &mut width_map)?;
-            progressbar.inc(1);
-        }
-
-        set_max_width(&mut ws, &width_map, 1.00)?;
-        worksheets.push(ws);
-    }
-    progressbar.finish();
-    Ok(worksheets)
+    sheet.autofilter(0, 0, 0, last_col)?;
+    sheet.set_freeze_panes(1, 0)?;
+    Ok(())
 }
 
 fn add_row_efd(
@@ -555,6 +539,7 @@ fn create_formats() -> EFDResult<HashMap<String, Format>> {
         (
             "default",
             Format::new()
+                .set_align(FormatAlign::Left)
                 .set_align(FormatAlign::VerticalCenter)
                 .set_font_size(FONT_SIZE),
         ),
@@ -576,6 +561,7 @@ fn create_formats() -> EFDResult<HashMap<String, Format>> {
         (
             "number",
             Format::new()
+                .set_align(FormatAlign::Right)
                 .set_align(FormatAlign::VerticalCenter)
                 .set_num_format("#,##0.00")
                 .set_font_size(FONT_SIZE),
@@ -583,6 +569,7 @@ fn create_formats() -> EFDResult<HashMap<String, Format>> {
         (
             "aliquota",
             Format::new()
+                .set_align(FormatAlign::Center)
                 .set_align(FormatAlign::VerticalCenter)
                 .set_num_format("0.0000")
                 .set_font_size(FONT_SIZE),
@@ -615,55 +602,6 @@ fn create_formats() -> EFDResult<HashMap<String, Format>> {
     }
 
     Ok(hash_map)
-}
-
-fn create_headers(
-    headers: &StringRecord,
-    sheet: &mut Worksheet,
-    width_map: &mut BTreeMap<u16, usize>,
-    fmt: &HashMap<String, Format>,
-    tipo: &str,
-) -> EFDResult<()> {
-    let fmt_header = fmt.get("header").unwrap();
-    let mut last_col = 0;
-
-    for (idx, header) in headers.iter().enumerate() {
-        let col = idx as u16;
-        sheet.write_string_with_format(0, col, header, fmt_header)?;
-
-        let mut width = header.len();
-        match tipo {
-            "data_efd" => {
-                // definir largura mínima de colunas específicas
-                let valor_ou_aliquota = header.contains("Valor") || header.contains("Alíquota");
-
-                if idx == 2 || header.contains("Período de Apuração") || valor_ou_aliquota {
-                    width = 12;
-                } else if header.contains("CNPJ") || header.contains("Data") {
-                    width = 18;
-                }
-            }
-            "data_cst" => width = 12,
-            "data_nat" => {
-                // definir largura mínima
-                width = 12;
-                // definir largura mínima de colunas específicas
-                if idx == 5 {
-                    width = 6;
-                } else if idx >= 9 {
-                    width = 18;
-                }
-            }
-            _ => {}
-        }
-
-        width_map.insert(col, width);
-        last_col = col;
-    }
-
-    sheet.autofilter(0, 0, 0, last_col)?;
-    sheet.set_freeze_panes(1, 0)?;
-    Ok(())
 }
 
 fn set_max_width(
