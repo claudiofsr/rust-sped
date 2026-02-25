@@ -11,14 +11,6 @@ use rust_xlsxwriter::{
 use serde::Deserialize;
 use serde_aux::prelude::serde_introspect;
 
-/*
-pub const COLOR_HEADER: Color = Color::RGB(0xC5D9F1);
-pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
-pub const COLOR_SALDO: Color = Color::RGB(0xF8CBAD);
-pub const COLOR_DESCONTO: Color = Color::RGB(0xCCC0DA);
-pub const COLOR_AVISO: Color = Color::RGB(0xFFF2CC);
-*/
-
 // --- Constantes Estéticas Compartilhadas ---
 pub const FONT_SIZE: f64 = 12.0;
 pub const HEADER_FONT_SIZE: f64 = 11.0;
