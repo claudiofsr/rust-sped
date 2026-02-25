@@ -49,7 +49,7 @@ enum FormatKey {
     Default = 0,
     Center = 1,
     Value = 2,
-    Aliq = 3,
+    Aliquota = 3,
     Date = 4,
 }
 
@@ -104,7 +104,7 @@ impl FormatRegistry {
             left.clone(),                                // Default
             center.clone(),                              // Center
             right.clone().set_num_format("#,##0.00"),    // Value
-            center.clone().set_num_format("#,##0.0000"), // Aliq
+            center.clone().set_num_format("#,##0.0000"), // Aliquota
             center.clone().set_num_format("dd/mm/yyyy"), // Date
         ];
 
@@ -144,7 +144,7 @@ fn get_format_key(col_name: &str, sheet_type: SheetType) -> FormatKey {
         .next()
         .map(|index| match index {
             0 => FormatKey::Value,
-            1 => FormatKey::Aliq,
+            1 => FormatKey::Aliquota,
             2 => FormatKey::Date,
             3 => FormatKey::Center,
             _ => FormatKey::Default,

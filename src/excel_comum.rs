@@ -143,13 +143,7 @@ pub fn create_formats() -> EFDResult<HashMap<String, Format>> {
         ("default", Format::new().set_align(FormatAlign::Left)),
         ("center", Format::new().set_align(FormatAlign::Center)),
         (
-            "date",
-            Format::new()
-                .set_align(FormatAlign::Center)
-                .set_num_format("dd/mm/yyyy"),
-        ),
-        (
-            "number",
+            "value",
             Format::new()
                 .set_align(FormatAlign::Right)
                 .set_num_format("#,##0.00"),
@@ -159,6 +153,12 @@ pub fn create_formats() -> EFDResult<HashMap<String, Format>> {
             Format::new()
                 .set_align(FormatAlign::Center)
                 .set_num_format("0.0000"),
+        ),
+        (
+            "date",
+            Format::new()
+                .set_align(FormatAlign::Center)
+                .set_num_format("dd/mm/yyyy"),
         ),
         (
             "integer",

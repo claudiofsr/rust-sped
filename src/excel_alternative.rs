@@ -382,16 +382,16 @@ fn add_row_efd(
         .cell(&col.nome_da_conta, f("default")?)?
         .date(col.data_emissao, f("date")?)?
         .date(col.data_entrada, f("date")?)?
-        .decimal(col.valor_item, f("number")?)?
-        .decimal(col.valor_bc, f("number")?)?
+        .decimal(col.valor_item, f("value")?)?
+        .decimal(col.valor_bc, f("value")?)?
         .decimal(col.aliq_pis, f("aliquota")?)?
         .decimal(col.aliq_cofins, f("aliquota")?)?
-        .decimal(col.valor_pis, f("number")?)?
-        .decimal(col.valor_cofins, f("number")?)?
-        .decimal(col.valor_iss, f("number")?)?
-        .decimal(col.valor_bc_icms, f("number")?)?
+        .decimal(col.valor_pis, f("value")?)?
+        .decimal(col.valor_cofins, f("value")?)?
+        .decimal(col.valor_iss, f("value")?)?
+        .decimal(col.valor_bc_icms, f("value")?)?
         .decimal(col.aliq_icms, f("aliquota")?)?
-        .decimal(col.valor_icms, f("number")?)?;
+        .decimal(col.valor_icms, f("value")?)?;
 
     let height = if row == 0 {
         HEADER_FONT_SIZE + 40.0
@@ -426,10 +426,10 @@ fn add_row_cst(
         .cell(col.trimestre, f("integer")?)?
         .cell(month_to_str(&col.mes), f("center")?)?
         .cell(display_cst(&col.cst), f("center")?)?
-        .decimal(Some(col.valor_item), f("number")?)?
-        .decimal(Some(col.valor_bc), f("number")?)?
-        .decimal(Some(col.valor_pis), f("number")?)?
-        .decimal(Some(col.valor_cofins), f("number")?)?;
+        .decimal(Some(col.valor_item), f("value")?)?
+        .decimal(Some(col.valor_bc), f("value")?)?
+        .decimal(Some(col.valor_pis), f("value")?)?
+        .decimal(Some(col.valor_cofins), f("value")?)?;
 
     let height = if row == 0 {
         HEADER_FONT_SIZE + 40.0
@@ -470,11 +470,11 @@ fn add_row_nat(
         .cell(display_aliquota(&col.aliq_pis), f("center")?)?
         .cell(display_aliquota(&col.aliq_cofins), f("center")?)?
         .cell(col.natureza_bc.map(|n| n.descricao_com_codigo()), f("default")?)?
-        .decimal(col.valor_bc, f("number")?)?
-        .decimal(col.valor_rbnc_trib, f("number")?)?
-        .decimal(col.valor_rbnc_ntrib, f("number")?)?
-        .decimal(col.valor_rbnc_exp, f("number")?)?
-        .decimal(col.valor_rb_cum, f("number")?)?;
+        .decimal(col.valor_bc, f("value")?)?
+        .decimal(col.valor_rbnc_trib, f("value")?)?
+        .decimal(col.valor_rbnc_ntrib, f("value")?)?
+        .decimal(col.valor_rbnc_exp, f("value")?)?
+        .decimal(col.valor_rb_cum, f("value")?)?;
 
     let height = if row == 0 {
         HEADER_FONT_SIZE + 50.0
