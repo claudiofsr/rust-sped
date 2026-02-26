@@ -17,7 +17,6 @@ pub const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
 
 /// Cores de fundo para identificação visual de tipos de linha.
 pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
-
 pub const COLOR_DESCONTO: Color = Color::RGB(0xCCC0DA);
 pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
 

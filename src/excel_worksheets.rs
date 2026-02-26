@@ -89,9 +89,9 @@ where
         return Ok(Vec::new());
     }
 
-    let pb = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
-    pb.set_style(get_style(0, 0, 35)?);
-    pb.set_message(format!("Excel: {}", sheet_type));
+    let mpb = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
+    mpb.set_style(get_style(0, 0, 35)?);
+    mpb.set_message(format!("Excel: {}", sheet_type));
 
     let worksheets = lines
         .chunks(MAX_NUMBER_OF_ROWS)
@@ -103,11 +103,11 @@ where
             } else {
                 format!("{} {}", sheet_type, k + 1)
             };
-            get_worksheet(data, sheet_type, &name, registry, &pb)
+            get_worksheet(data, sheet_type, &name, registry, &mpb)
         })
         .collect::<EFDResult<Vec<_>>>()?;
 
-    pb.finish();
+    mpb.finish();
     Ok(worksheets)
 }
 
