@@ -1,5 +1,3 @@
-use std::{collections::HashMap, fs::File, io::BufWriter, path::Path};
-
 use crate::{
     AnaliseDosCreditos, BUFFER_CAPACITY, ConsolidacaoCST, DocsFiscais, EFDError, EFDResult,
     ResultExt, get_all_worksheets,
@@ -10,16 +8,21 @@ use rust_xlsxwriter::{
 };
 use serde::Deserialize;
 use serde_aux::prelude::serde_introspect;
+use std::{collections::HashMap, fs::File, io::BufWriter, path::Path};
 
-// --- Constantes Estéticas Compartilhadas ---
+/// Constantes estéticas para o Excel.
 pub const FONT_SIZE: f64 = 12.0;
 pub const HEADER_FONT_SIZE: f64 = 11.0;
 pub const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
 
-// cores: 0xBFBFBF, 0xE6B8B7, 0xF8CBAD, 0xCCC0DA
+/// Cores de fundo para identificação visual de tipos de linha.
 pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
-pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
+
 pub const COLOR_DESCONTO: Color = Color::RGB(0xCCC0DA);
+pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
+
+//pub const COLOR_DESCONTO: Color = Color::RGB(0xFFF2CC);
+//pub const COLOR_SALDO: Color = Color::RGB(0xF8CBAD);
 
 /// Representa as diferentes abas (worksheets) geradas no arquivo Excel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,7 +36,6 @@ pub enum SheetType {
 }
 
 impl SheetType {
-    /// Retorna o nome amigável da aba que aparecerá no Excel.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::ItensDocsFiscais => "Itens de Docs Fiscais",
@@ -41,8 +43,6 @@ impl SheetType {
             Self::AnaliseCreditos => "Análise dos Créditos",
         }
     }
-
-    /// Verifica se o tipo atual é o de Itens, usado para lógica de formatação específica.
     pub fn is_itens(&self) -> bool {
         matches!(self, Self::ItensDocsFiscais)
     }
@@ -64,35 +64,100 @@ pub trait InfoExtension {
     }
 }
 
-/// Estrutura para gerenciar cores por estado da linha.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Identificadores para tipos de formatação de coluna.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FormatKey {
+    Default,
+    Center,
+    Value,
+    Aliquota,
+    Date,
+    Integer,
+}
+
+/// Estados de estilo para uma linha inteira.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[repr(usize)]
 pub enum RowStyle {
+    #[default]
     Normal = 0,
     Soma = 1,
     Desconto = 2,
     Saldo = 3,
 }
 
-pub fn apply_style_to_format(format: Format, state: RowStyle) -> Format {
-    match state {
-        RowStyle::Normal => format,
-        RowStyle::Soma => format.set_background_color(COLOR_SOMA),
-        RowStyle::Desconto => format.set_background_color(COLOR_DESCONTO),
-        RowStyle::Saldo => format.set_background_color(COLOR_SALDO),
+/// Gerenciador central de formatos que mapeia (Tipo de Coluna x Estilo de Linha).
+#[derive(Debug, Default)]
+pub struct FormatRegistry {
+    matrix: HashMap<(FormatKey, RowStyle), Format>,
+}
+
+impl FormatRegistry {
+    /// Cria um novo registro com todos os formatos pré-calculados.
+    pub fn new() -> Self {
+        let mut matrix = HashMap::new();
+        let keys = [
+            (FormatKey::Default, FormatAlign::Left, None),
+            (FormatKey::Center, FormatAlign::Center, None),
+            (FormatKey::Value, FormatAlign::Right, Some("#,##0.00")),
+            (FormatKey::Aliquota, FormatAlign::Center, Some("0.0000")),
+            (FormatKey::Date, FormatAlign::Center, Some("dd/mm/yyyy")),
+            (FormatKey::Integer, FormatAlign::Center, Some("#")),
+        ];
+
+        let styles = [
+            (RowStyle::Normal, None),
+            (RowStyle::Soma, Some(COLOR_SOMA)),
+            (RowStyle::Desconto, Some(COLOR_DESCONTO)),
+            (RowStyle::Saldo, Some(COLOR_SALDO)),
+        ];
+
+        for (f_key, align, num_fmt) in keys {
+            for (r_style, color) in styles {
+                let mut f = Format::new()
+                    .set_align(align)
+                    .set_align(FormatAlign::VerticalCenter)
+                    .set_font_size(FONT_SIZE);
+
+                if let Some(fmt) = num_fmt {
+                    f = f.set_num_format(fmt);
+                }
+                if let Some(c) = color {
+                    f = f.set_background_color(c);
+                }
+
+                matrix.insert((f_key, r_style), f);
+            }
+        }
+        Self { matrix }
+    }
+
+    /// Obtém um formato específico da matriz.
+    #[inline]
+    pub fn get(&self, f_key: FormatKey, r_style: RowStyle) -> &Format {
+        self.matrix
+            .get(&(f_key, r_style))
+            .expect("Format matrix incomplete")
+    }
+
+    /// Atalho para formato de cabeçalho.
+    pub fn header() -> Format {
+        Format::new()
+            .set_text_wrap()
+            .set_align(FormatAlign::Center)
+            .set_align(FormatAlign::VerticalCenter)
+            .set_font_size(HEADER_FONT_SIZE)
     }
 }
 
-/// Trait para permitir que registros individuais decidam seu próprio estilo visual no Excel.
+/// Trait para registros que decidem seu estilo visual (Cores de linha).
 pub trait ExcelCustomFormatter {
     fn row_style(&self) -> RowStyle {
         RowStyle::Normal
     }
 }
 
-/// Create excel xlsx file from data_efd, data_cst, data_nat.
-///
-/// data_efd can be divided into N Worksheets generated by N different threads.
+/// Gera o arquivo Excel principal.
 pub fn create_xlsx(
     path_xlsx: &Path,
     data_efd: &[DocsFiscais],
@@ -106,14 +171,14 @@ pub fn create_xlsx(
 
     let buffer = BufWriter::with_capacity(BUFFER_CAPACITY, file);
     let mut workbook = Workbook::new();
+    workbook.set_properties(&get_properties()?);
 
-    let properties = get_properties()?;
-    workbook.set_properties(&properties);
-
-    let formats = create_formats()?;
     let multiprogressbar = MultiProgress::new();
+    // Passamos o registro de formatos centralizado
+    let registry = FormatRegistry::new();
 
-    let worksheets = get_all_worksheets(data_efd, data_cst, data_nat, &formats, &multiprogressbar)?;
+    let worksheets =
+        get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
 
     for worksheet in worksheets {
         workbook.push_worksheet(worksheet);
@@ -121,74 +186,6 @@ pub fn create_xlsx(
 
     workbook.save_to_writer(buffer)?;
     Ok(())
-}
-
-pub fn create_formats() -> EFDResult<HashMap<String, Format>> {
-    let parse_color = |hex: &str| {
-        u32::from_str_radix(hex, 16).map_loc(|e| EFDError::ParseIntError(e, hex.to_string()))
-    };
-
-    let mut hash_map = HashMap::new();
-
-    let fmt_header = Format::new()
-        .set_text_wrap()
-        .set_align(FormatAlign::Center)
-        .set_align(FormatAlign::VerticalCenter)
-        .set_font_size(HEADER_FONT_SIZE)
-        .set_background_color(Color::RGB(parse_color("c5d9f1")?));
-
-    hash_map.insert("header".to_string(), fmt_header);
-
-    let base_formats = vec![
-        ("default", Format::new().set_align(FormatAlign::Left)),
-        ("center", Format::new().set_align(FormatAlign::Center)),
-        (
-            "value",
-            Format::new()
-                .set_align(FormatAlign::Right)
-                .set_num_format("#,##0.00"),
-        ),
-        (
-            "aliquota",
-            Format::new()
-                .set_align(FormatAlign::Center)
-                .set_num_format("0.0000"),
-        ),
-        (
-            "date",
-            Format::new()
-                .set_align(FormatAlign::Center)
-                .set_num_format("dd/mm/yyyy"),
-        ),
-        (
-            "integer",
-            Format::new()
-                .set_align(FormatAlign::Center)
-                .set_num_format("#"),
-        ),
-    ];
-
-    let colors = vec![
-        ("", None),
-        ("_bcsoma", Some("bfbfbf")),
-        ("_descon", Some("fff2cc")),
-        ("_saldoc", Some("f8cbad")),
-    ];
-
-    for (suffix, hex) in colors {
-        for (name, fmt) in &base_formats {
-            let mut f = fmt
-                .clone()
-                .set_align(FormatAlign::VerticalCenter)
-                .set_font_size(FONT_SIZE);
-            if let Some(c) = hex {
-                f = f.set_background_color(Color::RGB(parse_color(c)?));
-            }
-            hash_map.insert(format!("{name}{suffix}"), f);
-        }
-    }
-
-    Ok(hash_map)
 }
 
 /// Gera as propriedades padrão do documento Excel para ambos os módulos.
@@ -206,11 +203,4 @@ pub fn get_properties() -> EFDResult<DocProperties> {
         .set_creation_datetime(&date);
 
     Ok(properties)
-}
-
-/// Helper para criar formatos base comuns.
-pub fn base_format() -> Format {
-    Format::new()
-        .set_align(FormatAlign::VerticalCenter)
-        .set_font_size(FONT_SIZE)
 }

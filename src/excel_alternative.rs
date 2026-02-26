@@ -3,17 +3,13 @@ use claudiofsr_lib::{IntegerDigits, OptionExtension, get_style};
 use indicatif::{MultiProgress, ProgressBar};
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{BTreeMap, HashMap},
-    sync::Arc,
-};
+use std::{collections::BTreeMap, sync::Arc};
 
-use rust_xlsxwriter::{Format, Worksheet};
+use rust_xlsxwriter::{Color, Format, Worksheet};
 
 use crate::{
-    AnaliseDosCreditos, CSTOption, ConsolidacaoCST, DECIMAL_VALOR, DocsFiscais, EFDError,
-    EFDResult, MesesDoAno, ResultExt, display_aliquota, display_cst, excel_comum::*,
-    obter_descricao_do_cfop,
+    AnaliseDosCreditos, CSTOption, ConsolidacaoCST, DECIMAL_VALOR, DocsFiscais, EFDResult,
+    MesesDoAno, display_aliquota, display_cst, excel_comum::*, obter_descricao_do_cfop,
 };
 
 // --------------- Trait --------------
@@ -169,7 +165,7 @@ pub fn get_all_worksheets(
     data_efd: &[DocsFiscais],
     data_cst: &[ConsolidacaoCST],
     data_nat: &[AnaliseDosCreditos],
-    formats: &HashMap<String, Format>,
+    registry: &FormatRegistry,
     multiprogressbar: &MultiProgress,
 ) -> EFDResult<Vec<Worksheet>> {
     // Inicializamos os resultados como Sucesso vazio.
@@ -187,7 +183,7 @@ pub fn get_all_worksheets(
             res_efd = generate_worksheets(
                 data_efd,
                 SheetType::ItensDocsFiscais,
-                formats,
+                registry,
                 multiprogressbar,
                 0,
                 add_row_efd,
@@ -198,7 +194,7 @@ pub fn get_all_worksheets(
             res_cst = generate_worksheets(
                 data_cst,
                 SheetType::ConsolidacaoCST,
-                formats,
+                registry,
                 multiprogressbar,
                 1,
                 add_row_cst,
@@ -209,7 +205,7 @@ pub fn get_all_worksheets(
             res_nat = generate_worksheets(
                 data_nat,
                 SheetType::AnaliseCreditos,
-                formats,
+                registry,
                 multiprogressbar,
                 2,
                 add_row_nat,
@@ -230,18 +226,18 @@ pub fn get_all_worksheets(
 
 #[allow(clippy::type_complexity)]
 /// Função Genérica que encapsula a lógica de chunking (divisão de abas),
-/// barra de progresso e headers.
+/// barra de progresso e a aplicação de estilos via `FormatRegistry`.
 fn generate_worksheets<'de, T>(
     data: &[T],
     sheet_type: SheetType,
-    formats: &HashMap<String, Format>,
+    registry: &FormatRegistry, // Agora usa o Registry centralizado
     mpb: &MultiProgress,
     pb_idx: usize,
     row_fn: fn(
         u32,
         &T,
         &mut Worksheet,
-        &HashMap<String, Format>,
+        &FormatRegistry, // Atualizado aqui
         &mut BTreeMap<u16, usize>,
     ) -> EFDResult<()>,
 ) -> EFDResult<Vec<Worksheet>>
@@ -270,14 +266,14 @@ where
         let mut width_map = BTreeMap::new();
         let headers = T::get_headers();
 
-        create_headers(headers, &mut ws, &mut width_map, formats, sheet_type)?;
+        create_headers(headers, &mut ws, &mut width_map, registry, sheet_type)?;
 
         for (j, item) in chunk.iter().enumerate() {
-            row_fn(j as u32, item, &mut ws, formats, &mut width_map)?;
+            // Chama a função de linha passando o registry
+            row_fn(j as u32, item, &mut ws, registry, &mut width_map)?;
             pb.inc(1);
         }
 
-        // Ajuste fino do fator de largura baseado no tipo de aba
         let fator = if sheet_type.is_itens() { 1.05 } else { 1.0 };
         set_max_width(&mut ws, &width_map, fator)?;
         worksheets.push(ws);
@@ -290,17 +286,17 @@ fn create_headers(
     headers: &[&str],
     sheet: &mut Worksheet,
     width_map: &mut BTreeMap<u16, usize>,
-    fmt: &HashMap<String, Format>,
+    _registry: &FormatRegistry,
     sheet_type: SheetType,
 ) -> EFDResult<()> {
-    let fmt_header = fmt
-        .get("header")
-        .map_loc(|_| EFDError::FormatNotFound("header".into()))?;
+    // Obtém o formato de cabeçalho centralizado do excel_comum
+    let fmt_header = FormatRegistry::header().set_background_color(Color::RGB(0xC5D9F1));
+
     let mut last_col = 0;
 
     for (idx, &header) in headers.iter().enumerate() {
         let col = idx as u16;
-        sheet.write_string_with_format(0, col, header, fmt_header)?;
+        sheet.write_string_with_format(0, col, header, &fmt_header)?;
 
         let mut width = header.len();
         match sheet_type {
@@ -340,65 +336,58 @@ fn add_row_efd(
     row: u32,
     col: &DocsFiscais,
     sheet: &mut Worksheet,
-    fmt: &HashMap<String, Format>,
+    registry: &FormatRegistry,
     width_map: &mut BTreeMap<u16, usize>,
 ) -> EFDResult<()> {
-    let f = |n: &str| {
-        fmt.get(n)
-            .map_loc(|_| EFDError::FormatNotFound(n.to_string()))
-    };
+    // Atalho interno para obter formato Normal
+    let f = |k: FormatKey| registry.get(k, RowStyle::Normal);
 
     #[rustfmt::skip]
     RowWriter::new(sheet, row, width_map)
-        .cell(row + 2, f("integer")?)? // Valor direto T
-        .cell(col.arquivo_efd.clone(), f("default")?)?
-        .cell(col.num_linha_efd, f("integer")?)? // Option<T>
-        .cell(&col.estabelecimento_cnpj, f("center")?)?
-        .cell(&col.estabelecimento_nome, f("default")?)?
-        .date(col.periodo_de_apuracao, f("date")?)?
-        .cell(col.ano, f("integer")?)?
-        .cell(col.trimestre, f("integer")?)?
-        .cell(month_to_str(&col.mes), f("center")?)?
-        .cell(col.tipo_de_operacao.to_string(), f("default")?)?
-        .cell(col.indicador_de_origem.to_string(), f("default")?)?
-        .cell(col.cod_credito.map(|c| c.to_u16()), f("integer")?)?
-        .cell(col.tipo_de_credito.map(|t| t.descricao_com_codigo()), f("default")?)?
-        .cell(&col.registro, f("default")?)?
-        .cell(col.cst.descricao(), f("default")?)?
-        .cell(obter_descricao_do_cfop(col.cfop), f("default")?)?
-        .cell(col.natureza_bc.map(|n| n.descricao_com_codigo()), f("default")?)?
-        .cell(&col.participante_cnpj, f("center")?)?
-        .cell(&col.participante_cpf, f("center")?)?
-        .cell(&col.participante_nome, f("default")?)?
-        .cell(col.num_doc, f("default")?)?
-        .cell(&col.chave_doc, f("center")?)?
-        .cell(&col.modelo_doc_fiscal, f("center")?)?
-        .cell(col.num_item, f("integer")?)?
-        .cell(col.tipo_item.map(|t| t.descricao_com_codigo()), f("default")?)?
-        .cell(&col.descr_item, f("default")?)?
-        .cell(&col.cod_ncm, f("center")?)?
-        .cell(&col.nat_operacao, f("default")?)?
-        .cell(&col.complementar, f("default")?)?
-        .cell(&col.nome_da_conta, f("default")?)?
-        .date(col.data_emissao, f("date")?)?
-        .date(col.data_entrada, f("date")?)?
-        .decimal(col.valor_item, f("value")?)?
-        .decimal(col.valor_bc, f("value")?)?
-        .decimal(col.aliq_pis, f("aliquota")?)?
-        .decimal(col.aliq_cofins, f("aliquota")?)?
-        .decimal(col.valor_pis, f("value")?)?
-        .decimal(col.valor_cofins, f("value")?)?
-        .decimal(col.valor_iss, f("value")?)?
-        .decimal(col.valor_bc_icms, f("value")?)?
-        .decimal(col.aliq_icms, f("aliquota")?)?
-        .decimal(col.valor_icms, f("value")?)?;
+        .cell(row + 2, f(FormatKey::Integer))?
+        .cell(col.arquivo_efd.clone(), f(FormatKey::Default))?
+        .cell(col.num_linha_efd, f(FormatKey::Integer))?
+        .cell(&col.estabelecimento_cnpj, f(FormatKey::Center))?
+        .cell(&col.estabelecimento_nome, f(FormatKey::Default))?
+        .date(col.periodo_de_apuracao, f(FormatKey::Date))?
+        .cell(col.ano, f(FormatKey::Integer))?
+        .cell(col.trimestre, f(FormatKey::Integer))?
+        .cell(month_to_str(&col.mes), f(FormatKey::Center))?
+        .cell(col.tipo_de_operacao.to_string(), f(FormatKey::Default))?
+        .cell(col.indicador_de_origem.to_string(), f(FormatKey::Default))?
+        .cell(col.cod_credito.map(|c| c.to_u16()), f(FormatKey::Integer))?
+        .cell(col.tipo_de_credito.map(|t| t.descricao_com_codigo()), f(FormatKey::Default))?
+        .cell(&col.registro, f(FormatKey::Default))?
+        .cell(col.cst.descricao(), f(FormatKey::Default))?
+        .cell(obter_descricao_do_cfop(col.cfop), f(FormatKey::Default))?
+        .cell(col.natureza_bc.map(|n| n.descricao_com_codigo()), f(FormatKey::Default))?
+        .cell(&col.participante_cnpj, f(FormatKey::Center))?
+        .cell(&col.participante_cpf, f(FormatKey::Center))?
+        .cell(&col.participante_nome, f(FormatKey::Default))?
+        .cell(col.num_doc, f(FormatKey::Default))?
+        .cell(&col.chave_doc, f(FormatKey::Center))?
+        .cell(&col.modelo_doc_fiscal, f(FormatKey::Center))?
+        .cell(col.num_item, f(FormatKey::Integer))?
+        .cell(col.tipo_item.map(|t| t.descricao_com_codigo()), f(FormatKey::Default))?
+        .cell(&col.descr_item, f(FormatKey::Default))?
+        .cell(&col.cod_ncm, f(FormatKey::Center))?
+        .cell(&col.nat_operacao, f(FormatKey::Default))?
+        .cell(&col.complementar, f(FormatKey::Default))?
+        .cell(&col.nome_da_conta, f(FormatKey::Default))?
+        .date(col.data_emissao, f(FormatKey::Date))?
+        .date(col.data_entrada, f(FormatKey::Date))?
+        .decimal(col.valor_item, f(FormatKey::Value))?
+        .decimal(col.valor_bc, f(FormatKey::Value))?
+        .decimal(col.aliq_pis, f(FormatKey::Aliquota))?
+        .decimal(col.aliq_cofins, f(FormatKey::Aliquota))?
+        .decimal(col.valor_pis, f(FormatKey::Value))?
+        .decimal(col.valor_cofins, f(FormatKey::Value))?
+        .decimal(col.valor_iss, f(FormatKey::Value))?
+        .decimal(col.valor_bc_icms, f(FormatKey::Value))?
+        .decimal(col.aliq_icms, f(FormatKey::Aliquota))?
+        .decimal(col.valor_icms, f(FormatKey::Value))?;
 
-    let height = if row == 0 {
-        HEADER_FONT_SIZE + 40.0
-    } else {
-        FONT_SIZE + 3.0
-    };
-    sheet.set_row_height(row, height)?;
+    sheet.set_row_height(row, FONT_SIZE + 3.0)?;
     Ok(())
 }
 
@@ -406,37 +395,30 @@ fn add_row_cst(
     row: u32,
     col: &ConsolidacaoCST,
     sheet: &mut Worksheet,
-    fmt: &HashMap<String, Format>,
+    registry: &FormatRegistry, // <--- Alterado aqui também
     width_map: &mut BTreeMap<u16, usize>,
 ) -> EFDResult<()> {
-    let suffix = if let Some(490 | 980) = col.cst.code() {
-        "_bcsoma"
+    // Lógica de sufixo (_bcsoma) agora via enum RowStyle
+    let style = if let Some(490 | 980) = col.cst.code() {
+        RowStyle::Soma
     } else {
-        ""
+        RowStyle::Normal
     };
-    let f = |n: &str| {
-        fmt.get(&format!("{n}{suffix}"))
-            .map_loc(|_| EFDError::FormatNotFound(n.to_string()))
-    };
+
+    let f = |k: FormatKey| registry.get(k, style);
 
     #[rustfmt::skip]
     RowWriter::new(sheet, row, width_map)
-        .cell(&col.cnpj_base, f("center")?)?
-        .cell(col.ano, f("integer")?)?
-        .cell(col.trimestre, f("integer")?)?
-        .cell(month_to_str(&col.mes), f("center")?)?
-        .cell(display_cst(&col.cst), f("center")?)?
-        .decimal(Some(col.valor_item), f("value")?)?
-        .decimal(Some(col.valor_bc), f("value")?)?
-        .decimal(Some(col.valor_pis), f("value")?)?
-        .decimal(Some(col.valor_cofins), f("value")?)?;
+        .cell(&col.cnpj_base, f(FormatKey::Center))?
+        .cell(col.ano, f(FormatKey::Integer))?
+        .cell(col.trimestre, f(FormatKey::Integer))?
+        .cell(month_to_str(&col.mes), f(FormatKey::Center))?
+        .cell(display_cst(&col.cst), f(FormatKey::Center))?
+        .decimal(Some(col.valor_item), f(FormatKey::Value))?
+        .decimal(Some(col.valor_bc), f(FormatKey::Value))?
+        .decimal(Some(col.valor_pis), f(FormatKey::Value))?
+        .decimal(Some(col.valor_cofins), f(FormatKey::Value))?;
 
-    let height = if row == 0 {
-        HEADER_FONT_SIZE + 40.0
-    } else {
-        FONT_SIZE + 3.0
-    };
-    sheet.set_row_height(row, height)?;
     Ok(())
 }
 
@@ -444,44 +426,38 @@ fn add_row_nat(
     row: u32,
     col: &AnaliseDosCreditos,
     sheet: &mut Worksheet,
-    fmt: &HashMap<String, Format>,
+    registry: &FormatRegistry,
     width_map: &mut BTreeMap<u16, usize>,
 ) -> EFDResult<()> {
-    let suffix = match col.natureza_bc.map(|n| n.code()) {
-        Some(101..=199 | 300) => "_bcsoma",
-        Some(221 | 225) => "_descon",
-        Some(301 | 305) => "_saldoc",
-        _ => "",
+    // Determina o estilo da linha baseado na regra de negócio
+    let style = match col.natureza_bc.map(|n| n.code()) {
+        Some(101..=199 | 300) => RowStyle::Soma,
+        Some(221 | 225) => RowStyle::Desconto,
+        Some(301 | 305) => RowStyle::Saldo,
+        _ => RowStyle::Normal,
     };
-    let f = |n: &str| {
-        fmt.get(&format!("{n}{suffix}"))
-            .map_loc(|_| EFDError::FormatNotFound(n.to_string()))
-    };
+
+    let f = |k: FormatKey| registry.get(k, style);
 
     #[rustfmt::skip]
     RowWriter::new(sheet, row, width_map)
-        .cell(&col.cnpj_base, f("center")?)?
-        .cell(col.ano, f("integer")?)?
-        .cell(col.trimestre, f("integer")?)?
-        .cell(month_to_str(&col.mes), f("center")?)?
-        .cell(col.tipo_de_operacao.to_string(), f("default")?)?
-        .cell(col.tipo_de_credito.map(|t| t.to_string()), f("center")?)?
-        .cell(col.cst.code(), f("integer")?)?
-        .cell(display_aliquota(&col.aliq_pis), f("center")?)?
-        .cell(display_aliquota(&col.aliq_cofins), f("center")?)?
-        .cell(col.natureza_bc.map(|n| n.descricao_com_codigo()), f("default")?)?
-        .decimal(col.valor_bc, f("value")?)?
-        .decimal(col.valor_rbnc_trib, f("value")?)?
-        .decimal(col.valor_rbnc_ntrib, f("value")?)?
-        .decimal(col.valor_rbnc_exp, f("value")?)?
-        .decimal(col.valor_rb_cum, f("value")?)?;
+        .cell(&col.cnpj_base, f(FormatKey::Center))?
+        .cell(col.ano, f(FormatKey::Integer))?
+        .cell(col.trimestre, f(FormatKey::Integer))?
+        .cell(month_to_str(&col.mes), f(FormatKey::Center))?
+        .cell(col.tipo_de_operacao.to_string(), f(FormatKey::Default))?
+        .cell(col.tipo_de_credito.map(|t| t.to_string()), f(FormatKey::Center))?
+        .cell(col.cst.code(), f(FormatKey::Integer))?
+        .cell(display_aliquota(&col.aliq_pis), f(FormatKey::Center))?
+        .cell(display_aliquota(&col.aliq_cofins), f(FormatKey::Center))?
+        .cell(col.natureza_bc.map(|n| n.descricao_com_codigo()), f(FormatKey::Default))?
+        .decimal(col.valor_bc, f(FormatKey::Value))?
+        .decimal(col.valor_rbnc_trib, f(FormatKey::Value))?
+        .decimal(col.valor_rbnc_ntrib, f(FormatKey::Value))?
+        .decimal(col.valor_rbnc_exp, f(FormatKey::Value))?
+        .decimal(col.valor_rb_cum, f(FormatKey::Value))?;
 
-    let height = if row == 0 {
-        HEADER_FONT_SIZE + 50.0
-    } else {
-        FONT_SIZE + 3.0
-    };
-    sheet.set_row_height(row, height)?;
+    sheet.set_row_height(row, FONT_SIZE + 3.0)?;
     Ok(())
 }
 

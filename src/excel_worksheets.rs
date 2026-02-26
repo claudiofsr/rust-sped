@@ -5,7 +5,7 @@ use indicatif::{MultiProgress, ProgressBar};
 use itertools::Itertools;
 use rayon::prelude::*;
 use rust_decimal::Decimal;
-use rust_xlsxwriter::{Format, FormatAlign, Table, Worksheet};
+use rust_xlsxwriter::{Table, Worksheet};
 use serde::{Deserialize, Serialize};
 use std::sync::{
     Arc,
@@ -39,86 +39,6 @@ macro_rules! match_cast {
 const WIDTH_MIN: usize = 10;
 const WIDTH_MAX: usize = 100;
 const ADJUSTMENT: f64 = 1.2;
-
-// --- Traits e Enums ---
-
-/// Identificadores internos para tipos de formatação de coluna.
-#[derive(Debug, Clone, Copy)]
-#[repr(usize)]
-enum FormatKey {
-    Default = 0,
-    Center = 1,
-    Value = 2,
-    Aliquota = 3,
-    Date = 4,
-}
-
-/// Armazena as 4 variações de cores para um tipo específico de dado.
-struct FormatGroup {
-    formats: [Format; 4],
-}
-
-impl FormatGroup {
-    fn new(base: Format) -> Self {
-        Self {
-            formats: [
-                base.clone(),                                      // Normal
-                base.clone().set_background_color(COLOR_SOMA),     // Soma
-                base.clone().set_background_color(COLOR_DESCONTO), // Desconto
-                base.clone().set_background_color(COLOR_SALDO),    // Saldo
-            ],
-        }
-    }
-
-    #[inline]
-    fn get_format(&self, style: RowStyle) -> &Format {
-        &self.formats[style as usize]
-    }
-}
-
-/// Gerenciador central de formatos. Reduz drasticamente a alocação de memória
-/// ao pré-calcular a matriz de (Estilo de Coluna x Estilo de Linha).
-struct FormatRegistry {
-    groups: [FormatGroup; 5],
-}
-
-impl FormatRegistry {
-    /// Inicializa a matriz de formatos (Tipos de Coluna x Estilos de Linha).
-    fn new() -> Self {
-        let center = Format::new()
-            .set_align(FormatAlign::Center)
-            .set_align(FormatAlign::VerticalCenter)
-            .set_font_size(FONT_SIZE);
-
-        let left = Format::new()
-            .set_align(FormatAlign::Left)
-            .set_align(FormatAlign::VerticalCenter)
-            .set_font_size(FONT_SIZE);
-
-        let right = Format::new()
-            .set_align(FormatAlign::Right)
-            .set_align(FormatAlign::VerticalCenter)
-            .set_font_size(FONT_SIZE);
-
-        let keys = [
-            left.clone(),                                // Default
-            center.clone(),                              // Center
-            right.clone().set_num_format("#,##0.00"),    // Value
-            center.clone().set_num_format("#,##0.0000"), // Aliquota
-            center.clone().set_num_format("dd/mm/yyyy"), // Date
-        ];
-
-        Self {
-            groups: keys.map(FormatGroup::new),
-        }
-    }
-
-    /// Obtém o grupo de formatação correspondente à chave da coluna em O(1).
-    #[inline]
-    fn get_group(&self, key: FormatKey) -> &FormatGroup {
-        &self.groups[key as usize]
-    }
-}
 
 // --- Funções Auxiliares de Formatação ---
 
@@ -154,11 +74,11 @@ fn get_format_key(col_name: &str, sheet_type: SheetType) -> FormatKey {
 
 // --- Lógica Principal ---
 
-/// Gera uma coleção de Worksheets para um conjunto de dados.
-/// Se os dados excederem o limite do Excel, divide em várias abas numeradas.
+/// Gera as worksheets aplicando a serialização automática do Serde.
 pub fn get_worksheets<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
+    registry: &FormatRegistry,
     multiprogressbar: &MultiProgress,
     index: usize,
 ) -> EFDResult<Vec<Worksheet>>
@@ -171,7 +91,7 @@ where
 
     let pb = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
     pb.set_style(get_style(0, 0, 35)?);
-    pb.set_message(format!("Excel: {}", sheet_type.as_str()));
+    pb.set_message(format!("Excel: {}", sheet_type));
 
     let worksheets = lines
         .chunks(MAX_NUMBER_OF_ROWS)
@@ -181,9 +101,9 @@ where
             let name = if k == 0 {
                 sheet_type.as_str().to_owned()
             } else {
-                format!("{} {}", sheet_type.as_str(), k + 1)
+                format!("{} {}", sheet_type, k + 1)
             };
-            get_worksheet(data, sheet_type, &name, &pb)
+            get_worksheet(data, sheet_type, &name, registry, &pb)
         })
         .collect::<EFDResult<Vec<_>>>()?;
 
@@ -191,42 +111,35 @@ where
     Ok(worksheets)
 }
 
-/// Constrói uma Worksheet individual, aplicando serialização automática e estilos customizados.
 fn get_worksheet<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
     sheet_name: &str,
+    registry: &FormatRegistry,
     progressbar: &ProgressBar,
 ) -> EFDResult<Worksheet>
 where
     T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync,
 {
     let headers = T::get_headers();
-    let registry = FormatRegistry::new();
+    let col_configs: Vec<(u16, FormatKey)> = headers
+        .iter()
+        .enumerate()
+        .map(|(i, &name)| (i as u16, get_format_key(name, sheet_type)))
+        .collect();
 
     let num_cols = headers.len();
     let num_lines = lines.len();
 
-    // Mapeamento prévio dos formatos de coluna para evitar processamento dentro do loop de linhas
-    let col_configs: Vec<(u16, &FormatGroup)> = headers
-        .par_iter()
-        .enumerate()
-        .map(|(i, &col_name)| {
-            (
-                i as u16,
-                registry.get_group(get_format_key(col_name, sheet_type)),
-            )
-        })
-        .collect();
-
     let mut worksheet = Worksheet::new();
 
-    setup_worksheet_styles(
+    setup_worksheet(
         &mut worksheet,
         sheet_name,
         num_cols as u16,
         num_lines as u32,
         &col_configs,
+        registry,
     )?;
 
     // Aplica cabeçalhos e formatos de coluna padrão
@@ -250,10 +163,10 @@ where
             // Escreve os dados (Serialização é a parte mais pesada)
             worksheet.serialize(line)?;
 
-            // 2. Aplicação de Estilo de Linha (Cores de Fundo: Soma, Saldo, etc.)
+            // 2. Aplica cores apenas se não for estilo Normal (Otimização)
             if style != RowStyle::Normal {
-                for (col_idx, group) in &col_configs {
-                    worksheet.set_cell_format(row_idx, *col_idx, group.get_format(style))?;
+                for (col_idx, f_key) in &col_configs {
+                    worksheet.set_cell_format(row_idx, *col_idx, registry.get(*f_key, style))?;
                 }
             }
 
@@ -271,27 +184,22 @@ where
 }
 
 /// Helper para configurar o esqueleto da worksheet
-fn setup_worksheet_styles(
+fn setup_worksheet(
     ws: &mut Worksheet,
     name: &str,
     num_cols: u16,
     num_lines: u32,
-    configs: &[(u16, &FormatGroup)],
+    configs: &[(u16, FormatKey)],
+    registry: &FormatRegistry,
 ) -> EFDResult<()> {
-    let header_fmt = Format::new()
-        .set_align(FormatAlign::Center)
-        .set_align(FormatAlign::VerticalCenter)
-        .set_text_wrap()
-        .set_font_size(HEADER_FONT_SIZE);
-
     ws.set_name(name)?
         .set_row_height(0, 64)?
-        .set_row_format(0, &header_fmt)?
+        .set_row_format(0, &FormatRegistry::header())?
         .set_freeze_panes(1, 0)?;
 
     // Aplica formatos base às colunas
-    for (i, group) in configs {
-        ws.set_column_format(*i, group.get_format(RowStyle::Normal))?;
+    for (i, f_key) in configs {
+        ws.set_column_format(*i, registry.get(*f_key, RowStyle::Normal))?;
     }
 
     let table = Table::new().set_autofilter(true);
