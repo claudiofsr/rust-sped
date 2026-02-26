@@ -21,9 +21,6 @@ pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
 pub const COLOR_DESCONTO: Color = Color::RGB(0xCCC0DA);
 pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
 
-//pub const COLOR_DESCONTO: Color = Color::RGB(0xFFF2CC);
-//pub const COLOR_SALDO: Color = Color::RGB(0xF8CBAD);
-
 /// Representa as diferentes abas (worksheets) geradas no arquivo Excel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SheetType {

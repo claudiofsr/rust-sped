@@ -74,11 +74,11 @@ fn main() -> EFDResult<()> {
         arq_file_hash
     );
     assert_eq!(
-        "62d84f3f6811fe651e25b4865a4d82f809fff192c5e03ee9a5aa777a21f6fa42",
+        "99cb92fe2e10073b9a560752c4a4b9da80bb7aca794a293cad76da81ae486e45",
         out_file_hash
     );
     assert_eq!(
-        "96c857355e6f41de233ec4094c89bca06f3b46fe54bbe65a596a8320beb77843",
+        "8f575fbb3a2b710749d2e875b221a1d233aed840359be8dad20bc821a7703641",
         csv_file_hash
     );
 

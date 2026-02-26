@@ -46,17 +46,15 @@ Ao final, estas informações são padronizadas em Excel e CSV e escritas em arq
 
     find ./src/blocos -type f -name "registro_*.rs" -exec sed -i "/$context/,/$start/ { /\.loc()/ ! s/$start/$final/ }" {} +
 
-    cargo test --features old
     cargo test -- --nocapture
     cargo test -- --show-output split_line
     cargo run -- -h
-    cargo run --features old -- -cpr 1 20
-    cargo run --example run --features old examples/efd_data_random
+    cargo run -- -cpr 1 20
+    cargo run --example run examples/efd_data_random
     cargo doc --open
     cargo clippy
     rustfmt src/main.rs
     cargo b -r && cargo install --path=.
-    cargo b -r && cargo install --path=. --features old
 
     # Para ver os avisos (warn) e informações (info)
     RUST_LOG=warn cargo test -- --nocapture | rg warn

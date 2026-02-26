@@ -5,6 +5,7 @@ mod blocos;
 mod config;
 mod error;
 mod excel_comum;
+mod excel_workbook;
 mod excel_worksheets;
 mod extractor;
 mod macros;
@@ -22,21 +23,10 @@ use rust_decimal_macros::dec;
 
 pub use self::{
     analyze_all::*, analyze_one::*, args::*, blocos::*, config::*, error::*, excel_comum::*,
+    excel_workbook::*,
     excel_worksheets::*, extractor::*, model::*, parser::*, regex::*, structures::*, tabelas::*,
     traits::*, utils::*,
 };
-
-// https://crates.io/crates/cfg-if
-cfg_if::cfg_if! {
-    if #[cfg(feature = "old")] {
-        mod excel_alternative;
-        pub use excel_alternative::*;
-    } else {
-        // default: "new"
-        mod excel_workbook;
-        pub use excel_workbook::*;
-    }
-}
 
 // Definição da tolerância para comparações de ponto flutuante.
 // 1e-8 (0.00000001) é suficiente para ignorar "ruído" numérico sem afetar centavos.

@@ -40,7 +40,6 @@ readme = "README.md"
 anstyle = "1.0" # used by clap color
 blake3 = { version = "1.8", features = ["rayon"] }
 clap_complete = "4.5"
-cfg-if = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 compact_str = { version = "0.9", features = ["serde"] }
 csv = "1.4"
@@ -111,20 +110,15 @@ features = [
 ]
 
 [features]
-default = ["new"]
-# default = ["old"]
-
-old = [] # mod excel_alternative
-new = [] # mod excel_workbook
+default = []
 prefetch = [] # see binary_search.rs
 
-# Mutually exclusive features: new (default) or old.
-# To use old features:
-# cargo clippy --features old
-# cargo test --features old
-# cargo run --features old -- -f
-# cargo run --features old -- -r 1 20
-# cargo b -r && cargo install --path=. --features old
+# To use prefetch features:
+# cargo clippy --features prefetch
+# cargo test --features prefetch
+# cargo run --features prefetch -- -f
+# cargo run --features prefetch -- -r 1 20
+# cargo b -r && cargo install --path=. --features prefetch
 
 # Make your Rust Binaries TINY!
 # https://www.youtube.com/watch?v=b2qe3L4BX-Y
@@ -160,10 +154,9 @@ opt-level = 1          # Use slightly better optimizations.
 # After downloading the target with `rustup target add x86_64-pc-windows-gnu`
 # cargo b -r --target x86_64-unknown-linux-gnu --target x86_64-pc-windows-gnu
 
-# cargo run --example run --features old examples/efd_data_random
+# cargo run --example run examples/efd_data_random
 [[example]]
 name = "run"
-required-features = [ "old" ]
 
 [dev-dependencies]
 # Dependencies ONLY needed for testing

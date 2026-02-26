@@ -687,7 +687,6 @@ dependencies = [
  "anstyle",
  "blake3",
  "cc",
- "cfg-if",
  "chrono",
  "clap",
  "clap_complete",
