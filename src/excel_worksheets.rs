@@ -166,7 +166,8 @@ where
             // 2. Aplica cores apenas se não for estilo Normal (Otimização)
             if style != RowStyle::Normal {
                 for (col_idx, f_key) in &col_configs {
-                    worksheet.set_cell_format(row_idx, *col_idx, registry.get(*f_key, style))?;
+                    let fmt = registry.get(*f_key, style);
+                    worksheet.set_cell_format(row_idx, *col_idx, fmt)?;
                 }
             }
 

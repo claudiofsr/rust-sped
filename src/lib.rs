@@ -23,9 +23,8 @@ use rust_decimal_macros::dec;
 
 pub use self::{
     analyze_all::*, analyze_one::*, args::*, blocos::*, config::*, error::*, excel_comum::*,
-    excel_workbook::*,
-    excel_worksheets::*, extractor::*, model::*, parser::*, regex::*, structures::*, tabelas::*,
-    traits::*, utils::*,
+    excel_workbook::*, excel_worksheets::*, extractor::*, model::*, parser::*, regex::*,
+    structures::*, tabelas::*, traits::*, utils::*,
 };
 
 // Definição da tolerância para comparações de ponto flutuante.
