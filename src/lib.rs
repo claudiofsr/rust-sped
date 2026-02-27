@@ -5,7 +5,6 @@ mod blocos;
 mod config;
 mod error;
 mod excel_comum;
-mod excel_workbook;
 mod excel_worksheets;
 mod extractor;
 mod macros;
@@ -23,8 +22,8 @@ use rust_decimal_macros::dec;
 
 pub use self::{
     analyze_all::*, analyze_one::*, args::*, blocos::*, config::*, error::*, excel_comum::*,
-    excel_workbook::*, excel_worksheets::*, extractor::*, model::*, parser::*, regex::*,
-    structures::*, tabelas::*, traits::*, utils::*,
+    excel_worksheets::*, extractor::*, model::*, parser::*, regex::*, structures::*, tabelas::*,
+    traits::*, utils::*,
 };
 
 // Definição da tolerância para comparações de ponto flutuante.

@@ -1,14 +1,15 @@
 use crate::{
     AnaliseDosCreditos, BUFFER_CAPACITY, ConsolidacaoCST, DocsFiscais, EFDError, EFDResult,
-    ResultExt, get_all_worksheets,
+    ResultExt, process_sheet_type,
 };
 use indicatif::MultiProgress;
 use rust_xlsxwriter::{
     Color, DocProperties, ExcelDateTime, Format, FormatAlign, workbook::Workbook,
+    worksheet::Worksheet,
 };
 use serde::Deserialize;
 use serde_aux::prelude::serde_introspect;
-use std::{collections::HashMap, fs::File, io::BufWriter, path::Path};
+use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, sync::Arc};
 
 /// Constantes estéticas para o Excel.
 pub const FONT_SIZE: f64 = 12.0;
@@ -171,7 +172,7 @@ pub fn create_xlsx(
 
     let multiprogressbar = MultiProgress::new();
     // Passamos o registro de formatos centralizado
-    let registry = FormatRegistry::new();
+    let registry = Arc::new(FormatRegistry::new());
 
     let worksheets =
         get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
@@ -182,6 +183,55 @@ pub fn create_xlsx(
 
     workbook.save_to_writer(buffer)?;
     Ok(())
+}
+
+/// Gera todas as planilhas em paralelo usando Rayon scope.
+pub fn get_all_worksheets(
+    data_efd: &[DocsFiscais],
+    data_cst: &[ConsolidacaoCST],
+    data_nat: &[AnaliseDosCreditos],
+    registry: &Arc<FormatRegistry>,
+    multiprogressbar: &MultiProgress,
+) -> EFDResult<Vec<Worksheet>> {
+    let mut res_efd = Ok(vec![]);
+    let mut res_cst = Ok(vec![]);
+    let mut res_nat = Ok(vec![]);
+
+    // Process all sheets in parallel scopes
+    rayon::scope(|s| {
+        s.spawn(|_| {
+            res_efd = process_sheet_type(
+                data_efd,
+                SheetType::ItensDocsFiscais,
+                registry,
+                multiprogressbar,
+                0,
+            )
+        });
+        s.spawn(|_| {
+            res_cst = process_sheet_type(
+                data_cst,
+                SheetType::ConsolidacaoCST,
+                registry,
+                multiprogressbar,
+                1,
+            )
+        });
+        s.spawn(|_| {
+            res_nat = process_sheet_type(
+                data_nat,
+                SheetType::AnaliseCreditos,
+                registry,
+                multiprogressbar,
+                2,
+            )
+        });
+    });
+
+    [res_efd, res_cst, res_nat]
+        .into_iter()
+        .collect::<EFDResult<Vec<Vec<Worksheet>>>>()
+        .map(|v| v.into_iter().flatten().collect())
 }
 
 /// Gera as propriedades padrão do documento Excel para ambos os módulos.

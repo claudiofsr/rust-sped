@@ -75,10 +75,10 @@ fn get_format_key(col_name: &str, sheet_type: SheetType) -> FormatKey {
 // --- Lógica Principal ---
 
 /// Gera as worksheets aplicando a serialização automática do Serde.
-pub fn get_worksheets<'de, T>(
+pub fn process_sheet_type<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
-    registry: &FormatRegistry,
+    registry: &Arc<FormatRegistry>,
     multiprogressbar: &MultiProgress,
     index: usize,
 ) -> EFDResult<Vec<Worksheet>>
@@ -103,7 +103,7 @@ where
             } else {
                 format!("{} {}", sheet_type, k + 1)
             };
-            get_worksheet(data, sheet_type, &name, registry, &mpb)
+            generate_worksheet(data, sheet_type, &name, registry, &mpb)
         })
         .collect::<EFDResult<Vec<_>>>()?;
 
@@ -111,7 +111,7 @@ where
     Ok(worksheets)
 }
 
-fn get_worksheet<'de, T>(
+fn generate_worksheet<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
     sheet_name: &str,
@@ -122,6 +122,8 @@ where
     T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync,
 {
     let headers = T::get_headers();
+
+    // Pre-calculate column configurations once per worksheet chunk
     let col_configs: Vec<(u16, FormatKey)> = headers
         .iter()
         .enumerate()
@@ -200,7 +202,8 @@ fn setup_worksheet(
 
     // Aplica formatos base às colunas
     for (i, f_key) in configs {
-        ws.set_column_format(*i, registry.get(*f_key, RowStyle::Normal))?;
+        let fmt = registry.get(*f_key, RowStyle::Normal);
+        ws.set_column_format(*i, fmt)?;
     }
 
     let table = Table::new().set_autofilter(true);
