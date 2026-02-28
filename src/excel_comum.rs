@@ -83,6 +83,18 @@ pub enum FormatKey {
     Date,
 }
 
+impl FormatKey {
+    pub fn new() -> [(FormatKey, FormatAlign, Option<&'static str>); 5] {
+        [
+            (FormatKey::Default, FormatAlign::Left, None),
+            (FormatKey::Center, FormatAlign::Center, None),
+            (FormatKey::Value, FormatAlign::Right, Some("#,##0.00")),
+            (FormatKey::Aliquota, FormatAlign::Center, Some("0.0000")),
+            (FormatKey::Date, FormatAlign::Center, Some("dd/mm/yyyy")),
+        ]
+    }
+}
+
 /// Estados de estilo para uma linha inteira.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RowStyle {
@@ -90,6 +102,17 @@ pub enum RowStyle {
     Soma,
     Desconto,
     Saldo,
+}
+
+impl RowStyle {
+    pub fn new() -> [(RowStyle, Option<Color>); 4] {
+        [
+            (RowStyle::Default, None),
+            (RowStyle::Soma, Some(COLOR_SOMA)),
+            (RowStyle::Desconto, Some(COLOR_DESCONTO)),
+            (RowStyle::Saldo, Some(COLOR_SALDO)),
+        ]
+    }
 }
 
 /// Gerenciador central de formatos que mapeia (Tipo de Coluna x Estilo de Linha).
@@ -102,20 +125,8 @@ impl FormatRegistry {
     /// Cria um novo registro com todos os formatos pré-calculados.
     pub fn new() -> Self {
         let mut matrix = HashMap::new();
-        let keys = [
-            (FormatKey::Default, FormatAlign::Left, None),
-            (FormatKey::Center, FormatAlign::Center, None),
-            (FormatKey::Value, FormatAlign::Right, Some("#,##0.00")),
-            (FormatKey::Aliquota, FormatAlign::Center, Some("0.0000")),
-            (FormatKey::Date, FormatAlign::Center, Some("dd/mm/yyyy")),
-        ];
-
-        let styles = [
-            (RowStyle::Default, None),
-            (RowStyle::Soma, Some(COLOR_SOMA)),
-            (RowStyle::Desconto, Some(COLOR_DESCONTO)),
-            (RowStyle::Saldo, Some(COLOR_SALDO)),
-        ];
+        let keys = FormatKey::new();
+        let styles = RowStyle::new();
 
         for (f_key, align, num_fmt) in keys {
             for (r_style, color) in styles {
