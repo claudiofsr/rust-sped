@@ -220,7 +220,7 @@ fn auto_fit<'de, T>(
 where
     T: Serialize + Deserialize<'de> + InfoExtension + Iterable + Sync,
 {
-    let widths: Vec<_> = headers
+    let widths: Vec<AtomicUsize> = headers
         .iter()
         .map(|h| AtomicUsize::new(WIDTH_MIN.max(h.len().div_ceil(5))))
         .collect();
@@ -228,7 +228,8 @@ where
     lines.par_iter().for_each(|line| {
         line.iter().enumerate().for_each(|(i, (_name, val))| {
             if let Some(atomic) = widths.get(i) {
-                atomic.fetch_max(calculate_value_len(sheet_type, val), Ordering::Relaxed);
+                let len = calculate_value_len(sheet_type, val);
+                atomic.fetch_max(len, Ordering::Relaxed);
             }
         });
     });
