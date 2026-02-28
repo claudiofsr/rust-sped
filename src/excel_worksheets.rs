@@ -140,9 +140,9 @@ where
         return Ok(Vec::new());
     }
 
-    let mpb = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
-    mpb.set_style(get_style(0, 0, 35)?);
-    mpb.set_message(format!("Excel: {}", sheet_type.as_str()));
+    let progressbar = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
+    progressbar.set_style(get_style(0, 0, 35)?);
+    progressbar.set_message(format!("Excel: {}", sheet_type.as_str()));
 
     // par_chunks é o método nativo do Rayon para slices.
     // Ele retorna um ParallelIterator diretamente.
@@ -157,11 +157,11 @@ where
             };
 
             // generate_worksheet será executado em paralelo para cada chunk
-            generate_worksheet(data, sheet_type, &name, registry, &mpb)
+            generate_worksheet(data, sheet_type, &name, registry, &progressbar)
         })
         .collect::<EFDResult<Vec<_>>>()?;
 
-    mpb.finish();
+    progressbar.finish();
     Ok(worksheets)
 }
 
@@ -237,8 +237,6 @@ where
         })?;
 
     auto_fit(&mut worksheet, lines, headers, sheet_type)?;
-
-    progressbar.finish();
 
     Ok(worksheet)
 }
