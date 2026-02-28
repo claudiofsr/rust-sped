@@ -184,14 +184,15 @@ where
 
 /// Helper para configurar o esqueleto da worksheet
 fn setup_worksheet(
-    ws: &mut Worksheet,
+    worksheet: &mut Worksheet,
     name: &str,
     num_cols: u16,
     num_lines: u32,
     configs: &[(u16, FormatKey)],
     registry: &FormatRegistry,
 ) -> EFDResult<()> {
-    ws.set_name(name)?
+    worksheet
+        .set_name(name)?
         .set_row_height(0, 64)?
         .set_row_format(0, &FormatRegistry::header())?
         .set_freeze_panes(1, 0)?;
@@ -199,12 +200,12 @@ fn setup_worksheet(
     // Aplica formatos base às colunas
     for (i, f_key) in configs {
         if let Some(fmt) = registry.get(*f_key, RowStyle::Default) {
-            ws.set_column_format(*i, fmt)?;
+            worksheet.set_column_format(*i, fmt)?;
         }
     }
 
     let table = Table::new().set_autofilter(true);
-    ws.add_table(0, 0, num_lines, num_cols - 1, &table)?;
+    worksheet.add_table(0, 0, num_lines, num_cols - 1, &table)?;
 
     Ok(())
 }
