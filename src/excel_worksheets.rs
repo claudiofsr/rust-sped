@@ -5,17 +5,23 @@ use indicatif::{MultiProgress, ProgressBar};
 use itertools::Itertools;
 use rayon::prelude::*;
 use rust_decimal::Decimal;
-use rust_xlsxwriter::{Table, Worksheet};
+use rust_xlsxwriter::{Table, Worksheet, workbook::Workbook};
 use serde::{Deserialize, Serialize};
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
+use std::{
+    fs::File,
+    io::BufWriter,
+    path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 use struct_iterable::Iterable;
 
 use crate::{
-    CodigoDoCredito, CodigoSituacaoTributaria, EFDResult, FORMAT_REGEX_SET, IndicadorDeOrigem,
-    NaturezaBaseCalculo, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst, excel_comum::*,
+    AnaliseDosCreditos, BUFFER_CAPACITY, CodigoDoCredito, CodigoSituacaoTributaria,
+    ConsolidacaoCST, DocsFiscais, EFDError, EFDResult, IndicadorDeOrigem, NaturezaBaseCalculo,
+    ResultExt, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst, excel_format::*,
 };
 
 // --- Macros ---
@@ -35,39 +41,87 @@ macro_rules! match_cast {
     }};
 }
 
-// --- Funções Auxiliares de Formatação ---
+// --- Lógica Principal ---
 
-/// Identifica a chave de formatação baseada no nome da coluna (Regex).
-fn get_format_key(col_name: &str, sheet_type: SheetType) -> FormatKey {
-    // 1. Casos específicos com short-circuit (mais rápidos que Regex)
-    if col_name.starts_with("Código de Situação Tributária")
-        || col_name.starts_with("Tipo de Crédito")
-    {
-        return if sheet_type.is_itens() {
-            FormatKey::Default
-        } else {
-            FormatKey::Center
-        };
+/// Gera o arquivo Excel principal.
+pub fn create_xlsx(
+    path_xlsx: &Path,
+    data_efd: &[DocsFiscais],
+    data_cst: &[ConsolidacaoCST],
+    data_nat: &[AnaliseDosCreditos],
+) -> EFDResult<()> {
+    let file = File::create(path_xlsx).map_loc(|e| EFDError::InOut {
+        source: e,
+        path: path_xlsx.to_path_buf(),
+    })?;
+
+    let buffer = BufWriter::with_capacity(BUFFER_CAPACITY, file);
+    let mut workbook = Workbook::new();
+    workbook.set_properties(&get_properties()?);
+
+    let multiprogressbar = MultiProgress::new();
+    // Passamos o registro de formatos centralizado
+    let registry = Arc::new(FormatRegistry::new());
+
+    let worksheets =
+        get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
+
+    for worksheet in worksheets {
+        workbook.push_worksheet(worksheet);
     }
 
-    // 2. Uso do RegexSet para categorias gerais
-    // matches() retorna um iterador com os índices que deram match.
-    // Usamos .into_iter().next() para pegar o primeiro match por prioridade.
-    FORMAT_REGEX_SET
-        .matches(col_name)
-        .into_iter()
-        .next()
-        .map(|index| match index {
-            0 => FormatKey::Value,
-            1 => FormatKey::Aliquota,
-            2 => FormatKey::Date,
-            3 => FormatKey::Center,
-            _ => FormatKey::Default,
-        })
-        .unwrap_or(FormatKey::Default)
+    workbook.save_to_writer(buffer)?;
+    Ok(())
 }
 
-// --- Lógica Principal ---
+/// Gera todas as planilhas em paralelo usando Rayon scope.
+pub fn get_all_worksheets(
+    data_efd: &[DocsFiscais],
+    data_cst: &[ConsolidacaoCST],
+    data_nat: &[AnaliseDosCreditos],
+    registry: &Arc<FormatRegistry>,
+    multiprogressbar: &MultiProgress,
+) -> EFDResult<Vec<Worksheet>> {
+    let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+    let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+    let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+
+    // Process all sheets in parallel scopes
+    rayon::scope(|s| {
+        s.spawn(|_| {
+            res_efd = process_sheet_type(
+                data_efd,
+                SheetType::ItensDocsFiscais,
+                registry,
+                multiprogressbar,
+                0,
+            )
+        });
+        s.spawn(|_| {
+            res_cst = process_sheet_type(
+                data_cst,
+                SheetType::ConsolidacaoCST,
+                registry,
+                multiprogressbar,
+                1,
+            )
+        });
+        s.spawn(|_| {
+            res_nat = process_sheet_type(
+                data_nat,
+                SheetType::AnaliseCreditos,
+                registry,
+                multiprogressbar,
+                2,
+            )
+        });
+    });
+
+    [res_efd, res_cst, res_nat]
+        .into_iter()
+        .collect::<EFDResult<Vec<Vec<Worksheet>>>>()
+        .map(|v| v.into_iter().flatten().collect())
+}
 
 /// Gera as worksheets aplicando a serialização automática do Serde.
 pub fn process_sheet_type<'de, T>(
@@ -168,7 +222,7 @@ where
             // 2. Aplica cores apenas se não for estilo Normal (Otimização)
             if style != RowStyle::Default {
                 for (col_idx, f_key) in &col_configs {
-                    if let Some(fmt) = registry.get(*f_key, style) {
+                    if let Some(fmt) = registry.get_format(*f_key, style) {
                         worksheet.set_cell_format(row_idx, *col_idx, fmt)?;
                     }
                 }
@@ -206,7 +260,7 @@ fn setup_worksheet(
 
     // Aplica formatos base às colunas
     for (i, f_key) in configs {
-        if let Some(fmt) = registry.get(*f_key, RowStyle::Default) {
+        if let Some(fmt) = registry.get_format(*f_key, RowStyle::Default) {
             worksheet.set_column_format(*i, fmt)?;
         }
     }

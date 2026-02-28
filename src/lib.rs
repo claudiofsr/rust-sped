@@ -4,7 +4,7 @@ mod args;
 mod blocos;
 mod config;
 mod error;
-mod excel_comum;
+mod excel_format;
 mod excel_worksheets;
 mod extractor;
 mod macros;
@@ -21,7 +21,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 pub use self::{
-    analyze_all::*, analyze_one::*, args::*, blocos::*, config::*, error::*, excel_comum::*,
+    analyze_all::*, analyze_one::*, args::*, blocos::*, config::*, error::*, excel_format::*,
     excel_worksheets::*, extractor::*, model::*, parser::*, regex::*, structures::*, tabelas::*,
     traits::*, utils::*,
 };

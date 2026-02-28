@@ -1,15 +1,8 @@
-use crate::{
-    AnaliseDosCreditos, BUFFER_CAPACITY, ConsolidacaoCST, DocsFiscais, EFDError, EFDResult,
-    ResultExt, process_sheet_type,
-};
-use indicatif::MultiProgress;
-use rust_xlsxwriter::{
-    Color, DocProperties, ExcelDateTime, Format, FormatAlign, workbook::Workbook,
-    worksheet::Worksheet,
-};
+use crate::{EFDResult, FORMAT_REGEX_SET};
+use rust_xlsxwriter::{Color, DocProperties, ExcelDateTime, Format, FormatAlign};
 use serde::{Deserialize, Serialize};
 use serde_aux::prelude::serde_introspect;
-use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, sync::Arc};
+use std::collections::HashMap;
 
 /// Constantes estéticas para o Excel.
 pub const FONT_SIZE: f64 = 12.0;
@@ -150,7 +143,7 @@ impl FormatRegistry {
 
     /// Obtém um formato específico da matriz.
     #[inline]
-    pub fn get(&self, f_key: FormatKey, r_style: RowStyle) -> Option<&Format> {
+    pub fn get_format(&self, f_key: FormatKey, r_style: RowStyle) -> Option<&Format> {
         self.matrix.get(&(f_key, r_style))
     }
 
@@ -162,86 +155,6 @@ impl FormatRegistry {
             .set_align(FormatAlign::VerticalCenter)
             .set_font_size(HEADER_FONT_SIZE)
     }
-}
-
-/// Gera o arquivo Excel principal.
-pub fn create_xlsx(
-    path_xlsx: &Path,
-    data_efd: &[DocsFiscais],
-    data_cst: &[ConsolidacaoCST],
-    data_nat: &[AnaliseDosCreditos],
-) -> EFDResult<()> {
-    let file = File::create(path_xlsx).map_loc(|e| EFDError::InOut {
-        source: e,
-        path: path_xlsx.to_path_buf(),
-    })?;
-
-    let buffer = BufWriter::with_capacity(BUFFER_CAPACITY, file);
-    let mut workbook = Workbook::new();
-    workbook.set_properties(&get_properties()?);
-
-    let multiprogressbar = MultiProgress::new();
-    // Passamos o registro de formatos centralizado
-    let registry = Arc::new(FormatRegistry::new());
-
-    let worksheets =
-        get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
-
-    for worksheet in worksheets {
-        workbook.push_worksheet(worksheet);
-    }
-
-    workbook.save_to_writer(buffer)?;
-    Ok(())
-}
-
-/// Gera todas as planilhas em paralelo usando Rayon scope.
-pub fn get_all_worksheets(
-    data_efd: &[DocsFiscais],
-    data_cst: &[ConsolidacaoCST],
-    data_nat: &[AnaliseDosCreditos],
-    registry: &Arc<FormatRegistry>,
-    multiprogressbar: &MultiProgress,
-) -> EFDResult<Vec<Worksheet>> {
-    let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(vec![]);
-    let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(vec![]);
-    let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(vec![]);
-
-    // Process all sheets in parallel scopes
-    rayon::scope(|s| {
-        s.spawn(|_| {
-            res_efd = process_sheet_type(
-                data_efd,
-                SheetType::ItensDocsFiscais,
-                registry,
-                multiprogressbar,
-                0,
-            )
-        });
-        s.spawn(|_| {
-            res_cst = process_sheet_type(
-                data_cst,
-                SheetType::ConsolidacaoCST,
-                registry,
-                multiprogressbar,
-                1,
-            )
-        });
-        s.spawn(|_| {
-            res_nat = process_sheet_type(
-                data_nat,
-                SheetType::AnaliseCreditos,
-                registry,
-                multiprogressbar,
-                2,
-            )
-        });
-    });
-
-    [res_efd, res_cst, res_nat]
-        .into_iter()
-        .collect::<EFDResult<Vec<Vec<Worksheet>>>>()
-        .map(|v| v.into_iter().flatten().collect())
 }
 
 /// Gera as propriedades padrão do documento Excel para ambos os módulos.
@@ -259,4 +172,36 @@ pub fn get_properties() -> EFDResult<DocProperties> {
         .set_creation_datetime(&date);
 
     Ok(properties)
+}
+
+// --- Funções Auxiliares de Formatação ---
+
+/// Identifica a chave de formatação baseada no nome da coluna (Regex).
+pub fn get_format_key(col_name: &str, sheet_type: SheetType) -> FormatKey {
+    // 1. Casos específicos com short-circuit (mais rápidos que Regex)
+    if col_name.starts_with("Código de Situação Tributária")
+        || col_name.starts_with("Tipo de Crédito")
+    {
+        return if sheet_type.is_itens() {
+            FormatKey::Default
+        } else {
+            FormatKey::Center
+        };
+    }
+
+    // 2. Uso do RegexSet para categorias gerais
+    // matches() retorna um iterador com os índices que deram match.
+    // Usamos .into_iter().next() para pegar o primeiro match por prioridade.
+    FORMAT_REGEX_SET
+        .matches(col_name)
+        .into_iter()
+        .next()
+        .map(|index| match index {
+            0 => FormatKey::Value,
+            1 => FormatKey::Aliquota,
+            2 => FormatKey::Date,
+            3 => FormatKey::Center,
+            _ => FormatKey::Default,
+        })
+        .unwrap_or(FormatKey::Default)
 }
