@@ -7,7 +7,7 @@ use rust_xlsxwriter::{
     Color, DocProperties, ExcelDateTime, Format, FormatAlign, workbook::Workbook,
     worksheet::Worksheet,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_aux::prelude::serde_introspect;
 use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, sync::Arc};
 
@@ -15,11 +15,33 @@ use std::{collections::HashMap, fs::File, io::BufWriter, path::Path, sync::Arc};
 pub const FONT_SIZE: f64 = 12.0;
 pub const HEADER_FONT_SIZE: f64 = 11.0;
 pub const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
+pub const WIDTH_MIN: usize = 10;
+pub const WIDTH_MAX: usize = 100;
+pub const ADJUSTMENT: f64 = 1.2;
 
 /// Cores de fundo para identificação visual de tipos de linha.
 pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
 pub const COLOR_DESCONTO: Color = Color::RGB(0xCCC0DA);
 pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
+
+// --- Traits & Enums ---
+
+/// Extensão para obter metadados de headers via Serde Introspection.
+pub trait InfoExtension {
+    fn get_headers<'de>() -> &'static [&'static str]
+    where
+        Self: Serialize + Deserialize<'de>,
+    {
+        serde_introspect::<Self>()
+    }
+}
+
+/// Trait para registros que decidem seu estilo visual (Cores de linha).
+pub trait ExcelCustomFormatter {
+    fn row_style(&self) -> RowStyle {
+        RowStyle::Default
+    }
+}
 
 /// Representa as diferentes abas (worksheets) geradas no arquivo Excel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,16 +73,6 @@ impl std::fmt::Display for SheetType {
     }
 }
 
-/// Extensão para obter metadados de headers via Serde Introspection.
-pub trait InfoExtension {
-    fn get_headers<'de>() -> &'static [&'static str]
-    where
-        Self: Deserialize<'de>,
-    {
-        serde_introspect::<Self>()
-    }
-}
-
 /// Identificadores para tipos de formatação de coluna.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FormatKey {
@@ -69,18 +81,15 @@ pub enum FormatKey {
     Value,
     Aliquota,
     Date,
-    Integer,
 }
 
 /// Estados de estilo para uma linha inteira.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[repr(usize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RowStyle {
-    #[default]
-    Normal = 0,
-    Soma = 1,
-    Desconto = 2,
-    Saldo = 3,
+    Default,
+    Soma,
+    Desconto,
+    Saldo,
 }
 
 /// Gerenciador central de formatos que mapeia (Tipo de Coluna x Estilo de Linha).
@@ -99,11 +108,10 @@ impl FormatRegistry {
             (FormatKey::Value, FormatAlign::Right, Some("#,##0.00")),
             (FormatKey::Aliquota, FormatAlign::Center, Some("0.0000")),
             (FormatKey::Date, FormatAlign::Center, Some("dd/mm/yyyy")),
-            (FormatKey::Integer, FormatAlign::Center, Some("#")),
         ];
 
         let styles = [
-            (RowStyle::Normal, None),
+            (RowStyle::Default, None),
             (RowStyle::Soma, Some(COLOR_SOMA)),
             (RowStyle::Desconto, Some(COLOR_DESCONTO)),
             (RowStyle::Saldo, Some(COLOR_SALDO)),
@@ -131,10 +139,8 @@ impl FormatRegistry {
 
     /// Obtém um formato específico da matriz.
     #[inline]
-    pub fn get(&self, f_key: FormatKey, r_style: RowStyle) -> &Format {
-        self.matrix
-            .get(&(f_key, r_style))
-            .expect("Format matrix incomplete")
+    pub fn get(&self, f_key: FormatKey, r_style: RowStyle) -> Option<&Format> {
+        self.matrix.get(&(f_key, r_style))
     }
 
     /// Atalho para formato de cabeçalho.
@@ -144,13 +150,6 @@ impl FormatRegistry {
             .set_align(FormatAlign::Center)
             .set_align(FormatAlign::VerticalCenter)
             .set_font_size(HEADER_FONT_SIZE)
-    }
-}
-
-/// Trait para registros que decidem seu estilo visual (Cores de linha).
-pub trait ExcelCustomFormatter {
-    fn row_style(&self) -> RowStyle {
-        RowStyle::Normal
     }
 }
 
@@ -193,9 +192,9 @@ pub fn get_all_worksheets(
     registry: &Arc<FormatRegistry>,
     multiprogressbar: &MultiProgress,
 ) -> EFDResult<Vec<Worksheet>> {
-    let mut res_efd = Ok(vec![]);
-    let mut res_cst = Ok(vec![]);
-    let mut res_nat = Ok(vec![]);
+    let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+    let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+    let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(vec![]);
 
     // Process all sheets in parallel scopes
     rayon::scope(|s| {

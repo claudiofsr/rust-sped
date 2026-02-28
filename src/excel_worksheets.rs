@@ -35,11 +35,6 @@ macro_rules! match_cast {
     }};
 }
 
-// --- Constantes Estéticas ---
-const WIDTH_MIN: usize = 10;
-const WIDTH_MAX: usize = 100;
-const ADJUSTMENT: f64 = 1.2;
-
 // --- Funções Auxiliares de Formatação ---
 
 /// Identifica a chave de formatação baseada no nome da coluna (Regex).
@@ -166,10 +161,11 @@ where
             worksheet.serialize(line)?;
 
             // 2. Aplica cores apenas se não for estilo Normal (Otimização)
-            if style != RowStyle::Normal {
+            if style != RowStyle::Default {
                 for (col_idx, f_key) in &col_configs {
-                    let fmt = registry.get(*f_key, style);
-                    worksheet.set_cell_format(row_idx, *col_idx, fmt)?;
+                    if let Some(fmt) = registry.get(*f_key, style) {
+                        worksheet.set_cell_format(row_idx, *col_idx, fmt)?;
+                    }
                 }
             }
 
@@ -202,8 +198,9 @@ fn setup_worksheet(
 
     // Aplica formatos base às colunas
     for (i, f_key) in configs {
-        let fmt = registry.get(*f_key, RowStyle::Normal);
-        ws.set_column_format(*i, fmt)?;
+        if let Some(fmt) = registry.get(*f_key, RowStyle::Default) {
+            ws.set_column_format(*i, fmt)?;
+        }
     }
 
     let table = Table::new().set_autofilter(true);

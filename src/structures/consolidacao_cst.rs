@@ -180,7 +180,7 @@ impl ExcelCustomFormatter for ConsolidacaoCST {
             Some(CodigoSituacaoTributaria::TotalReceitasSaidas)
             | Some(CodigoSituacaoTributaria::TotalAquisicoes) => RowStyle::Soma,
 
-            _ => RowStyle::Normal,
+            _ => RowStyle::Default,
         }
     }
 }

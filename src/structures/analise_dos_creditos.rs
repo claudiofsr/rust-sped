@@ -327,7 +327,7 @@ impl ExcelCustomFormatter for AnaliseDosCreditos {
             Some(SaldoDisponivelPis | SaldoDisponivelCofins) => RowStyle::Saldo,
 
             // Caso padrão (Naturezas de operação 01..18, ajustes, outros ou None)
-            _ => RowStyle::Normal,
+            _ => RowStyle::Default,
         }
     }
 }
