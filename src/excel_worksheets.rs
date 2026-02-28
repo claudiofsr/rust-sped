@@ -78,7 +78,9 @@ pub fn process_sheet_type<'de, T>(
     index: usize,
 ) -> EFDResult<Vec<Worksheet>>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync,
+    // T: Sync é necessário para par_chunks (referência compartilhada entre threads)
+    // T: Send é necessário para mover o processamento para outras threads
+    T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync + Send,
 {
     if lines.is_empty() {
         return Ok(Vec::new());
@@ -86,18 +88,21 @@ where
 
     let mpb = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
     mpb.set_style(get_style(0, 0, 35)?);
-    mpb.set_message(format!("Excel: {}", sheet_type));
+    mpb.set_message(format!("Excel: {}", sheet_type.as_str()));
 
+    // par_chunks é o método nativo do Rayon para slices.
+    // Ele retorna um ParallelIterator diretamente.
     let worksheets = lines
-        .chunks(MAX_NUMBER_OF_ROWS)
-        .enumerate()
-        .par_bridge() // Rayon: Processa os chunks em paralelo
+        .par_chunks(MAX_NUMBER_OF_ROWS)
+        .enumerate() // Este é o enumerate do Rayon (paralelo)
         .map(|(k, data)| {
             let name = if k == 0 {
                 sheet_type.as_str().to_owned()
             } else {
-                format!("{} {}", sheet_type, k + 1)
+                format!("{} {}", sheet_type.as_str(), k + 1)
             };
+
+            // generate_worksheet será executado em paralelo para cada chunk
             generate_worksheet(data, sheet_type, &name, registry, &mpb)
         })
         .collect::<EFDResult<Vec<_>>>()?;
