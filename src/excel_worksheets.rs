@@ -119,7 +119,7 @@ fn generate_worksheet<'de, T>(
     progressbar: &ProgressBar,
 ) -> EFDResult<Worksheet>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync,
+    T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync + Send,
 {
     let headers = T::get_headers();
 
