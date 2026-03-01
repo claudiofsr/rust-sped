@@ -134,7 +134,7 @@ pub fn process_sheet_type<'de, T>(
 where
     // T: Sync é necessário para par_chunks (referência compartilhada entre threads)
     // T: Send é necessário para mover o processamento para outras threads
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync + Send,
+    T: Serialize + Deserialize<'de> + Iterable + ExcelExtension + Sync + Send,
 {
     if lines.is_empty() {
         return Ok(Vec::new());
@@ -173,7 +173,7 @@ fn generate_worksheet<'de, T>(
     progressbar: &ProgressBar,
 ) -> EFDResult<Worksheet>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable + ExcelCustomFormatter + Sync + Send,
+    T: Serialize + Deserialize<'de> + Iterable + ExcelExtension + Sync + Send,
 {
     let headers = T::get_headers();
 
@@ -277,7 +277,7 @@ fn auto_fit<'de, T>(
     sheet_type: SheetType,
 ) -> EFDResult<()>
 where
-    T: Serialize + Deserialize<'de> + InfoExtension + Iterable + Sync,
+    T: Serialize + Deserialize<'de> + ExcelExtension + Iterable + Sync,
 {
     let widths: Vec<AtomicUsize> = headers
         .iter()

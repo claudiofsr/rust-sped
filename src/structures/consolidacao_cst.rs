@@ -21,9 +21,9 @@ use tabled::{
 };
 
 use crate::{
-    CSTOption, CodigoSituacaoTributaria, Despise, DocsFiscais, EFDResult, ExcelCustomFormatter,
-    InfoExtension, MesesDoAno, RowStyle, consolidar_registros, display_decimal, display_mes,
-    display_value, realizar_somas_trimestrais, serialize_decimal, verificar_periodo_multiplo,
+    CSTOption, CodigoSituacaoTributaria, Despise, DocsFiscais, EFDResult, ExcelExtension,
+    MesesDoAno, RowStyle, consolidar_registros, display_decimal, display_mes, display_value,
+    realizar_somas_trimestrais, serialize_decimal, verificar_periodo_multiplo,
 };
 
 // ==============================================================================
@@ -172,9 +172,7 @@ pub struct ConsolidacaoCST {
     pub valor_cofins: Decimal,
 }
 
-impl InfoExtension for ConsolidacaoCST {}
-
-impl ExcelCustomFormatter for ConsolidacaoCST {
+impl ExcelExtension for ConsolidacaoCST {
     fn row_style(&self) -> RowStyle {
         match self.cst {
             Some(CodigoSituacaoTributaria::TotalReceitasSaidas)

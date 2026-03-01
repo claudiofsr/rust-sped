@@ -19,18 +19,17 @@ pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
 
 // --- Traits & Enums ---
 
-/// Extensão para obter metadados de headers via Serde Introspection.
-pub trait InfoExtension {
+/// Extensão para gerar arquivos Excel
+pub trait ExcelExtension {
+    /// Extensão para obter metadados de headers via Serde Introspection.
     fn get_headers<'de>() -> &'static [&'static str]
     where
         Self: Serialize + Deserialize<'de>,
     {
         serde_introspect::<Self>()
     }
-}
 
-/// Trait para registros que decidem seu estilo visual (Cores de linha).
-pub trait ExcelCustomFormatter {
+    /// Trait para registros que decidem seu estilo visual (Cores de linha).
     fn row_style(&self) -> RowStyle {
         RowStyle::Default
     }

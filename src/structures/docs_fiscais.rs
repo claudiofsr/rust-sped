@@ -11,9 +11,9 @@ use std::sync::Arc;
 use struct_iterable::Iterable;
 
 use crate::{
-    CodigoDoCredito, CodigoSituacaoTributaria, ExcelCustomFormatter, FloatExt, GrupoDeContas,
-    IndicadorDeOrigem, InfoExtension, MesesDoAno, NaturezaBaseCalculo, TipoDeCredito,
-    TipoDeOperacao, TipoDeRateio, TipoDoItem, obter_descricao_do_cfop,
+    CodigoDoCredito, CodigoSituacaoTributaria, ExcelExtension, FloatExt, GrupoDeContas,
+    IndicadorDeOrigem, MesesDoAno, NaturezaBaseCalculo, TipoDeCredito, TipoDeOperacao,
+    TipoDeRateio, TipoDoItem, obter_descricao_do_cfop,
 };
 
 #[derive(Debug, Clone)]
@@ -235,9 +235,7 @@ pub struct DocsFiscais {
     pub valor_icms: Option<Decimal>,
 }
 
-impl InfoExtension for DocsFiscais {}
-
-impl ExcelCustomFormatter for DocsFiscais {}
+impl ExcelExtension for DocsFiscais {}
 
 /// Helper function to serialize Option<Decimal> as f64 (Excel Number)
 pub fn serialize_option_decimal<S>(

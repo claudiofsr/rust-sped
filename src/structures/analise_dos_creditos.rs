@@ -25,11 +25,11 @@ use tabled::{
 
 use crate::{
     AppConfig, CSTOption, CodigoDoCredito, CodigoSituacaoTributaria, DECIMAL_ALIQ, DecimalExt,
-    Despise, DocsFiscais, EFDResult, ExcelCustomFormatter, InfoExtension, MesesDoAno, NatBCOption,
-    NaturezaBaseCalculo, RowStyle, TipoDeCredito, TipoDeOperacao, TipoDeRateio, Tributo,
-    apurar_receita_bruta, consolidar_registros, display_cst, display_decimal, display_mes,
-    display_value, realizar_somas_trimestrais, serialize_cst, serialize_decimal,
-    serialize_natureza_opt, serialize_option_decimal, verificar_periodo_multiplo,
+    Despise, DocsFiscais, EFDResult, ExcelExtension, MesesDoAno, NatBCOption, NaturezaBaseCalculo,
+    RowStyle, TipoDeCredito, TipoDeOperacao, TipoDeRateio, Tributo, apurar_receita_bruta,
+    consolidar_registros, display_cst, display_decimal, display_mes, display_value,
+    realizar_somas_trimestrais, serialize_cst, serialize_decimal, serialize_natureza_opt,
+    serialize_option_decimal, verificar_periodo_multiplo,
 };
 
 use CodigoSituacaoTributaria::*;
@@ -311,9 +311,7 @@ pub struct AnaliseDosCreditos {
     pub valor_rb_cum: Decimal,
 }
 
-impl InfoExtension for AnaliseDosCreditos {}
-
-impl ExcelCustomFormatter for AnaliseDosCreditos {
+impl ExcelExtension for AnaliseDosCreditos {
     fn row_style(&self) -> RowStyle {
         match self.natureza_bc {
             // "Soma" - Intervalo 101 a 199 ou 300
