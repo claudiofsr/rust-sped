@@ -319,14 +319,14 @@ fn calculate_value_len(sheet_type: SheetType, field_value: &dyn std::any::Any) -
                     cst.descricao_com_codigo().len() * 70 / 100
                 } else {
                     // Planilha Compacta: Apenas os dígitos "01"
-                    display_cst(&Some(*cst)).len() * 82 / 100
+                    display_cst(&Some(*cst)).len() * 80 / 100
                 }
             })
         },
 
         val as Option<NaturezaBaseCalculo> => {
             val.as_ref().map_or(0, |n| {
-                n.descricao_com_codigo().len() * 74 / 100
+                n.descricao_com_codigo().len() * 72 / 100
             })
         },
 

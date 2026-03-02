@@ -220,8 +220,6 @@ impl From<(Keys, Values)> for ConsolidacaoCST {
 // ==============================================================================
 
 pub fn display_cst(cst_opt: &Option<CodigoSituacaoTributaria>) -> String {
-    // cst_opt.map(|c| c.to_string()).unwrap_or_default()
-    // cst_opt.map(|cst| format!("{:02}", cst.code())).unwrap_or_default()
     match cst_opt.code() {
         Some(490) => "Total Receitas/Saídas".to_string(),
         Some(980) => "Total Aquisições/Custos/Despesas".to_string(),
