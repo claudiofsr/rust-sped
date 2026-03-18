@@ -39,7 +39,7 @@ readme = "README.md"
 [dependencies]
 anstyle = "1.0" # used by clap color
 blake3 = { version = "1.8", features = ["rayon"] }
-clap_complete = "4.5"
+clap_complete = "4.6"
 chrono = { version = "0.4", features = ["serde"] }
 compact_str = { version = "0.9", features = ["serde"] }
 csv = "1.4"
@@ -60,7 +60,7 @@ serde_derive = "1.0"
 serde-aux = "4.7"
 struct_iterable = "0.1"
 tabled = { version = "0.20", features = ["ansi"] }
-tempfile = "3.25"
+tempfile = "3.27"
 thiserror = "2.0"
 
 log = "0.4"
@@ -81,7 +81,7 @@ features = [
 ]
 
 [dependencies.clap]
-version = "4.5"
+version = "4.6"
 features = [
     "derive",
     "color",
