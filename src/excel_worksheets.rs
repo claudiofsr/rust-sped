@@ -141,7 +141,7 @@ where
     }
 
     let progressbar = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
-    progressbar.set_style(get_style(0, 0, 32)?);
+    progressbar.set_style(get_style(0, 0, 33)?);
     progressbar.set_message(format!("Excel: {}", sheet_type.as_str()));
 
     // par_chunks é o método nativo do Rayon para slices.
