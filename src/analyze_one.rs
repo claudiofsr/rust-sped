@@ -316,7 +316,7 @@ fn initialize_progressbar(
 
     let progressbar: ProgressBar =
         multiprogressbar.insert(index, ProgressBar::new(number_of_lines));
-    let style = get_style(0, 0, 35).map_loc(|_| EFDError::InvalidStyle)?;
+    let style = get_style(0, 0, 32).map_loc(|_| EFDError::InvalidStyle)?;
     progressbar.set_style(style);
 
     Ok((progressbar, number_of_lines))
