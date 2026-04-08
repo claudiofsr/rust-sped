@@ -91,7 +91,7 @@ features = [
 ]
 
 [dependencies.rust_decimal]
-version = "1.40"
+version = "1.41"
 features = [
     #"serde-str",
     #"serde-float",
