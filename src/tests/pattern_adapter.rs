@@ -25,7 +25,7 @@ Agora, queremos usar uma struct `Turkey` (com interface diferente) como se fosse
 // cargo test -- --show-output
 
 /// Run tests with:
-/// cargo test -- --show-output parser_tests
+/// cargo test -- --show-output pattern_adapter_tests
 #[cfg(test)]
 mod pattern_adapter_tests {
     // Interface Duck

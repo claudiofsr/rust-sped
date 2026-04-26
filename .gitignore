@@ -6,4 +6,5 @@ efd_contribuicoes*
 *.csv
 *.xlsx
 *.txt
+*.zst
 .vscode

@@ -10,10 +10,10 @@ mod extractor;
 mod macros;
 mod model;
 mod parser;
-mod pattern_adapter;
 mod regex;
 mod structures;
 mod tabelas;
+mod tests;
 mod traits;
 mod utils;
 
