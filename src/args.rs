@@ -1,6 +1,10 @@
-use clap::{CommandFactory, Parser};
+use clap::{
+    CommandFactory, Parser,
+    builder::styling::{AnsiColor, Color, Style},
+};
 use clap_complete::{Generator, Shell, generate};
 use claudiofsr_lib::clear_terminal_screen;
+use colored::Colorize;
 use std::{
     io,
     process, // process::exit(1)
@@ -13,21 +17,15 @@ use crate::EFDResult;
 ///
 /// <https://stackoverflow.com/questions/74068168/clap-rs-not-printing-colors-during-help>
 pub fn get_styles() -> clap::builder::Styles {
-    // colors
-    let yellow = anstyle::Color::Ansi(anstyle::AnsiColor::Yellow);
-    let cyan = anstyle::Color::Ansi(anstyle::AnsiColor::Cyan);
-    let green = anstyle::Color::Ansi(anstyle::AnsiColor::Green);
+    let cyan = Color::Ansi(AnsiColor::Cyan);
+    let green = Color::Ansi(AnsiColor::Green);
+    let yellow = Color::Ansi(AnsiColor::Yellow);
 
     clap::builder::Styles::styled()
-        .placeholder(anstyle::Style::new().fg_color(Some(yellow)))
-        .usage(anstyle::Style::new().fg_color(Some(cyan)).bold())
-        .header(
-            anstyle::Style::new()
-                .fg_color(Some(cyan))
-                .bold()
-                .underline(),
-        )
-        .literal(anstyle::Style::new().fg_color(Some(green)))
+        .placeholder(Style::new().fg_color(Some(yellow)))
+        .usage(Style::new().fg_color(Some(cyan)).bold())
+        .header(Style::new().fg_color(Some(cyan)).bold().underline())
+        .literal(Style::new().fg_color(Some(green)))
 }
 
 /// Template para customizar a exibição do Help.
@@ -142,7 +140,7 @@ pub struct Arguments {
     ///
     /// Reter apenas itens de operações de crédito em arquivos Excel e CSV.
     ///
-    /// Ou seja, imprimir nos arquivos finais itens de operações com alguna
+    /// Ou seja, imprimir nos arquivos finais itens de operações com alguma
     ///
     /// Natureza da Base de Cálculo.
     #[arg(
@@ -225,7 +223,9 @@ impl Arguments {
         let cmd_name = cmd.get_name().to_string();
         let mut stdout = io::stdout();
 
-        log::info!("Gerando arquivo de auto-complete para {gen:?}...");
+        let log_msg = format!("Gerando arquivo de auto-complete para {gen:?}...").green();
+        log::info!("{}", log_msg);
+
         generate(r#gen, &mut cmd, cmd_name, &mut stdout);
         process::exit(0);
     }
@@ -240,9 +240,6 @@ impl Arguments {
 
 #[cfg(test)]
 mod tests_args {
-    // cargo test -- --help
-    // cargo test -- --nocapture
-    // cargo test -- --show-output
     use super::*;
 
     /// Verifica se a estrutura do CLI está íntegra e sem conflitos de nomes/flags.
