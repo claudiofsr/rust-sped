@@ -59,7 +59,7 @@ serde = { version = "1.0", features = ["derive", "rc"] }
 serde_derive = "1.0"
 serde-aux = "4.7"
 struct_iterable = "0.1"
-tabled = { version = "0.20", features = ["ansi"] }
+tabled = { version = "0.21", features = ["ansi"] }
 tempfile = "3.27"
 thiserror = "2.0"
 
@@ -91,7 +91,7 @@ features = [
 ]
 
 [dependencies.rust_decimal]
-version = "1.41"
+version = "1.42"
 features = [
     #"serde-str",
     #"serde-float",
@@ -99,7 +99,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.94"
+version = "0.95"
 features = [
     # "constant_memory",
     "chrono",
