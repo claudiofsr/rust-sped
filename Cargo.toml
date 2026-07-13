@@ -3,7 +3,7 @@ name = "efd_contribuicoes"
 authors = ["Claudio F S Rodrigues <claudiofsrodrigues@gmail.com>"]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.95.0"
+rust-version = "1.97.0"
 description = """
 Analisar informações contidas em arquivos de SPED EFD Contribuições
 https://github.com/claudiofsr/rust-sped
@@ -40,7 +40,7 @@ readme = "README.md"
 blake3 = { version = "1.8", features = ["rayon"] }
 clap_complete = "4.6"
 chrono = { version = "0.4", features = ["serde"] }
-compact_str = { version = "0.9", features = ["serde"] }
+compact_str = { version = "0.10", features = ["serde"] }
 csv = "1.4"
 colored = "3.1"
 encoding_rs = "0.8"
@@ -48,11 +48,11 @@ encoding_rs_io = "0.1"
 execution-time = "0.3"
 glob = "0.3"
 indicatif = {version = "0.18", features = ["rayon"] } # ProgressBar
-itertools = "0.14"
+itertools = "0.15"
 # memmap2 = "0.9"
 rand = "0.10"
 rayon = "1.12"
-regex = "1.12"
+regex = "1.13"
 rust_decimal_macros = "1.40"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_derive = "1.0"
@@ -98,7 +98,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.95"
+version = "0.96"
 features = [
     # "constant_memory",
     "chrono",

@@ -5,12 +5,12 @@ use serde_aux::prelude::serde_introspect;
 use std::collections::HashMap;
 
 /// Constantes estéticas para o Excel.
-pub const FONT_SIZE: f64 = 12.0;
-pub const HEADER_FONT_SIZE: f64 = 11.0;
+pub const FONT_SIZE: f64 = 14.0;
+pub const HEADER_FONT_SIZE: f64 = 12.0;
 pub const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
 pub const WIDTH_MIN: usize = 10;
 pub const WIDTH_MAX: usize = 100;
-pub const ADJUSTMENT: f64 = 1.2;
+pub const ADJUSTMENT: f64 = 1.45;
 
 /// Cores de fundo para identificação visual de tipos de linha.
 pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
