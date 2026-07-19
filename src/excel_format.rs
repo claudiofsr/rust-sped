@@ -1,5 +1,4 @@
 use crate::{EFDResult, FORMAT_REGEX_SET};
-use clap::ValueEnum;
 use rust_xlsxwriter::{Color, DocProperties, ExcelDateTime, Format, FormatAlign};
 use serde::{Deserialize, Serialize};
 use serde_aux::prelude::serde_introspect;
@@ -17,17 +16,6 @@ pub const ADJUSTMENT: f64 = 1.45;
 pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
 pub const COLOR_DESCONTO: Color = Color::RGB(0xCCC0DA);
 pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
-
-/// Modos de consumo de memória para a geração do arquivo Excel.
-#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExcelMemoryMode {
-    /// Armazena toda a estrutura em memória RAM (via processamento paralelo com Rayon).
-    InMemory,
-    /// Consumo de memória constante, que grava os dados diretamente no disco de forma contínua.
-    ConstantMemory,
-    /// Baixa memória, focado na geração de arquivos compactos através do uso de strings compartilhadas.
-    LowMemory,
-}
 
 // --- Traits & Enums ---
 

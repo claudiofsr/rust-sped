@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use clap::ValueEnum;
 use claudiofsr_lib::{digit_count, get_style};
 use compact_str::CompactString;
 use indicatif::{MultiProgress, ProgressBar};
@@ -23,6 +24,17 @@ use crate::{
     ConsolidacaoCST, DocsFiscais, EFDError, EFDResult, IndicadorDeOrigem, NaturezaBaseCalculo,
     ResultExt, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst, excel_format::*,
 };
+
+/// Modos de consumo de memória para a geração do arquivo Excel.
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExcelMemoryMode {
+    /// Consumo de memória constante, que grava os dados diretamente no disco de forma contínua.
+    ConstantMemory,
+    /// Baixa memória, focado na geração de arquivos compactos através do uso de strings compartilhadas.
+    LowMemory,
+    /// Armazena toda a estrutura em memória RAM (via processamento paralelo com Rayon).
+    InMemory,
+}
 
 // --- Macros ---
 
