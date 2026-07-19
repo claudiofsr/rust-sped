@@ -65,7 +65,7 @@ pub fn create_xlsx(
     let registry = Arc::new(FormatRegistry::new());
 
     match memory_mode {
-        ExcelMemoryMode::Default => {
+        ExcelMemoryMode::InMemory => {
             // Preserva a lógica de paralelização via Rayon
             let worksheets =
                 get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
@@ -357,7 +357,7 @@ where
         let worksheet = match memory_mode {
             ExcelMemoryMode::ConstantMemory => workbook.add_worksheet_with_constant_memory(),
             ExcelMemoryMode::LowMemory => workbook.add_worksheet_with_low_memory(),
-            ExcelMemoryMode::Default => workbook.add_worksheet(),
+            ExcelMemoryMode::InMemory => workbook.add_worksheet(),
         };
 
         worksheet.set_name(&name)?;

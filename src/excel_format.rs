@@ -21,11 +21,11 @@ pub const COLOR_SALDO: Color = Color::RGB(0xE6B8B7);
 /// Modos de consumo de memória para a geração do arquivo Excel.
 #[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExcelMemoryMode {
-    /// Modo padrão (alto desempenho com paralelismo total via Rayon).
-    Default,
-    /// Modo de memória constante (escreve as linhas diretamente para o disco).
+    /// Armazena toda a estrutura em memória RAM (via processamento paralelo com Rayon).
+    InMemory,
+    /// Consumo de memória constante, que grava os dados diretamente no disco de forma contínua.
     ConstantMemory,
-    /// Modo de baixa memória (mantém arquivo compacto usando shared strings).
+    /// Baixa memória, focado na geração de arquivos compactos através do uso de strings compartilhadas.
     LowMemory,
 }
 
