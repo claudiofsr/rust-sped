@@ -66,6 +66,7 @@ pub fn executar_programa(config: &AppConfig, write: &mut dyn Write) -> EFDResult
                     &filtered_lines,
                     &consolidacao_cst,
                     &consolidacao_nat,
+                    config.memory_mode,
                 )
             }
         },

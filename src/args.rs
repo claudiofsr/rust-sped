@@ -11,7 +11,7 @@ use std::{
     str,
 };
 
-use crate::EFDResult;
+use crate::{EFDResult, ExcelMemoryMode};
 
 /// Define os estilos de cores para o terminal (Interface Moderna).
 ///
@@ -133,6 +133,18 @@ pub struct Arguments {
     */
     #[arg(short('g'), long("generate"), value_enum)]
     pub generator: Option<Shell>,
+
+    /// Seleciona o modo de consumo de memória para a geração da planilha Excel.
+    ///
+    /// Select the memory consumption mode for generating the Excel spreadsheet.
+    #[arg(
+        short('m'),
+        long("memory_mode"),
+        value_enum,
+        verbatim_doc_comment,
+        default_value_t = ExcelMemoryMode::Default
+    )]
+    pub memory_mode: ExcelMemoryMode,
 
     /// Retém apenas itens que geram crédito (50 <= CST <= 66).
     ///

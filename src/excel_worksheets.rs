@@ -49,6 +49,7 @@ pub fn create_xlsx(
     data_efd: &[DocsFiscais],
     data_cst: &[ConsolidacaoCST],
     data_nat: &[AnaliseDosCreditos],
+    memory_mode: ExcelMemoryMode,
 ) -> EFDResult<()> {
     let file = File::create(path_xlsx).map_loc(|e| EFDError::InOut {
         source: e,
@@ -63,11 +64,27 @@ pub fn create_xlsx(
     // Passamos o registro de formatos centralizado
     let registry = Arc::new(FormatRegistry::new());
 
-    let worksheets =
-        get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
-
-    for worksheet in worksheets {
-        workbook.push_worksheet(worksheet);
+    match memory_mode {
+        ExcelMemoryMode::Default => {
+            // Preserva a lógica de paralelização via Rayon
+            let worksheets =
+                get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
+            for worksheet in worksheets {
+                workbook.push_worksheet(worksheet);
+            }
+        }
+        ExcelMemoryMode::ConstantMemory | ExcelMemoryMode::LowMemory => {
+            // Executa sequencialmente gravando diretamente no buffer do Workbook
+            write_sequentially_to_workbook(
+                &mut workbook,
+                data_efd,
+                data_cst,
+                data_nat,
+                &registry,
+                &multiprogressbar,
+                memory_mode,
+            )?;
+        }
     }
 
     workbook.save_to_writer(buffer)?;
@@ -75,6 +92,10 @@ pub fn create_xlsx(
 }
 
 /// Gera todas as planilhas em paralelo usando Rayon scope.
+///
+/// This approach uses `rayon::scope` with safe default initialization.
+/// Since `Vec::new()` does not perform heap allocations until elements are pushed,
+/// initializing with `Ok(Vec::new())` is efficient and avoids `expect`/`unwrap` panics.
 pub fn get_all_worksheets(
     data_efd: &[DocsFiscais],
     data_cst: &[ConsolidacaoCST],
@@ -82,9 +103,10 @@ pub fn get_all_worksheets(
     registry: &Arc<FormatRegistry>,
     multiprogressbar: &MultiProgress,
 ) -> EFDResult<Vec<Worksheet>> {
-    let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(vec![]);
-    let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(vec![]);
-    let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(vec![]);
+    // Initializing with Ok(Vec::new()) has zero heap-allocation cost.
+    let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
+    let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
+    let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
 
     // Process all sheets in parallel scopes
     rayon::scope(|s| {
@@ -117,13 +139,15 @@ pub fn get_all_worksheets(
         });
     });
 
-    [res_efd, res_cst, res_nat]
-        .into_iter()
-        .collect::<EFDResult<Vec<Vec<Worksheet>>>>()
-        .map(|v| v.into_iter().flatten().collect())
+    // Safely propagate potential errors and extend the vectors
+    let mut worksheets = res_efd?;
+    worksheets.extend(res_cst?);
+    worksheets.extend(res_nat?);
+
+    Ok(worksheets)
 }
 
-/// Gera as worksheets aplicando a serialização automática do Serde.
+/// Gera as worksheets aplicando a serialização automática do Serde (Usado Rayon)
 pub fn process_sheet_type<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
@@ -148,13 +172,9 @@ where
     // Ele retorna um ParallelIterator diretamente.
     let worksheets = lines
         .par_chunks(MAX_NUMBER_OF_ROWS)
-        .enumerate() // Este é o enumerate do Rayon (paralelo)
+        .enumerate()
         .map(|(k, data)| {
-            let name = if k == 0 {
-                sheet_type.as_str().to_owned()
-            } else {
-                format!("{} {}", sheet_type.as_str(), k + 1)
-            };
+            let name = obter_nome_da_aba(sheet_type, k);
 
             // generate_worksheet será executado em paralelo para cada chunk
             generate_worksheet(data, sheet_type, &name, registry, &progressbar)
@@ -165,6 +185,19 @@ where
     Ok(worksheets)
 }
 
+/// Gera o nome formatado da aba (worksheet) com base no tipo de planilha e no índice do lote (chunk).
+///
+/// Esta é uma função pura (sem efeitos colaterais) que unifica a regra de nomenclatura
+/// para divisões de lotes volumosos de dados.
+#[inline]
+pub fn obter_nome_da_aba(sheet_type: SheetType, k: usize) -> String {
+    if k == 0 {
+        sheet_type.as_str().to_string()
+    } else {
+        format!("{} {}", sheet_type.as_str(), k + 1)
+    }
+}
+
 fn generate_worksheet<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
@@ -173,7 +206,26 @@ fn generate_worksheet<'de, T>(
     progressbar: &ProgressBar,
 ) -> EFDResult<Worksheet>
 where
-    T: Serialize + Deserialize<'de> + Iterable + ExcelExtension + Sync + Send,
+    T: Serialize + Deserialize<'de> + Iterable + ExcelExtension + Sync,
+{
+    let mut worksheet = Worksheet::new();
+    worksheet.set_name(sheet_name)?;
+
+    populate_worksheet_data(&mut worksheet, lines, sheet_type, registry, progressbar)?;
+
+    Ok(worksheet)
+}
+
+/// Rotina unificada para preenchimento dos dados (DRY)
+fn populate_worksheet_data<'de, T>(
+    worksheet: &mut Worksheet,
+    lines: &[T],
+    sheet_type: SheetType,
+    registry: &FormatRegistry,
+    progressbar: &ProgressBar,
+) -> EFDResult<()>
+where
+    T: Serialize + Deserialize<'de> + Iterable + ExcelExtension + Sync,
 {
     let headers = T::get_headers();
 
@@ -187,11 +239,8 @@ where
     let num_cols = headers.len();
     let num_lines = lines.len();
 
-    let mut worksheet = Worksheet::new();
-
     setup_worksheet(
-        &mut worksheet,
-        sheet_name,
+        worksheet,
         num_cols as u16,
         num_lines as u32,
         &col_configs,
@@ -236,22 +285,98 @@ where
             Ok(())
         })?;
 
-    auto_fit(&mut worksheet, lines, headers, sheet_type)?;
+    auto_fit(worksheet, lines, headers, sheet_type)?;
 
-    Ok(worksheet)
+    Ok(())
+}
+
+/// Rotina sequencial para contornar a limitação de instanciação do rust_xlsxwriter
+fn write_sequentially_to_workbook(
+    workbook: &mut Workbook,
+    data_efd: &[DocsFiscais],
+    data_cst: &[ConsolidacaoCST],
+    data_nat: &[AnaliseDosCreditos],
+    registry: &Arc<FormatRegistry>,
+    multiprogressbar: &MultiProgress,
+    memory_mode: ExcelMemoryMode,
+) -> EFDResult<()> {
+    process_sheet_type_sequential(
+        workbook,
+        data_efd,
+        SheetType::ItensDocsFiscais,
+        registry,
+        multiprogressbar,
+        0,
+        memory_mode,
+    )?;
+    process_sheet_type_sequential(
+        workbook,
+        data_cst,
+        SheetType::ConsolidacaoCST,
+        registry,
+        multiprogressbar,
+        1,
+        memory_mode,
+    )?;
+    process_sheet_type_sequential(
+        workbook,
+        data_nat,
+        SheetType::AnaliseCreditos,
+        registry,
+        multiprogressbar,
+        2,
+        memory_mode,
+    )?;
+    Ok(())
+}
+
+fn process_sheet_type_sequential<'de, T>(
+    workbook: &mut Workbook,
+    lines: &[T],
+    sheet_type: SheetType,
+    registry: &FormatRegistry,
+    multiprogressbar: &MultiProgress,
+    index: usize,
+    memory_mode: ExcelMemoryMode,
+) -> EFDResult<()>
+where
+    T: Serialize + Deserialize<'de> + Iterable + ExcelExtension + Sync,
+{
+    if lines.is_empty() {
+        return Ok(());
+    }
+
+    let progressbar = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
+    progressbar.set_style(get_style(0, 0, 33)?);
+    progressbar.set_message(format!("Excel (Streaming): {}", sheet_type.as_str()));
+
+    for (k, chunk) in lines.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
+        let name = obter_nome_da_aba(sheet_type, k);
+
+        // Instancia a planilha utilizando a API correta do Workbook correspondente
+        let worksheet = match memory_mode {
+            ExcelMemoryMode::ConstantMemory => workbook.add_worksheet_with_constant_memory(),
+            ExcelMemoryMode::LowMemory => workbook.add_worksheet_with_low_memory(),
+            ExcelMemoryMode::Default => workbook.add_worksheet(),
+        };
+
+        worksheet.set_name(&name)?;
+        populate_worksheet_data(worksheet, chunk, sheet_type, registry, &progressbar)?;
+    }
+
+    progressbar.finish();
+    Ok(())
 }
 
 /// Helper para configurar o esqueleto da worksheet
 fn setup_worksheet(
     worksheet: &mut Worksheet,
-    name: &str,
     num_cols: u16,
     num_lines: u32,
     configs: &[(u16, FormatKey)],
     registry: &FormatRegistry,
 ) -> EFDResult<()> {
     worksheet
-        .set_name(name)?
         .set_row_height(0, 64)?
         .set_row_format(0, &FormatRegistry::header())?
         .set_freeze_panes(1, 0)?;

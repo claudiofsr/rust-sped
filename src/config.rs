@@ -1,4 +1,4 @@
-use crate::{EFDError, EfdRaise};
+use crate::{EFDError, EfdRaise, ExcelMemoryMode};
 use crate::{EFDResult, args::Arguments};
 use claudiofsr_lib::Colors;
 use colored::*;
@@ -17,53 +17,57 @@ const EFD_PATTERN: &str = "**/PISCOFINS_[0-9][0-9]*_[0-9][0-9]*.txt";
 /// das "regras de negócio e caminhos" (Domínio).
 #[derive(Debug)]
 pub struct AppConfig {
+    /// Lista final de arquivos a serem processados.
+    pub all_files: Vec<PathBuf>,
+
     /// Nome do Programa extraído do binário
     pub app_name: String,
 
-    /// Lista final de arquivos a serem processados.
-    pub all_files: Vec<PathBuf>,
+    /// Nome base para os arquivos de saída (sem extensão).
+    pub base_name: String,
+
+    /// Ativa logs detalhados de depuração.
+    pub debug: bool,
+
+    /// Se true, limita o rateio aos CSTs 01 a 09.
+    pub excluir_cst_49: bool,
 
     // Flags de filtragem e processamento
     /// Se true, remove itens de saída do relatório final.
     pub excluir_saidas: bool,
 
-    /// Se true, limita o rateio aos CSTs 01 a 09.
-    pub excluir_cst_49: bool,
-
-    /// Se true, mantém apenas operações que geram crédito (CST 50 a 66).
-    pub operacoes_de_creditos: bool,
+    /// Modo de consumo de memória selecionado para o Excel.
+    pub memory_mode: ExcelMemoryMode,
 
     /// Se true, não gera o arquivo .xlsx (Excel).
     pub no_excel: bool,
 
-    /// Se true, gera o arquivo .csv.
-    pub print_csv: bool,
-
-    /// Ativa logs detalhados de depuração.
-    pub debug: bool,
+    /// Se true, mantém apenas operações que geram crédito (CST 50 a 66).
+    pub operacoes_de_creditos: bool,
 
     // Caminhos de saída centralizados
     /// Diretório onde os resultados serão salvos.
     pub output_dir: PathBuf,
 
-    /// Nome base para os arquivos de saída (sem extensão).
-    pub base_name: String,
+    /// Se true, gera o arquivo .csv.
+    pub print_csv: bool,
 }
 
 /// Implementação manual do Default para suportar valores customizados
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            app_name: String::new(),
             all_files: Vec::new(),
-            excluir_saidas: false,
-            excluir_cst_49: false,
-            operacoes_de_creditos: false,
-            no_excel: false,
-            print_csv: false,
-            debug: false,
-            output_dir: PathBuf::from(OUTPUT_DIRECTORY),
+            app_name: String::new(),
             base_name: BASE_NAME.to_string(),
+            debug: false,
+            excluir_cst_49: false,
+            excluir_saidas: false,
+            memory_mode: ExcelMemoryMode::Default,
+            no_excel: false,
+            operacoes_de_creditos: false,
+            output_dir: PathBuf::from(OUTPUT_DIRECTORY),
+            print_csv: false,
         }
     }
 }
@@ -96,12 +100,13 @@ impl AppConfig {
         Ok(Self {
             app_name: args.get_app_name(),
             all_files: found_files,
+            debug: args.debug,
             excluir_saidas: args.excluir_saidas,
             excluir_cst_49: args.excluir_cst_49,
-            operacoes_de_creditos: args.operacoes_de_creditos,
+            memory_mode: args.memory_mode,
             no_excel: args.no_excel,
+            operacoes_de_creditos: args.operacoes_de_creditos,
             print_csv: args.print_csv,
-            debug: args.debug,
             ..Self::default() // output_dir e base_name vêm do impl Default acima
         })
     }
