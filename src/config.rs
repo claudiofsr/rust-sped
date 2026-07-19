@@ -63,7 +63,7 @@ impl Default for AppConfig {
             debug: false,
             excluir_cst_49: false,
             excluir_saidas: false,
-            memory_mode: ExcelMemoryMode::Default,
+            memory_mode: ExcelMemoryMode::ConstantMemory,
             no_excel: false,
             operacoes_de_creditos: false,
             output_dir: PathBuf::from(OUTPUT_DIRECTORY),

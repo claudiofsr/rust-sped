@@ -142,7 +142,7 @@ pub struct Arguments {
         long("memory_mode"),
         value_enum,
         verbatim_doc_comment,
-        default_value_t = ExcelMemoryMode::Default
+        default_value_t = ExcelMemoryMode::ConstantMemory
     )]
     pub memory_mode: ExcelMemoryMode,
 
