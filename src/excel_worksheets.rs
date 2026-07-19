@@ -1,3 +1,14 @@
+//! # Excel Worksheet Generation Module
+//!
+//! This module provides high-performance Excel generation utilities for fiscal documents (EFD).
+//! It supports multiple memory allocation strategies (In-Memory parallel rendering, Low-Memory sharing,
+//! and Constant-Memory streaming) to balance processing throughput and system resource constraints.
+//!
+//! Key performance features include:
+//! - Parallel worksheet generation using Rayon scopes.
+//! - Parallel column-width auto-fitting using lock-free atomic maximum operations (`AtomicUsize`).
+//! - Structured serialization driving automated table formatting.
+
 use chrono::NaiveDate;
 use clap::ValueEnum;
 use claudiofsr_lib::{digit_count, get_style};
@@ -25,23 +36,25 @@ use crate::{
     ResultExt, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst, excel_format::*,
 };
 
-/// Modos de consumo de memória para a geração do arquivo Excel.
+/// Memory consumption strategies for Excel file generation.
 #[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExcelMemoryMode {
-    /// Consumo de memória constante, que grava os dados diretamente no disco de forma contínua.
+    /// Constant memory profile that writes row data progressively to disk.
+    /// Best for processing very large files under tight system memory constraints.
     ConstantMemory,
-    /// Baixa memória, focado na geração de arquivos compactos através do uso de strings compartilhadas.
+    /// Low memory profile focused on compact structures utilizing shared strings.
     LowMemory,
-    /// Armazena toda a estrutura em memória RAM (via processamento paralelo com Rayon).
+    /// Fully buffered in-memory structure processed in parallel via Rayon.
+    /// Offers the highest throughput at the cost of transient memory usage.
     InMemory,
 }
 
 // --- Macros ---
 
-/// Realiza o "downcast" dinâmico de um `dyn Any` para tipos específicos.
+/// Dynamically casts a `dyn Any` reference to concrete types.
 ///
-/// Esta macro percorre os tipos fornecidos e executa o corpo da expressão
-/// para o primeiro tipo que coincidir com o valor em tempo de execução.
+/// This macro iterates through a list of target types and executes the associated
+/// expression for the first matching type found at runtime.
 macro_rules! match_cast {
     ($any:ident { $( $bind:ident as $patt:ty => $body:expr ),+ $(,)? }) => {{
         $(
@@ -53,9 +66,12 @@ macro_rules! match_cast {
     }};
 }
 
-// --- Lógica Principal ---
+// --- Core Execution Logic ---
 
-/// Gera o arquivo Excel principal.
+/// Entrypoint to generate the principal Excel document.
+///
+/// Dispatches the task to either a parallelized in-memory approach or an
+/// optimized sequential streaming writer based on the specified `memory_mode`.
 pub fn create_xlsx(
     path_xlsx: &Path,
     data_efd: &[DocsFiscais],
@@ -78,7 +94,7 @@ pub fn create_xlsx(
 
     match memory_mode {
         ExcelMemoryMode::InMemory => {
-            // Preserva a lógica de paralelização via Rayon
+            // Highly parallel execution branch utilizing all available CPU threads
             let worksheets =
                 get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
             for worksheet in worksheets {
@@ -86,7 +102,7 @@ pub fn create_xlsx(
             }
         }
         ExcelMemoryMode::ConstantMemory | ExcelMemoryMode::LowMemory => {
-            // Executa sequencialmente gravando diretamente no buffer do Workbook
+            // Sequential branch that maintains structured performance without over-allocating heap memory
             write_sequentially_to_workbook(
                 &mut workbook,
                 data_efd,
@@ -103,11 +119,10 @@ pub fn create_xlsx(
     Ok(())
 }
 
-/// Gera todas as planilhas em paralelo usando Rayon scope.
+/// Generates all worksheets concurrently using a structured Rayon scope.
 ///
-/// This approach uses `rayon::scope` with safe default initialization.
-/// Since `Vec::new()` does not perform heap allocations until elements are pushed,
-/// initializing with `Ok(Vec::new())` is efficient and avoids `expect`/`unwrap` panics.
+/// This function constructs worksheets isolated in separate heap spaces, allowing
+/// thread-safe execution across multiple CPUs before safely concatenating the results.
 pub fn get_all_worksheets(
     data_efd: &[DocsFiscais],
     data_cst: &[ConsolidacaoCST],
@@ -159,7 +174,10 @@ pub fn get_all_worksheets(
     Ok(worksheets)
 }
 
-/// Gera as worksheets aplicando a serialização automática do Serde (Usado Rayon)
+/// Processes a slice of structured data into formatted Excel worksheets in parallel.
+///
+/// Divides massive data arrays into standard chunks defined by the engine limits,
+/// utilizing parallel chunk processing to build worksheets concurrently.
 pub fn process_sheet_type<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
@@ -197,10 +215,10 @@ where
     Ok(worksheets)
 }
 
-/// Gera o nome formatado da aba (worksheet) com base no tipo de planilha e no índice do lote (chunk).
+/// Standardized naming convention for worksheets divided into sequential blocks.
 ///
-/// Esta é uma função pura (sem efeitos colaterais) que unifica a regra de nomenclatura
-/// para divisões de lotes volumosos de dados.
+/// A pure, predictable function naming first sheets with standard labels and appending
+/// a index count for overflow segments.
 #[inline]
 pub fn obter_nome_da_aba(sheet_type: SheetType, k: usize) -> String {
     if k == 0 {
@@ -210,6 +228,7 @@ pub fn obter_nome_da_aba(sheet_type: SheetType, k: usize) -> String {
     }
 }
 
+/// Standardized worksheet initialization, data serialization, and post-processing.
 fn generate_worksheet<'de, T>(
     lines: &[T],
     sheet_type: SheetType,
@@ -228,7 +247,12 @@ where
     Ok(worksheet)
 }
 
-/// Rotina unificada para preenchimento dos dados (DRY)
+/// Populates structural cells inside a worksheet, applying localized visual formats.
+///
+/// Designed to balance speed and structure:
+/// 1. Extracts layouts and establishes basic formatting parameters.
+/// 2. Iteratively serializes records using custom row styles.
+/// 3. Safely reports completion progress.
 fn populate_worksheet_data<'de, T>(
     worksheet: &mut Worksheet,
     lines: &[T],
@@ -302,7 +326,10 @@ where
     Ok(())
 }
 
-/// Rotina sequencial para contornar a limitação de instanciação do rust_xlsxwriter
+/// Executes progressive sequential stream rendering to avoid high-volume memory usage.
+///
+/// Processes one dataset sequentially, instantly releasing completed structures
+/// to the system buffer without storing intermediary states.
 fn write_sequentially_to_workbook(
     workbook: &mut Workbook,
     data_efd: &[DocsFiscais],
@@ -342,6 +369,10 @@ fn write_sequentially_to_workbook(
     Ok(())
 }
 
+/// Evaluates the workbook allocation strategy and registers sequential worksheets.
+///
+/// Avoids general in-memory buffering by using low-memory or constant-memory
+/// constructs tailored specifically to disk-streaming workflows.
 fn process_sheet_type_sequential<'de, T>(
     workbook: &mut Workbook,
     lines: &[T],
@@ -365,7 +396,8 @@ where
     for (k, chunk) in lines.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
         let name = obter_nome_da_aba(sheet_type, k);
 
-        // Instancia a planilha utilizando a API correta do Workbook correspondente
+        // Dynamically instantiate the streaming options based on user configuration.
+        // Unreachable match branches are avoided by restricting sequential calls to streaming variants.
         let worksheet = match memory_mode {
             ExcelMemoryMode::ConstantMemory => workbook.add_worksheet_with_constant_memory(),
             ExcelMemoryMode::LowMemory => workbook.add_worksheet_with_low_memory(),
@@ -380,7 +412,9 @@ where
     Ok(())
 }
 
-/// Helper para configurar o esqueleto da worksheet
+/// Sets up structural and structural visual anchors for a worksheet.
+///
+/// Sets up table constraints, locked panes, structural headers, and custom column stylings.
 fn setup_worksheet(
     worksheet: &mut Worksheet,
     num_cols: u16,
@@ -406,7 +440,10 @@ fn setup_worksheet(
     Ok(())
 }
 
-/// Ajusta a largura das colunas dinamicamente em paralelo usando Rayon.
+/// Adjusts column widths dynamically.
+///
+/// Loops through row records in parallel via Rayon, executing lock-free comparisons
+/// against an array of atomic integers to capture maximum string widths safely.
 fn auto_fit<'de, T>(
     worksheet: &mut Worksheet,
     lines: &[T],
@@ -437,13 +474,16 @@ where
     Ok(())
 }
 
-/// Calcula o comprimento visual de um Decimal.
+/// Computes the layout width of a standard `Decimal` object.
 #[inline]
 fn decimal_len(d: &Decimal) -> usize {
     d.to_string().len()
 }
 
-/// Calcula o comprimento visual de qualquer valor suportado para ajuste automático de coluna.
+/// Inspects various field types to compute reasonable column widths.
+///
+/// Multiplies the resulting string representation with specific safety ratios
+/// to account for non-monospace rendering differences (e.g., Calibri fonts).
 fn calculate_value_len(sheet_type: SheetType, field_value: &dyn std::any::Any) -> usize {
     let len = match_cast!(field_value {
         // Tratamento do CST
