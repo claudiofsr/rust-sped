@@ -36,19 +36,6 @@ use crate::{
     ResultExt, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst, excel_format::*,
 };
 
-/// Memory consumption strategies for Excel file generation.
-#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExcelMemoryMode {
-    /// Constant memory profile that writes row data progressively to disk.
-    /// Best for processing very large files under tight system memory constraints.
-    ConstantMemory,
-    /// Low memory profile focused on compact structures utilizing shared strings.
-    LowMemory,
-    /// Fully buffered in-memory structure processed in parallel via Rayon.
-    /// Offers the highest throughput at the cost of transient memory usage.
-    InMemory,
-}
-
 // --- Macros ---
 
 /// Dynamically casts a `dyn Any` reference to concrete types.
@@ -66,12 +53,146 @@ macro_rules! match_cast {
     }};
 }
 
+/// Memory consumption strategies for Excel file generation.
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExcelMemoryMode {
+    /// Constant memory profile that writes row data progressively to disk.
+    /// Best for processing very large files under tight system memory constraints.
+    ConstantMemory,
+    /// Low memory profile focused on compact structures utilizing shared strings.
+    LowMemory,
+    /// Fully buffered in-memory structure processed in parallel via Rayon.
+    /// Offers the highest throughput at the cost of transient memory usage.
+    InMemory,
+}
+
+/// A unified context structure grouping the core datasets required for Excel processing.
+///
+/// This container holds borrow-slices of the raw data. It decouples high-level
+/// orchestration from data ownership, allowing worksheet generation routines
+/// to be attached as domain-specific methods.
+pub struct AllData<'a> {
+    /// Detailed list of fiscal documents and their items.
+    pub efd: &'a [DocsFiscais],
+    /// Consolidated records grouped by CST.
+    pub cst: &'a [ConsolidacaoCST],
+    /// Credit analysis data categorized by core calculations.
+    pub nat: &'a [AnaliseDosCreditos],
+}
+
+impl<'a> AllData<'a> {
+    /// Constructs a new `AllData` container from borrows of the input datasets.
+    pub fn new(
+        efd: &'a [DocsFiscais],
+        cst: &'a [ConsolidacaoCST],
+        nat: &'a [AnaliseDosCreditos],
+    ) -> Self {
+        Self { efd, cst, nat }
+    }
+
+    /// Generates all worksheets concurrently using a structured Rayon scope.
+    ///
+    /// This method uses concurrent worker scopes to split the rendering load
+    /// of each sheet category across the CPU thread pool. The results are collected
+    /// dynamically before propagating up.
+    pub fn get_all_worksheets(
+        &self,
+        registry: &Arc<FormatRegistry>,
+        multiprogressbar: &MultiProgress,
+    ) -> EFDResult<Vec<Worksheet>> {
+        let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
+        let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
+        let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
+
+        // We use a Rayon scope to spawn detached logical tasks on separate threads.
+        // This ensures the main thread coordinates thread-safety barriers.
+        rayon::scope(|s| {
+            s.spawn(|_| {
+                res_efd = process_sheet_type(
+                    self.efd,
+                    SheetType::ItensDocsFiscais,
+                    registry,
+                    multiprogressbar,
+                    0,
+                );
+            });
+            s.spawn(|_| {
+                res_cst = process_sheet_type(
+                    self.cst,
+                    SheetType::ConsolidacaoCST,
+                    registry,
+                    multiprogressbar,
+                    1,
+                );
+            });
+            s.spawn(|_| {
+                res_nat = process_sheet_type(
+                    self.nat,
+                    SheetType::AnaliseCreditos,
+                    registry,
+                    multiprogressbar,
+                    2,
+                );
+            });
+        });
+
+        // Safely propagate first-occurring thread errors and assemble the resulting sequence.
+        let mut worksheets = res_efd?;
+        worksheets.extend(res_cst?);
+        worksheets.extend(res_nat?);
+
+        Ok(worksheets)
+    }
+
+    /// Sequentially renders worksheet blocks directly into the target workbook.
+    ///
+    /// Intended for low-memory environments, this method processes each dataset segment
+    /// sequentially, writing rows directly to streaming file targets to avoid holding
+    /// fully serialized sheets in memory.
+    pub fn write_sequentially_to_workbook(
+        &self,
+        workbook: &mut Workbook,
+        registry: &Arc<FormatRegistry>,
+        multiprogressbar: &MultiProgress,
+        memory_mode: ExcelMemoryMode,
+    ) -> EFDResult<()> {
+        process_sheet_type_sequential(
+            workbook,
+            self.efd,
+            SheetType::ItensDocsFiscais,
+            registry,
+            multiprogressbar,
+            0,
+            memory_mode,
+        )?;
+        process_sheet_type_sequential(
+            workbook,
+            self.cst,
+            SheetType::ConsolidacaoCST,
+            registry,
+            multiprogressbar,
+            1,
+            memory_mode,
+        )?;
+        process_sheet_type_sequential(
+            workbook,
+            self.nat,
+            SheetType::AnaliseCreditos,
+            registry,
+            multiprogressbar,
+            2,
+            memory_mode,
+        )?;
+        Ok(())
+    }
+}
+
 // --- Core Execution Logic ---
 
 /// Entrypoint to generate the principal Excel document.
 ///
-/// Dispatches the task to either a parallelized in-memory approach or an
-/// optimized sequential streaming writer based on the specified `memory_mode`.
+/// Bundles input slices into an `AllData` context, builds physical workbook references,
+/// and delegates performance pipelines depending on the requested memory profile.
 pub fn create_xlsx(
     path_xlsx: &Path,
     data_efd: &[DocsFiscais],
@@ -84,30 +205,30 @@ pub fn create_xlsx(
         path: path_xlsx.to_path_buf(),
     })?;
 
+    // Instantiate our unified data context
+    let all_data = AllData::new(data_efd, data_cst, data_nat);
+
     let buffer = BufWriter::with_capacity(BUFFER_CAPACITY, file);
     let mut workbook = Workbook::new();
     workbook.set_properties(&get_properties()?);
 
     let multiprogressbar = MultiProgress::new();
-    // Passamos o registro de formatos centralizado
     let registry = Arc::new(FormatRegistry::new());
 
+    // Clean, idiomatic dispatch of the generation strategy.
+    // In-memory layouts are parallelized, whereas streaming variants render sequentially.
     match memory_mode {
         ExcelMemoryMode::InMemory => {
-            // Highly parallel execution branch utilizing all available CPU threads
-            let worksheets =
-                get_all_worksheets(data_efd, data_cst, data_nat, &registry, &multiprogressbar)?;
-            for worksheet in worksheets {
-                workbook.push_worksheet(worksheet);
-            }
+            all_data
+                .get_all_worksheets(&registry, &multiprogressbar)?
+                .into_iter()
+                .for_each(|worksheet| {
+                    workbook.push_worksheet(worksheet);
+                });
         }
         ExcelMemoryMode::ConstantMemory | ExcelMemoryMode::LowMemory => {
-            // Sequential branch that maintains structured performance without over-allocating heap memory
-            write_sequentially_to_workbook(
+            all_data.write_sequentially_to_workbook(
                 &mut workbook,
-                data_efd,
-                data_cst,
-                data_nat,
                 &registry,
                 &multiprogressbar,
                 memory_mode,
@@ -117,61 +238,6 @@ pub fn create_xlsx(
 
     workbook.save_to_writer(buffer)?;
     Ok(())
-}
-
-/// Generates all worksheets concurrently using a structured Rayon scope.
-///
-/// This function constructs worksheets isolated in separate heap spaces, allowing
-/// thread-safe execution across multiple CPUs before safely concatenating the results.
-pub fn get_all_worksheets(
-    data_efd: &[DocsFiscais],
-    data_cst: &[ConsolidacaoCST],
-    data_nat: &[AnaliseDosCreditos],
-    registry: &Arc<FormatRegistry>,
-    multiprogressbar: &MultiProgress,
-) -> EFDResult<Vec<Worksheet>> {
-    // Initializing with Ok(Vec::new()) has zero heap-allocation cost.
-    let mut res_efd: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
-    let mut res_cst: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
-    let mut res_nat: EFDResult<Vec<Worksheet>> = Ok(Vec::new());
-
-    // Process all sheets in parallel scopes
-    rayon::scope(|s| {
-        s.spawn(|_| {
-            res_efd = process_sheet_type(
-                data_efd,
-                SheetType::ItensDocsFiscais,
-                registry,
-                multiprogressbar,
-                0,
-            )
-        });
-        s.spawn(|_| {
-            res_cst = process_sheet_type(
-                data_cst,
-                SheetType::ConsolidacaoCST,
-                registry,
-                multiprogressbar,
-                1,
-            )
-        });
-        s.spawn(|_| {
-            res_nat = process_sheet_type(
-                data_nat,
-                SheetType::AnaliseCreditos,
-                registry,
-                multiprogressbar,
-                2,
-            )
-        });
-    });
-
-    // Safely propagate potential errors and extend the vectors
-    let mut worksheets = res_efd?;
-    worksheets.extend(res_cst?);
-    worksheets.extend(res_nat?);
-
-    Ok(worksheets)
 }
 
 /// Processes a slice of structured data into formatted Excel worksheets in parallel.
@@ -186,8 +252,6 @@ pub fn process_sheet_type<'de, T>(
     index: usize,
 ) -> EFDResult<Vec<Worksheet>>
 where
-    // T: Sync é necessário para par_chunks (referência compartilhada entre threads)
-    // T: Send é necessário para mover o processamento para outras threads
     T: Serialize + Deserialize<'de> + Iterable + ExcelExtension + Sync + Send,
 {
     if lines.is_empty() {
@@ -198,15 +262,12 @@ where
     progressbar.set_style(get_style(0, 0, 33)?);
     progressbar.set_message(format!("Excel: {}", sheet_type.as_str()));
 
-    // par_chunks é o método nativo do Rayon para slices.
-    // Ele retorna um ParallelIterator diretamente.
+    // par_chunks splits processing tasks safely across Rayon's thread pool
     let worksheets = lines
         .par_chunks(MAX_NUMBER_OF_ROWS)
         .enumerate()
         .map(|(k, data)| {
             let name = obter_nome_da_aba(sheet_type, k);
-
-            // generate_worksheet será executado em paralelo para cada chunk
             generate_worksheet(data, sheet_type, &name, registry, &progressbar)
         })
         .collect::<EFDResult<Vec<_>>>()?;
@@ -283,16 +344,14 @@ where
         registry,
     )?;
 
-    // Aplica cabeçalhos e formatos de coluna padrão
+    // Writes headers and default column formats
     worksheet.deserialize_headers::<T>(0, 0)?;
 
-    // Define a frequência de atualização da barra de progresso (ex: a cada 1%)
+    // Update progress bar at set intervals (e.g., every 1%) to reduce visual overhead
     let delta: usize = (num_lines / 100).max(1);
-
-    // Converte usize para u64 de forma segura uma única vez
     let delta_u64: u64 = delta.try_into()?;
 
-    // Processamento funcional das linhas
+    // Functional traversal of lines to stream and style row contents
     lines
         .iter()
         .enumerate()
@@ -300,11 +359,10 @@ where
             let row_idx = (idx + 1) as u32;
             let style = line.row_style();
 
-            // 1. Serialização base (escreve os dados conforme o #[serde])
-            // Escreve os dados (Serialização é a parte mais pesada)
+            // 1. Core serialization step
             worksheet.serialize(line)?;
 
-            // 2. Aplica cores apenas se não for estilo Normal (Otimização)
+            // 2. Format row override styling only if different from normal (Optimization)
             if style != RowStyle::Default {
                 for (col_idx, f_key) in &col_configs {
                     if let Some(fmt) = registry.get_format(*f_key, style) {
@@ -323,49 +381,6 @@ where
 
     auto_fit(worksheet, lines, headers, sheet_type)?;
 
-    Ok(())
-}
-
-/// Executes progressive sequential stream rendering to avoid high-volume memory usage.
-///
-/// Processes one dataset sequentially, instantly releasing completed structures
-/// to the system buffer without storing intermediary states.
-fn write_sequentially_to_workbook(
-    workbook: &mut Workbook,
-    data_efd: &[DocsFiscais],
-    data_cst: &[ConsolidacaoCST],
-    data_nat: &[AnaliseDosCreditos],
-    registry: &Arc<FormatRegistry>,
-    multiprogressbar: &MultiProgress,
-    memory_mode: ExcelMemoryMode,
-) -> EFDResult<()> {
-    process_sheet_type_sequential(
-        workbook,
-        data_efd,
-        SheetType::ItensDocsFiscais,
-        registry,
-        multiprogressbar,
-        0,
-        memory_mode,
-    )?;
-    process_sheet_type_sequential(
-        workbook,
-        data_cst,
-        SheetType::ConsolidacaoCST,
-        registry,
-        multiprogressbar,
-        1,
-        memory_mode,
-    )?;
-    process_sheet_type_sequential(
-        workbook,
-        data_nat,
-        SheetType::AnaliseCreditos,
-        registry,
-        multiprogressbar,
-        2,
-        memory_mode,
-    )?;
     Ok(())
 }
 
@@ -391,13 +406,12 @@ where
 
     let progressbar = multiprogressbar.insert(index, ProgressBar::new(lines.len() as u64));
     progressbar.set_style(get_style(0, 0, 33)?);
-    progressbar.set_message(format!("Excel (Streaming): {}", sheet_type.as_str()));
+    progressbar.set_message(format!("Excel: {}", sheet_type.as_str()));
 
     for (k, chunk) in lines.chunks(MAX_NUMBER_OF_ROWS).enumerate() {
         let name = obter_nome_da_aba(sheet_type, k);
 
-        // Dynamically instantiate the streaming options based on user configuration.
-        // Unreachable match branches are avoided by restricting sequential calls to streaming variants.
+        // Instantiates specialized low-allocation worksheets depending on streaming configuration
         let worksheet = match memory_mode {
             ExcelMemoryMode::ConstantMemory => workbook.add_worksheet_with_constant_memory(),
             ExcelMemoryMode::LowMemory => workbook.add_worksheet_with_low_memory(),
@@ -412,9 +426,10 @@ where
     Ok(())
 }
 
-/// Sets up structural and structural visual anchors for a worksheet.
+/// Sets up structural visual configurations for a worksheet.
 ///
-/// Sets up table constraints, locked panes, structural headers, and custom column stylings.
+/// Configures top header row dimensions, sets frozen navigation panes,
+/// applies base column styling, and attaches an overall filterable Excel table.
 fn setup_worksheet(
     worksheet: &mut Worksheet,
     num_cols: u16,
@@ -427,7 +442,6 @@ fn setup_worksheet(
         .set_row_format(0, &FormatRegistry::header())?
         .set_freeze_panes(1, 0)?;
 
-    // Aplica formatos base às colunas
     for (i, f_key) in configs {
         if let Some(fmt) = registry.get_format(*f_key, RowStyle::Default) {
             worksheet.set_column_format(*i, fmt)?;
@@ -442,8 +456,10 @@ fn setup_worksheet(
 
 /// Adjusts column widths dynamically.
 ///
-/// Loops through row records in parallel via Rayon, executing lock-free comparisons
-/// against an array of atomic integers to capture maximum string widths safely.
+/// Iterates over data records across parallel workers. In order to dynamically compute
+/// column layout dimensions safely without heavy lock primitives (like `Mutex`),
+/// this function utilizes lock-free atomic `AtomicUsize` structures with `Relaxed`
+/// ordering constraints.
 fn auto_fit<'de, T>(
     worksheet: &mut Worksheet,
     lines: &[T],
@@ -453,11 +469,13 @@ fn auto_fit<'de, T>(
 where
     T: Serialize + Deserialize<'de> + ExcelExtension + Iterable + Sync,
 {
+    // Initialize atomic storage with default limits derived from raw header lengths
     let widths: Vec<AtomicUsize> = headers
         .iter()
         .map(|h| AtomicUsize::new(WIDTH_MIN.max(h.len().div_ceil(5))))
         .collect();
 
+    // Iterate through line records concurrently to calculate length extrema
     lines.par_iter().for_each(|line| {
         line.iter().enumerate().for_each(|(i, (_name, val))| {
             if let Some(atomic) = widths.get(i) {
@@ -467,6 +485,7 @@ where
         });
     });
 
+    // Write final resolved column widths down to the sheet structure
     for (i, atomic) in widths.into_iter().enumerate() {
         let width = (atomic.load(Ordering::Relaxed).min(WIDTH_MAX) as f64) * ADJUSTMENT;
         worksheet.set_column_width(i as u16, width)?;
@@ -480,10 +499,10 @@ fn decimal_len(d: &Decimal) -> usize {
     d.to_string().len()
 }
 
-/// Inspects various field types to compute reasonable column widths.
+/// Inspects field types dynamically to estimate layout widths.
 ///
-/// Multiplies the resulting string representation with specific safety ratios
-/// to account for non-monospace rendering differences (e.g., Calibri fonts).
+/// Accounts for proportion differences in proportional typography (such as Calibri)
+/// by applying safety factors to character counts.
 fn calculate_value_len(sheet_type: SheetType, field_value: &dyn std::any::Any) -> usize {
     let len = match_cast!(field_value {
         // Tratamento do CST
