@@ -23,7 +23,7 @@ _efd_contribuicoes() {
 
     case "${cmd}" in
         efd_contribuicoes)
-            opts="-c -d -e -t -f -g -o -p -n -r -h -V --clear_terminal --debug --excluir-saidas --excluir-cst-49 --find --generate --operacoes-de-creditos --csv --no-excel --range --help --version"
+            opts="-c -d -e -t -f -g -m -o -p -n -r -h -V --clear_terminal --debug --excluir-saidas --excluir-cst-49 --find --generate --memory-mode --operacoes-de-creditos --csv --no-excel --range --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -35,6 +35,14 @@ _efd_contribuicoes() {
                     ;;
                 -g)
                     COMPREPLY=($(compgen -W "bash elvish fish powershell zsh" -- "${cur}"))
+                    return 0
+                    ;;
+                --memory-mode)
+                    COMPREPLY=($(compgen -W "constant-memory low-memory in-memory" -- "${cur}"))
+                    return 0
+                    ;;
+                -m)
+                    COMPREPLY=($(compgen -W "constant-memory low-memory in-memory" -- "${cur}"))
                     return 0
                     ;;
                 --range)

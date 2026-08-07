@@ -3,6 +3,9 @@ elvish\t''
 fish\t''
 powershell\t''
 zsh\t''"
+complete -c efd_contribuicoes -s m -l memory-mode -d 'Seleciona o modo de consumo de memória para a geração da planilha Excel.' -r -f -a "constant-memory\t'Constant memory profile that writes row data progressively to disk. Best for processing very large files under tight system memory constraints'
+low-memory\t'Low memory profile focused on compact structures utilizing shared strings'
+in-memory\t'Fully buffered in-memory structure processed in parallel via Rayon. Offers the highest throughput at the cost of transient memory usage'"
 complete -c efd_contribuicoes -s r -l range -d 'Selecione arquivos SPED EFD para analisar especificando o intervalo' -r
 complete -c efd_contribuicoes -s c -l clear_terminal -d 'Limpa a tela do terminal antes de apresentar a análise'
 complete -c efd_contribuicoes -s d -l debug -d 'Ativar mensagens de debug (ex: detalhes de correlações do Bloco M)'
@@ -11,6 +14,6 @@ complete -c efd_contribuicoes -s t -l excluir-cst-49 -d 'Excluir CST 49 do Ratei
 complete -c efd_contribuicoes -s f -l find -d 'Listar arquivos SPED EFD encontrados no diretório atual.'
 complete -c efd_contribuicoes -s o -l operacoes-de-creditos -d 'Retém apenas itens que geram crédito (50 <= CST <= 66).'
 complete -c efd_contribuicoes -s p -l csv -d 'Gerar arquivo CSV.'
-complete -c efd_contribuicoes -s n -l no-excel -d 'Desativar a geração do arquivo Excel (.xlsx).'
+complete -c efd_contribuicoes -s n -l no-excel -d 'Desativar a criação da planilha Excel (habilitada por padrão).'
 complete -c efd_contribuicoes -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c efd_contribuicoes -s V -l version -d 'Print version'
