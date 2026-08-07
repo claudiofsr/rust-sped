@@ -226,12 +226,12 @@ pub fn create_xlsx(
                     workbook.push_worksheet(worksheet);
                 });
         }
-        ExcelMemoryMode::ConstantMemory | ExcelMemoryMode::LowMemory => {
+        mode => {
             all_data.write_sequentially_to_workbook(
                 &mut workbook,
                 &registry,
                 &multiprogressbar,
-                memory_mode,
+                mode,
             )?;
         }
     }
