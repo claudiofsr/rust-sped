@@ -9,8 +9,9 @@ use std::{
 
 use crate::{
     AppConfig, BUFFER_CAPACITY, DELIMITER_CHAR, DocsFiscais, EFDError, EFDResult, Informacoes,
-    OUTPUT_DIRECTORY, ResultExt, TipoDeOperacao, analyze_one_file, create_xlsx,
+    OUTPUT_DIRECTORY, ResultExt, TipoDeOperacao, analyze_one_file,
     structures::{analise_dos_creditos, consolidacao_cst},
+    write_xlsx,
 };
 
 // ============================================================================
@@ -61,7 +62,7 @@ pub fn executar_programa(config: &AppConfig, write: &mut dyn Write) -> EFDResult
             if config.no_excel {
                 Ok(())
             } else {
-                create_xlsx(
+                write_xlsx(
                     &path_xlsx,
                     &filtered_lines,
                     &consolidacao_cst,

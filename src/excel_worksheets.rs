@@ -95,7 +95,7 @@ impl<'a> AllData<'a> {
     /// This method uses concurrent worker scopes to split the rendering load
     /// of each sheet category across the CPU thread pool. The results are collected
     /// dynamically before propagating up.
-    pub fn get_all_worksheets(
+    pub fn generate_worksheets_in_parallel(
         &self,
         registry: &Arc<FormatRegistry>,
         multiprogressbar: &MultiProgress,
@@ -193,7 +193,7 @@ impl<'a> AllData<'a> {
 ///
 /// Bundles input slices into an `AllData` context, builds physical workbook references,
 /// and delegates performance pipelines depending on the requested memory profile.
-pub fn create_xlsx(
+pub fn write_xlsx(
     path_xlsx: &Path,
     data_efd: &[DocsFiscais],
     data_cst: &[ConsolidacaoCST],
@@ -220,7 +220,7 @@ pub fn create_xlsx(
     match memory_mode {
         ExcelMemoryMode::InMemory => {
             all_data
-                .get_all_worksheets(&registry, &multiprogressbar)?
+                .generate_worksheets_in_parallel(&registry, &multiprogressbar)?
                 .into_iter()
                 .for_each(|worksheet| {
                     workbook.push_worksheet(worksheet);
