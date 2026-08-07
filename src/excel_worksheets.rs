@@ -54,12 +54,13 @@ macro_rules! match_cast {
 }
 
 /// Memory consumption strategies for Excel file generation.
-#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExcelMemoryMode {
     /// Constant memory profile that writes row data progressively to disk.
     /// Best for processing very large files under tight system memory constraints.
     ConstantMemory,
     /// Low memory profile focused on compact structures utilizing shared strings.
+    #[default]
     LowMemory,
     /// Fully buffered in-memory structure processed in parallel via Rayon.
     /// Offers the highest throughput at the cost of transient memory usage.

@@ -139,10 +139,10 @@ pub struct Arguments {
     /// Select the memory consumption mode for generating the Excel spreadsheet.
     #[arg(
         short('m'),
-        long("memory_mode"),
+        long("memory-mode"),
         value_enum,
         verbatim_doc_comment,
-        default_value_t = ExcelMemoryMode::ConstantMemory
+        default_value_t = ExcelMemoryMode::default()
     )]
     pub memory_mode: ExcelMemoryMode,
 
