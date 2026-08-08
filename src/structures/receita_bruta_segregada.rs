@@ -196,8 +196,15 @@ fn segregar_receita_bruta(
             receitas.push(Some(ReceitaBruta::RbncTot));
             match chaves.cst.code() {
                 Some(1 | 2 | 3 | 5) => receitas.push(Some(ReceitaBruta::RbnTrmi)),
-                Some(4 | 6 | 7 | 8 | 9 | 49) => {
-                    if chaves.cfop_de_exportacao() {
+                Some(4 | 6 | 7 | 9 | 49) => {
+                    if chaves.cfop_de_exportacao_restritivo() {
+                        receitas.push(Some(ReceitaBruta::RbnExpo))
+                    } else {
+                        receitas.push(Some(ReceitaBruta::RbnNtmi))
+                    }
+                }
+                Some(8) => {
+                    if chaves.cfop_de_exportacao_expansivo() {
                         receitas.push(Some(ReceitaBruta::RbnExpo))
                     } else {
                         receitas.push(Some(ReceitaBruta::RbnNtmi))

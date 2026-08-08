@@ -69,7 +69,12 @@ impl Chaves {
     The `CFOP_DE_EXPORTACAO` constant array is assumed to be sorted
     for efficient binary search.
     */
-    pub fn cfop_de_exportacao(&self) -> bool {
+    pub fn cfop_de_exportacao_restritivo(&self) -> bool {
+        self.cfop
+            .is_some_and(|cfop_value| CFOP_DE_EXPORTACAO.binary_search(&cfop_value).is_ok())
+    }
+
+    pub fn cfop_de_exportacao_expansivo(&self) -> bool {
         self.cfop
             .is_none_or(|cfop_value| CFOP_DE_EXPORTACAO.binary_search(&cfop_value).is_ok())
     }
