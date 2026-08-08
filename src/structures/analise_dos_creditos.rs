@@ -71,7 +71,7 @@ impl Chaves {
     */
     pub fn cfop_de_exportacao(&self) -> bool {
         self.cfop
-            .is_some_and(|cfop_value| CFOP_DE_EXPORTACAO.binary_search(&cfop_value).is_ok())
+            .is_none_or(|cfop_value| CFOP_DE_EXPORTACAO.binary_search(&cfop_value).is_ok())
     }
 }
 
