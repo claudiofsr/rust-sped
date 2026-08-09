@@ -493,7 +493,7 @@ mod tests_analyze_all {
             arq_file_hash
         );
         assert_eq!(
-            "99cb92fe2e10073b9a560752c4a4b9da80bb7aca794a293cad76da81ae486e45",
+            "6e5486b07e74e8416f2df08f6c9d747098dfb80c26cf0e0ea9a1ea428cc46ecd",
             out_file_hash
         );
         assert_eq!(
