@@ -1456,6 +1456,36 @@ pub fn cred_presumido(aliq_pis: Option<Decimal>, aliq_cof: Option<Decimal>) -> b
         })
 }
 
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Serialize, Deserialize)]
+pub enum ReceitaBruta {
+    /// CSTs 01, 02, 03, 05 (Tributadas no Mercado Interno)
+    #[serde(rename = "Receita Bruta Não-Cumulativa - Tributada no Mercado Interno")]
+    RbnTrmi,
+
+    /// CSTs 04, 06, 07, 09, 49 (Não Tributada no Mercado Interno por padrão)
+    #[serde(rename = "Receita Bruta Não-Cumulativa - Não Tributada no Mercado Interno")]
+    RbnNtmi,
+
+    /// CST 08 (Sem Incidência / Exportação por padrão)
+    #[serde(rename = "Receita Bruta Não-Cumulativa - Exportação")]
+    RbnExpo,
+
+    #[serde(rename = "Receita Bruta Não Cumulativa Total")]
+    RbncTot,
+
+    #[serde(rename = "Receita Bruta Cumulativa")]
+    RbCumul,
+
+    #[serde(rename = "Receita Bruta Total")]
+    RbTotal,
+}
+
+impl fmt::Display for ReceitaBruta {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.serialize(f)
+    }
+}
+
 // ============================================================================
 // Código da Situação Tributária (CST)
 // ============================================================================
@@ -1780,6 +1810,18 @@ impl CodigoSituacaoTributaria {
         // *self as u16 obtém o valor numérico (1, 50, 99...)
         // self (Display) obtém a descrição do #[serde(rename)]
         format!("{:02} - {}", self.code(), self)
+    }
+
+    /// Classifica preliminarmente o CST de saída em sua categoria base correspondente da receita bruta.
+    ///
+    /// Esta classificação serve como ponto de partida (padrão) antes da validação do CFOP.
+    pub const fn classificar_receita_bruta(self) -> Option<ReceitaBruta> {
+        match self.code() {
+            1 | 2 | 3 | 5 => Some(ReceitaBruta::RbnTrmi),
+            4 | 6 | 7 | 9 | 49 => Some(ReceitaBruta::RbnNtmi),
+            8 => Some(ReceitaBruta::RbnExpo),
+            _ => None, // CSTs de entrada que não compõem a receita bruta não cumulativa
+        }
     }
 }
 

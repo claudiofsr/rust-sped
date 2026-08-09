@@ -6,45 +6,19 @@ use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use serde_aux::prelude::serde_introspect;
 use std::collections::HashMap;
-use std::fmt;
 use std::ops::AddAssign;
 use tabled::Tabled;
 
 use crate::{
-    CSTOption,
-    CodigoSituacaoTributaria,
-    DecimalExt,
-    MesesDoAno,
+    CodigoSituacaoTributaria, DecimalExt, EFDError, EFDResult, MesesDoAno, ReceitaBruta,
     analise_dos_creditos::{Chaves, Valores},
     serialize_option_decimal,
-    utils::{display_decimal, display_mes, display_value, serialize_decimal}, // Importa as structs de agregação do arquivo pai/irmão
+    utils::{display_decimal, display_mes, display_value, serialize_decimal},
 };
 
 // ==============================================================================
 // Enums e Structs Específicos de Receita
 // ==============================================================================
-
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Serialize, Deserialize)]
-pub enum ReceitaBruta {
-    #[serde(rename = "Receita Bruta Não-Cumulativa - Tributada no Mercado Interno")]
-    RbnTrmi,
-    #[serde(rename = "Receita Bruta Não-Cumulativa - Não Tributada no Mercado Interno")]
-    RbnNtmi,
-    #[serde(rename = "Receita Bruta Não-Cumulativa - Exportação")]
-    RbnExpo,
-    #[serde(rename = "Receita Bruta Não Cumulativa Total")]
-    RbncTot,
-    #[serde(rename = "Receita Bruta Cumulativa")]
-    RbCumul,
-    #[serde(rename = "Receita Bruta Total")]
-    RbTotal,
-}
-
-impl fmt::Display for ReceitaBruta {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.serialize(f)
-    }
-}
 
 #[derive(Debug, Default, Eq, PartialEq, PartialOrd, Clone, Hash, Serialize, Deserialize)]
 pub struct PeriodoDeApuracao {
@@ -174,15 +148,15 @@ fn display_percentual(valor: &Option<Decimal>) -> String {
 /// Processa o HashMap consolidado de chaves fiscais e gera a estrutura de Receita Bruta
 pub fn apurar_receita_bruta(
     receita_bruta_map: &HashMap<Chaves, Valores>,
-) -> Vec<ReceitaBrutaSegregadaPorCST> {
-    let receita_bruta_segregada = segregar_receita_bruta(receita_bruta_map);
-    obter_informacoes_de_receita_bruta(&receita_bruta_segregada)
+) -> EFDResult<Vec<ReceitaBrutaSegregadaPorCST>> {
+    let receita_bruta_segregada = segregar_receita_bruta(receita_bruta_map)?;
+    Ok(obter_informacoes_de_receita_bruta(&receita_bruta_segregada))
 }
 
 /// Obter Receita Bruta segregada por CST para fins de rateio dos créditos
 fn segregar_receita_bruta(
     receita_bruta: &HashMap<Chaves, Valores>,
-) -> HashMap<PeriodoDeApuracao, ValorDaReceita> {
+) -> EFDResult<HashMap<PeriodoDeApuracao, ValorDaReceita>> {
     let mut hashmap: HashMap<PeriodoDeApuracao, ValorDaReceita> = HashMap::new();
 
     for (chaves, valores) in receita_bruta {
@@ -194,28 +168,36 @@ fn segregar_receita_bruta(
             receitas.push(Some(ReceitaBruta::RbCumul));
         } else {
             receitas.push(Some(ReceitaBruta::RbncTot));
-            match chaves.cst.code() {
-                Some(1 | 2 | 3 | 5) => receitas.push(Some(ReceitaBruta::RbnTrmi)),
-                Some(4 | 6 | 7 | 9 | 49) => {
+
+            // Obtém a classificação da Receita Bruta Não Cumulativa baseada no CST
+            let rbnc = chaves.cst.and_then(|cst| cst.classificar_receita_bruta());
+
+            match rbnc {
+                Some(ReceitaBruta::RbnTrmi) => {
+                    receitas.push(Some(ReceitaBruta::RbnTrmi));
+                }
+                Some(ReceitaBruta::RbnNtmi) => {
                     if chaves.cfop_de_exportacao_restritivo() {
-                        receitas.push(Some(ReceitaBruta::RbnExpo))
+                        receitas.push(Some(ReceitaBruta::RbnExpo));
                     } else {
-                        receitas.push(Some(ReceitaBruta::RbnNtmi))
+                        receitas.push(Some(ReceitaBruta::RbnNtmi));
                     }
                 }
-                Some(8) => {
+                Some(ReceitaBruta::RbnExpo) => {
                     if chaves.cfop_de_exportacao_expansivo() {
-                        receitas.push(Some(ReceitaBruta::RbnExpo))
+                        receitas.push(Some(ReceitaBruta::RbnExpo));
                     } else {
-                        receitas.push(Some(ReceitaBruta::RbnNtmi))
+                        receitas.push(Some(ReceitaBruta::RbnNtmi));
                     }
                 }
-                _ => panic!(
-                    "CST (1 <= CST <= 49) inválido para receita bruta: {:?}",
-                    chaves.cst
-                ),
+                _ => {
+                    // Retorna o erro específico
+                    return Err(EFDError::InvalidCstRBNC {
+                        cst: format!("{:?}", chaves.cst),
+                    });
+                }
             }
-        };
+        }
 
         let rb = ValorDaReceita {
             valor: valores.valor_item,
@@ -225,7 +207,6 @@ fn segregar_receita_bruta(
 
         for receita in receitas {
             let pa = PeriodoDeApuracao {
-                //path: chaves.path.clone(),
                 cnpj_base: chaves.cnpj_base.clone(),
                 ano: chaves.ano,
                 trimestre: chaves.trimestre,
@@ -237,7 +218,7 @@ fn segregar_receita_bruta(
         }
     }
 
-    hashmap
+    Ok(hashmap)
 }
 
 fn obter_informacoes_de_receita_bruta(

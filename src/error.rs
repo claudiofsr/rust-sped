@@ -137,6 +137,14 @@ pub enum EFDError {
         line: String,
     },
 
+    /// CST inválido para apuração da receita bruta (esperava-se de 01 a 49).
+    #[error(
+        "CST inválido para a apuração da receita bruta não cumulativa.\n\
+         CST encontrado: {cst}\n\
+         Detalhes: Esperava-se um CST de saídas válido (na faixa de 01 a 09, ou 49)."
+    )]
+    InvalidCstRBNC { cst: String },
+
     /// Nº incorreto de campos
     #[error(
         "Erro: Nº incorreto de campos\n\

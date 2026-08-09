@@ -414,7 +414,7 @@ pub fn consolidar_natureza_da_base_de_calculo(
     // 4. Processamento de Receita (Delegado para receita_bruta_segregada.rs)
     distribuir_creditos_rateados(linhas, &mut base_creditos);
 
-    let informacoes_de_receita_bruta = apurar_receita_bruta(&receita_bruta);
+    let informacoes_de_receita_bruta = apurar_receita_bruta(&receita_bruta)?;
     let tabela_da_receita_bruta = gerar_tabela_rec(&informacoes_de_receita_bruta);
 
     // 5. Ajustes e Descontos em Paralelo usando Rayon Scope
