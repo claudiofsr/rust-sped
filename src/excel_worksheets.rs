@@ -414,8 +414,8 @@ where
 
         // Instantiates specialized low-allocation worksheets depending on streaming configuration
         let worksheet = match memory_mode {
-            ExcelMemoryMode::ConstantMemory => workbook.add_worksheet_with_constant_memory(),
-            ExcelMemoryMode::LowMemory => workbook.add_worksheet_with_low_memory(),
+            ExcelMemoryMode::ConstantMemory => workbook.add_worksheet_with_constant_memory()?,
+            ExcelMemoryMode::LowMemory => workbook.add_worksheet_with_low_memory()?,
             ExcelMemoryMode::InMemory => workbook.add_worksheet(),
         };
 

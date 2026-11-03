@@ -74,7 +74,7 @@ features = [
 ]
 
 [dependencies.cc]
-version = "1.4"
+version = "1.11"
 features = [
     "parallel"
 ]
@@ -90,7 +90,7 @@ features = [
 ]
 
 [dependencies.rust_decimal]
-version = "1.42"
+version = "1.43"
 features = [
     #"serde-str",
     #"serde-float",
@@ -98,7 +98,7 @@ features = [
 ]
 
 [dependencies.rust_xlsxwriter]
-version = "0.99"
+version = "0.102"
 features = [
     "constant_memory",
     "chrono",
