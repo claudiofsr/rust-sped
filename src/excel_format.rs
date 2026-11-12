@@ -10,7 +10,7 @@ pub const HEADER_FONT_SIZE: f64 = 12.0;
 pub const MAX_NUMBER_OF_ROWS: usize = 1_000_000;
 pub const WIDTH_MIN: usize = 10;
 pub const WIDTH_MAX: usize = 100;
-pub const ADJUSTMENT: f64 = 1.50;
+pub const ADJUSTMENT: f64 = 1.60;
 
 /// Cores de fundo para identificação visual de tipos de linha.
 pub const COLOR_SOMA: Color = Color::RGB(0xBFBFBF);
