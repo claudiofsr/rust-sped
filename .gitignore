@@ -8,3 +8,4 @@ efd_contribuicoes*
 *.txt
 *.zst
 .vscode
+fix*.py

@@ -158,6 +158,7 @@ name = "run"
 # ver resultado em: ... Rust/projects/efd_contribuicoes/target/criterion/report/index.html
 criterion = { version = "0.8", features = ["html_reports"] }
 plotters = "0.3"
+rand = "0.10"
 
 [[bench]]
 name = "fields_format"
