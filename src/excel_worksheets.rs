@@ -11,7 +11,7 @@
 
 use chrono::NaiveDate;
 use clap::ValueEnum;
-use claudiofsr_lib::{digit_count, get_style};
+use claudiofsr_lib::{digit_count, get_style, match_cast};
 use compact_str::CompactString;
 use indicatif::{MultiProgress, ProgressBar};
 use itertools::Itertools;
@@ -35,23 +35,6 @@ use crate::{
     ConsolidacaoCST, DocsFiscais, EFDError, EFDResult, IndicadorDeOrigem, NaturezaBaseCalculo,
     ResultExt, TipoDeCredito, TipoDeOperacao, TipoDoItem, display_cst, excel_format::*,
 };
-
-// --- Macros ---
-
-/// Dynamically casts a `dyn Any` reference to concrete types.
-///
-/// This macro iterates through a list of target types and executes the associated
-/// expression for the first matching type found at runtime.
-macro_rules! match_cast {
-    ($any:ident { $( $bind:ident as $patt:ty => $body:expr ),+ $(,)? }) => {{
-        $(
-            if let Some($bind) = $any.downcast_ref::<$patt>() {
-                Some($body)
-            } else
-        )+
-        { None }
-    }};
-}
 
 /// Memory consumption strategies for Excel file generation.
 #[derive(Default, ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
@@ -201,6 +184,26 @@ pub fn write_xlsx(
     data_nat: &[AnaliseDosCreditos],
     memory_mode: ExcelMemoryMode,
 ) -> EFDResult<()> {
+    let multiprogressbar = MultiProgress::new();
+    write_xlsx_com_progresso(
+        path_xlsx,
+        data_efd,
+        data_cst,
+        data_nat,
+        memory_mode,
+        &multiprogressbar,
+    )
+}
+
+/// Versão interna que reutiliza um `MultiProgress` já existente (ex.: modo `--stream`).
+pub(crate) fn write_xlsx_com_progresso(
+    path_xlsx: &Path,
+    data_efd: &[DocsFiscais],
+    data_cst: &[ConsolidacaoCST],
+    data_nat: &[AnaliseDosCreditos],
+    memory_mode: ExcelMemoryMode,
+    multiprogressbar: &MultiProgress,
+) -> EFDResult<()> {
     let file = File::create(path_xlsx).map_loc(|e| EFDError::InOut {
         source: e,
         path: path_xlsx.to_path_buf(),
@@ -213,7 +216,6 @@ pub fn write_xlsx(
     let mut workbook = Workbook::new();
     workbook.set_properties(&get_properties()?);
 
-    let multiprogressbar = MultiProgress::new();
     let registry = Arc::new(FormatRegistry::new());
 
     // Clean, idiomatic dispatch of the generation strategy.
@@ -221,7 +223,7 @@ pub fn write_xlsx(
     match memory_mode {
         ExcelMemoryMode::InMemory => {
             all_data
-                .generate_worksheets_in_parallel(&registry, &multiprogressbar)?
+                .generate_worksheets_in_parallel(&registry, multiprogressbar)?
                 .into_iter()
                 .for_each(|worksheet| {
                     workbook.push_worksheet(worksheet);
@@ -231,7 +233,7 @@ pub fn write_xlsx(
             all_data.write_sequentially_to_workbook(
                 &mut workbook,
                 &registry,
-                &multiprogressbar,
+                multiprogressbar,
                 mode,
             )?;
         }
@@ -450,7 +452,7 @@ fn setup_worksheet(
     }
 
     let table = Table::new().set_autofilter(true);
-    worksheet.add_table(0, 0, num_lines, num_cols - 1, &table)?;
+    worksheet.add_table(0, 0, num_lines, num_cols.saturating_sub(1), &table)?;
 
     Ok(())
 }
@@ -508,53 +510,48 @@ fn calculate_value_len(sheet_type: SheetType, field_value: &dyn std::any::Any) -
     let len = match_cast!(field_value {
         // Tratamento do CST
         val as Option<CodigoSituacaoTributaria> => {
-            val.as_ref().map_or(2, |cst| {
+            Some(val.as_ref().map_or(2, |cst| {
                 if sheet_type.is_itens() {
                     // Planilha Detalhada: "01 - Operação Tributável..."
-                    // Multiplicamos por 110% porque fontes proporcionais (Calibri)
-                    // são levemente mais largas que a contagem de caracteres monoespaçados.
                     cst.descricao_com_codigo().len() * 70 / 100
                 } else {
                     // Planilha Compacta: Apenas os dígitos "01"
                     display_cst(&Some(*cst)).len() * 80 / 100
                 }
-            })
+            }))
         },
 
         val as Option<NaturezaBaseCalculo> => {
-            val.as_ref().map_or(0, |n| {
-                n.descricao_com_codigo().len() * 72 / 100
-            })
+            Some(val.as_ref().map_or(0, |n| n.descricao_com_codigo().len() * 72 / 100))
         },
 
         // Inteiros e Decimais
-        val as Option<u16> => val.map_or(0, |v| digit_count(v as usize)),
-        val as Option<u32> => val.map_or(0, |v| digit_count(v as usize)),
-        val as Option<usize> => val.map_or(0, digit_count),
-        val as Decimal => decimal_len(val),
-        val as Option<Decimal> => val.as_ref().map_or(0, decimal_len),
+        val as Option<u16> => { Some(val.map_or(0, |v| digit_count(v as usize))) },
+        val as Option<u32> => { Some(val.map_or(0, |v| digit_count(v as usize))) },
+        val as Option<usize> => { Some(val.map_or(0, digit_count)) },
+        val as Decimal => { Some(decimal_len(val)) },
+        val as Option<Decimal> => { Some(val.as_ref().map_or(0, decimal_len)) },
 
         // Datas (Fixo: YYYY-MM-DD ou DD/MM/YYYY)
-        val as Option<NaiveDate> => val.map_or(0, |_| 10),
+        val as Option<NaiveDate> => { Some(val.map_or(0, |_| 10)) },
 
         // Enums formatados
-        //val as Option<CodigoSituacaoTributaria> => display_cst(val).len() * 82 / 100,
-        val as Option<CodigoDoCredito> => val.as_ref().map_or(0, |_| 5),
-        val as Option<IndicadorDeOrigem> => val.as_ref().map_or(0, |s| s.to_string().len() * 88 / 100),
-        val as Option<TipoDeCredito> => val.as_ref().map_or(0, |s| s.to_string().len() * 86 / 100),
-        val as Option<TipoDeOperacao> => val.as_ref().map_or(0, |s| s.to_string().len()),
-        val as Option<TipoDoItem> => val.as_ref().map_or(0, |s| s.to_string().len() * 88 / 100),
+        val as Option<CodigoDoCredito> => { Some(val.as_ref().map_or(0, |_| 5)) },
+        val as Option<IndicadorDeOrigem> => { Some(val.as_ref().map_or(0, |s| s.to_string().len() * 88 / 100)) },
+        val as Option<TipoDeCredito> => { Some(val.as_ref().map_or(0, |s| s.to_string().len() * 86 / 100)) },
+        val as Option<TipoDeOperacao> => { Some(val.as_ref().map_or(0, |s| s.as_str().len())) },
+        val as Option<TipoDoItem> => { Some(val.as_ref().map_or(0, |s| s.to_string().len() * 88 / 100)) },
 
         // Strings e Wrappers
-        val as String => val.len(),
-        val as Arc<str> => val.len(),
-        val as CompactString => val.len(),
-        val as Option<String> => val.as_ref().map_or(0, |s| s.len()),
-        val as Option<Arc<str>> => val.as_deref().map_or(0, |s| s.len()),
-        val as Option<CompactString> => val.as_deref().map_or(0, |s| s.len()),
+        val as String => { Some(val.len()) },
+        val as Arc<str> => { Some(val.len()) },
+        val as CompactString => { Some(val.len()) },
+        val as Option<String> => { Some(val.as_ref().map_or(0, |s| s.len())) },
+        val as Option<Arc<str>> => { Some(val.as_deref().map_or(0, |s| s.len())) },
+        val as Option<CompactString> => { Some(val.as_deref().map_or(0, |s| s.len())) },
 
         // Coleções
-        val as Vec<String> => val.iter().join(", ").len(),
+        val as Vec<String> => { Some(val.iter().join(", ").len()) },
     });
 
     len.unwrap_or(WIDTH_MIN)

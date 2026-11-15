@@ -51,6 +51,24 @@ pub struct AppConfig {
 
     /// Se true, gera o arquivo .csv.
     pub print_csv: bool,
+
+    /// Modo streaming (`--stream`).
+    pub stream: bool,
+
+    /// Gerar Excel mensal completo (3 abas) por arquivo em `novo/spill` (`--xlsx-mensal`).
+    pub xlsx_mensal: bool,
+
+    /// Concatenar os CSV por arquivo em um CSV por CNPJ base.
+    pub concat_csv: bool,
+
+    /// Orçamento de RAM disponível detectada, em bytes.
+    pub max_ram_bytes: u64,
+
+    /// Fator de expansão memória/arquivo usado nas estimativas (`--mem-factor`).
+    pub mem_factor: f64,
+
+    /// Máximo de arquivos analisados simultaneamente (`--jobs`).
+    pub jobs: Option<usize>,
 }
 
 /// Implementação manual do Default para suportar valores customizados
@@ -68,6 +86,12 @@ impl Default for AppConfig {
             operacoes_de_creditos: false,
             output_dir: PathBuf::from(OUTPUT_DIRECTORY),
             print_csv: false,
+            stream: false,
+            xlsx_mensal: false,
+            concat_csv: false,
+            max_ram_bytes: crate::sysmem::orcamento_de_ram(),
+            mem_factor: 6.0,
+            jobs: None,
         }
     }
 }
@@ -107,7 +131,14 @@ impl AppConfig {
             no_excel: args.no_excel,
             operacoes_de_creditos: args.operacoes_de_creditos,
             print_csv: args.print_csv,
-            ..Self::default() // output_dir e base_name vêm do impl Default acima
+            stream: args.stream,
+            xlsx_mensal: args.xlsx_mensal,
+            concat_csv: args.concat_csv,
+            max_ram_bytes: crate::sysmem::orcamento_de_ram(),
+            mem_factor: args.mem_factor.max(1.0),
+            jobs: args.jobs.map(|n| n.max(1)),
+            base_name: BASE_NAME.to_string(),
+            output_dir: PathBuf::from(OUTPUT_DIRECTORY),
         })
     }
 
@@ -247,5 +278,9 @@ impl AppConfig {
 
     pub fn path_xlsx(&self) -> PathBuf {
         self.output_dir.join(&self.base_name).with_extension("xlsx")
+    }
+
+    pub fn spill_dir(&self) -> PathBuf {
+        self.output_dir.join("spill")
     }
 }

@@ -205,6 +205,38 @@ pub struct Arguments {
     /// Exemplo: '-r 1' (apenas o primeiro), '-r 1 5' (do primeiro ao quinto).
     #[arg(short, long, value_parser, verbatim_doc_comment, required = false, num_args = 1..=2)]
     pub range: Option<Vec<usize>>,
+
+    /// Modo streaming: processa arquivos com uso limitado de RAM.
+    ///
+    /// Cada arquivo gera dados temporários em `novo/spill` durante o processamento.
+    /// Consolida todos os CNPJs em um único Excel (ou um por CNPJ base se exceder
+    /// a RAM disponível), contendo apenas as abas de consolidação.
+    #[arg(short = 's', long)]
+    pub stream: bool,
+
+    /// Gera um arquivo Excel mensal (com as 3 abas) por arquivo EFD em `novo/spill` (modo --stream).
+    ///
+    /// Inclui a aba detalhada `Itens de Docs Fiscais`, respeitando -e, -o, -t e -m.
+    /// Pode ser combinado com -n (--no-excel) para gerar apenas os arquivos mensais.
+    #[arg(long = "xlsx-mensal", requires = "stream")]
+    pub xlsx_mensal: bool,
+
+    /// Gera o CSV final único, idêntico ao do modo global (modo --stream; requer -p).
+    #[arg(long = "concat-csv", requires_all = ["stream", "print_csv"])]
+    pub concat_csv: bool,
+
+    /// Fator de expansão estimado: RAM de pico = tamanho do arquivo x fator (modo --stream).
+    ///
+    /// Calibre com: /usr/bin/time -v efd_contribuicoes -sr 1
+    /// (Maximum resident set size / tamanho do arquivo).
+    #[arg(long = "mem-factor", requires = "stream", default_value_t = 6.0)]
+    pub mem_factor: f64,
+
+    /// Máximo de arquivos analisados simultaneamente (padrão: nº de CPUs).
+    ///
+    /// O orçamento de RAM pode reduzir esse número automaticamente.
+    #[arg(short = 'j', long)]
+    pub jobs: Option<usize>,
 }
 
 impl Arguments {
@@ -236,7 +268,7 @@ impl Arguments {
         let mut stdout = io::stdout();
 
         let log_msg = format!("Gerando arquivo de auto-complete para {gen:?}...").green();
-        log::info!("{}", log_msg);
+        log::debug!("{}", log_msg);
 
         generate(r#gen, &mut cmd, cmd_name, &mut stdout);
         process::exit(0);
@@ -259,5 +291,16 @@ mod tests_args {
     fn verify_cli() {
         use clap::CommandFactory;
         Arguments::command().debug_assert()
+    }
+
+    #[test]
+    fn dependencias_de_flags_no_cli() {
+        assert!(Arguments::try_parse_from(["efd", "-r", "1", "-s", "--concat-csv"]).is_err());
+        assert!(Arguments::try_parse_from(["efd", "-r", "1", "-p", "--concat-csv"]).is_err());
+        assert!(Arguments::try_parse_from(["efd", "-r", "1", "-s", "-p", "--concat-csv"]).is_ok());
+
+        assert!(Arguments::try_parse_from(["efd", "-f"]).is_ok());
+        assert!(Arguments::try_parse_from(["efd", "-r", "1", "--mem-factor", "4"]).is_err());
+        assert!(Arguments::try_parse_from(["efd", "-r", "1", "-s", "--mem-factor", "4"]).is_ok());
     }
 }

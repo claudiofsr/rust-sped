@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     AppConfig, BUFFER_CAPACITY, DELIMITER_CHAR, DocsFiscais, EFDError, EFDResult, Informacoes,
-    OUTPUT_DIRECTORY, ResultExt, TipoDeOperacao, analyze_one_file,
+    ResultExt, TipoDeOperacao, analyze_one_file,
     structures::{analise_dos_creditos, consolidacao_cst},
     write_xlsx,
 };
@@ -19,9 +19,15 @@ use crate::{
 // ============================================================================
 
 pub fn executar_programa(config: &AppConfig, write: &mut dyn Write) -> EFDResult<Vec<DocsFiscais>> {
+    // Modo streaming: nada é retido em memória; veja src/spill.rs.
+    if config.stream {
+        crate::spill::executar_streaming(config, write)?;
+        return Ok(Vec::new());
+    }
     // 1. Setup inicial (Sequencial)
-    fs::create_dir_all(OUTPUT_DIRECTORY)
-        .map_loc(|e| EFDError::DirectoryCreationFailed(OUTPUT_DIRECTORY.to_string(), e))?;
+    fs::create_dir_all(&config.output_dir).map_loc(|e| {
+        EFDError::DirectoryCreationFailed(config.output_dir.display().to_string(), e)
+    })?;
 
     // 2. Análise dos arquivos
     let (pa_total, all_lines) = analyze_all_files(config, write)?;
@@ -94,7 +100,7 @@ pub fn executar_programa(config: &AppConfig, write: &mut dyn Write) -> EFDResult
 /// Decide se um registro deve ser mantido com base nos argumentos de CLI.
 /// Combina a lógica de exclusão de saídas e operações de crédito.
 #[inline]
-fn should_keep_record(doc: &DocsFiscais, config: &AppConfig) -> bool {
+pub(crate) fn should_keep_record(doc: &DocsFiscais, config: &AppConfig) -> bool {
     // Se NÃO for operação de entrada/saída, aprovamos direto (Early Return com TRUE), mantemos DocsFiscais.
     if !doc.operacoes_de_entrada_ou_saida() {
         return true; // Note o "true" (MANTER)
@@ -116,7 +122,7 @@ fn should_keep_record(doc: &DocsFiscais, config: &AppConfig) -> bool {
 
 /// Imprime o resumo do período de apuração total.
 /// Otimização: Usa min/max (O(N)) em vez de sort (O(N log N)).
-fn imprimir_resumo_periodo(dates: &[NaiveDate], write: &mut dyn Write) -> EFDResult<()> {
+pub(crate) fn imprimir_resumo_periodo(dates: &[NaiveDate], write: &mut dyn Write) -> EFDResult<()> {
     // Só imprime se houver mais de um arquivo/data, conforme lógica original
     if dates.len() <= 1 {
         return Ok(());
@@ -255,7 +261,10 @@ fn update_line_counter(all_lines: &mut [DocsFiscais]) {
         });
 }
 
-fn print_arquivos_selecionados(arquivos: &[PathBuf], write: &mut dyn Write) -> EFDResult<()> {
+pub(crate) fn print_arquivos_selecionados(
+    arquivos: &[PathBuf],
+    write: &mut dyn Write,
+) -> EFDResult<()> {
     let number_of_files = arquivos.len();
 
     writeln!(write)?;
@@ -293,80 +302,47 @@ fn consolidar_resultados(
         || analise_dos_creditos::consolidar_natureza_da_base_de_calculo(config, database),
     );
 
-    /*
-    // This creates the scope for the threads
-    let (rresult_cst, rresult_nat) = thread::scope(|s| {
-
-        let thread_cst = s.spawn(|| {
-            consolidacao_cst::consolidar_operacoes_por_cst(database)
-        });
-
-        let thread_nat = s.spawn(|| {
-            analise_dos_creditos::consolidar_natureza_da_base_de_calculo(database)
-        });
-
-        // Wait for background thread to complete
-        (thread_cst.join(), thread_nat.join())
-    });
-
-    let (cst, nat) = match (rresult_cst, rresult_nat) {
-        (Ok(result_cst), Ok(result_nat)) => {
-            match (result_cst, result_nat) {
-            (Ok(cst), Ok(nat)) => (cst, nat),
-            _ => panic!("Falha na Consolidação!"),
-            }
-        },
-        _ => panic!("thread fault!"),
-    };
-    */
-
-    /*
-    let mut cst = (String::new(), Vec::new());
-    let mut nat = (String::new(), String::new(), Vec::new());
-
-    // This creates the scope for the threads
-    thread::scope(|s| {
-        s.spawn(|| -> EFDResult<()> {
-            cst = consolidacao_cst::consolidar_operacoes_por_cst(database)?;
-            Ok(())
-        });
-
-        s.spawn(|| -> EFDResult<()> {
-            nat = analise_dos_creditos::consolidar_natureza_da_base_de_calculo(config, database)?;
-            Ok(())
-        });
-    });
-    */
-
     let (tabela_cst, consolidacao_cst) = cst_result?;
     let (tabela_nat, tabela_rb, consolidacao_nat) = nat_result?;
 
     if print_table {
-        if let Some(tabela) = tabela_rb {
-            let title =
-                "Receita Bruta Apurada e Segregada Conforme CST para Fins de Rateio dos Créditos";
-            writeln!(write, "{title}")?;
-            writeln!(write, "{tabela}\n")?;
-        }
-
-        if let Some(tabela) = tabela_cst {
-            let title = "REGISTROS FISCAIS - CONSOLIDAÇÃO DAS OPERAÇÕES POR CST:";
-            writeln!(write, "{title}")?;
-            writeln!(write, "{tabela}\n")?;
-        }
-
-        if let Some(tabela) = tabela_nat {
-            let title = "Natureza da Base de Cálculo dos Créditos - CONSOLIDAÇÃO DAS OPERAÇÕES por Tipo de Crédito, CST e Alíquotas das Contribuições:";
-            writeln!(write, "{title}")?;
-            writeln!(write, "{tabela}\n")?;
-        }
+        escrever_tabelas(write, tabela_rb, tabela_cst, tabela_nat)?;
     }
 
     Ok((consolidacao_cst, consolidacao_nat))
 }
 
+/// Imprime as tabelas de consolidação (Receita Bruta, CST e Natureza).
+pub(crate) fn escrever_tabelas(
+    write: &mut dyn Write,
+    tabela_rb: Option<String>,
+    tabela_cst: Option<String>,
+    tabela_nat: Option<String>,
+) -> EFDResult<()> {
+    if let Some(tabela) = tabela_rb {
+        let title =
+            "Receita Bruta Apurada e Segregada Conforme CST para Fins de Rateio dos Créditos";
+        writeln!(write, "{title}")?;
+        writeln!(write, "{tabela}\n")?;
+    }
+
+    if let Some(tabela) = tabela_cst {
+        let title = "REGISTROS FISCAIS - CONSOLIDAÇÃO DAS OPERAÇÕES POR CST:";
+        writeln!(write, "{title}")?;
+        writeln!(write, "{tabela}\n")?;
+    }
+
+    if let Some(tabela) = tabela_nat {
+        let title = "Natureza da Base de Cálculo dos Créditos - CONSOLIDAÇÃO DAS OPERAÇÕES por Tipo de Crédito, CST e Alíquotas das Contribuições:";
+        writeln!(write, "{title}")?;
+        writeln!(write, "{tabela}\n")?;
+    }
+
+    Ok(())
+}
+
 /// Imprimir CSV com Writer interno e buffering para máxima eficiência de IO.
-fn write_csv(path_csv: &Path, data: &[DocsFiscais]) -> EFDResult<()> {
+pub(crate) fn write_csv(path_csv: &Path, data: &[DocsFiscais]) -> EFDResult<()> {
     let file = File::create(path_csv).map_loc(|e| EFDError::InOut {
         source: e,
         path: path_csv.to_path_buf(),
@@ -406,6 +382,7 @@ fn write_csv(path_csv: &Path, data: &[DocsFiscais]) -> EFDResult<()> {
 #[cfg(test)]
 mod tests_analyze_all {
     use super::*;
+    use crate::OUTPUT_DIRECTORY;
     use claudiofsr_lib::{blake3_hash, my_print};
     use rust_decimal_macros::dec;
 

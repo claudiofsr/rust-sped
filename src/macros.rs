@@ -122,7 +122,7 @@ macro_rules! impl_dopai {
     (@map get_valor_icms, $v:ident) => { fn get_valor_icms(&self) -> Option<Decimal> { self.$v } };
 
     // Safety catch
-    (@method $other:ident, $v:ident) => { compile_error!(concat!("Chave desconhecida '", stringify!($other), "' em impl_dopai!")); };
+    (@map $other:ident, $v:ident) => { compile_error!(concat!("Chave desconhecida '", stringify!($other), "' em impl_dopai!")); };
 }
 
 /// Implementa RegistroFilho para mapear campos da Struct para a Trait
@@ -186,7 +186,7 @@ macro_rules! impl_filho {
     (@map get_valor_bc_icms_st, $v:ident) => { fn get_valor_bc_icms_st(&self) -> Option<Decimal> { self.$v } };
 
     // Safety catch
-    (@method $other:ident, $v:ident) => { compile_error!(concat!("Chave desconhecida '", stringify!($other), "' em impl_filho!")); };
+    (@map $other:ident, $v:ident) => { compile_error!(concat!("Chave desconhecida '", stringify!($other), "' em impl_filho!")); };
 }
 
 // ============================================================================

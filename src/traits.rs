@@ -640,7 +640,7 @@ macro_rules! bridge_from_str_to_efd {
                         linha_num: linha,
                         campo: campo.to_string(),
                         valor: s.to_string(),
-                        detalhe: Some(format!("Valor inválido para o tipo {}", stringify!($t))),
+                        detalhe: Some(format!("Valor inválido para o tipo {}", stringify!($target))),
                     })
                 }
             }

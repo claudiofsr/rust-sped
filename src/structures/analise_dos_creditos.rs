@@ -244,7 +244,10 @@ pub struct AnaliseDosCreditos {
     #[tabled(rename = "Mês", display = "display_mes")]
     pub mes: Option<MesesDoAno>,
 
-    #[serde(rename = "Tipo de Operação")]
+    #[serde(
+        rename = "Tipo de Operação",
+        serialize_with = "TipoDeOperacao::serialize_agrupado"
+    )]
     #[tabled(rename = "Tipo de Operação", display = "display_option")]
     pub tipo_de_operacao: Option<TipoDeOperacao>,
 
@@ -381,68 +384,185 @@ pub fn display_aliquota(valor: &Option<Decimal>) -> String {
 // Lógica Principal
 // ==============================================================================
 
+/// Rateio de créditos (registros "Detalhamento"): ATRIBUIÇÃO, não soma.
+/// Na ordem global dos arquivos, o último valor atribuído a cada campo vence.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct Rateio {
+    pub trib: Option<Decimal>,
+    pub ntrib: Option<Decimal>,
+    pub exp: Option<Decimal>,
+    pub cum: Option<Decimal>,
+}
+
+impl Rateio {
+    pub fn atribuir(&mut self, tipo: TipoDeRateio, valor: Decimal) {
+        let campo = match tipo {
+            TipoDeRateio::RecBrutaNCumTribMercInterno => &mut self.trib,
+            TipoDeRateio::RecBrutaNCumNTribMercInterno => &mut self.ntrib,
+            TipoDeRateio::RecBrutaNCumDeExportacao => &mut self.exp,
+            TipoDeRateio::RecBrutaCumulativa => &mut self.cum,
+        };
+        *campo = Some(valor);
+    }
+
+    /// `outro` é POSTERIOR: seus campos atribuídos prevalecem.
+    pub fn sobrepor(&mut self, outro: Rateio) {
+        if outro.trib.is_some() {
+            self.trib = outro.trib;
+        }
+        if outro.ntrib.is_some() {
+            self.ntrib = outro.ntrib;
+        }
+        if outro.exp.is_some() {
+            self.exp = outro.exp;
+        }
+        if outro.cum.is_some() {
+            self.cum = outro.cum;
+        }
+    }
+
+    pub fn aplicar(&self, valores: &mut Valores) {
+        if let Some(v) = self.trib {
+            valores.valor_rbnc_trib = v;
+        }
+        if let Some(v) = self.ntrib {
+            valores.valor_rbnc_ntrib = v;
+        }
+        if let Some(v) = self.exp {
+            valores.valor_rbnc_exp = v;
+        }
+        if let Some(v) = self.cum {
+            valores.valor_rb_cum = v;
+        }
+    }
+}
+
+/// Contribuição de um conjunto de linhas (ex.: um arquivo EFD) para a
+/// consolidação da Natureza da Base de Cálculo. Tudo é ADITIVO, exceto
+/// `rateio` (último vence): veja `mesclar`.
+#[derive(Debug, Default, Clone)]
+pub struct AcumuladoNatureza {
+    pub base: HashMap<Chaves, Valores>,
+    pub rateio: HashMap<Chaves, Rateio>,
+    pub ajustes: HashMap<Chaves, Valores>,
+    pub descontos: HashMap<Chaves, Valores>,
+}
+
+impl AcumuladoNatureza {
+    /// Funde `outro`, que deve ser POSTERIOR na ordem global dos arquivos
+    /// (cnpj, ano, mês, ordem de descoberta).
+    pub fn mesclar(&mut self, outro: AcumuladoNatureza) {
+        for (k, v) in outro.base {
+            *self.base.entry(k).or_default() += v;
+        }
+        for (k, r) in outro.rateio {
+            self.rateio.entry(k).or_default().sobrepor(r);
+        }
+        for (k, v) in outro.ajustes {
+            *self.ajustes.entry(k).or_default() += v;
+        }
+        for (k, v) in outro.descontos {
+            *self.descontos.entry(k).or_default() += v;
+        }
+    }
+}
+
+fn acumular_rateio(linhas: &[DocsFiscais]) -> HashMap<Chaves, Rateio> {
+    let mut mapa: HashMap<Chaves, Rateio> = HashMap::new();
+
+    for linha in linhas
+        .iter()
+        .filter(|&linha| linha.tipo_de_operacao == Some(TipoDeOperacao::Detalhamento))
+    {
+        let chaves = Chaves {
+            cnpj_base: linha.get_cnpj_base(),
+            ano: linha.ano,
+            trimestre: linha.trimestre,
+            mes: linha.mes,
+            tipo_de_operacao: Some(TipoDeOperacao::Entrada), // atualizar valor: Entrada
+            tipo_de_credito: linha.tipo_de_credito,
+            cst: linha.cst,
+            cfop: linha.cfop, // None
+            aliq_pis: linha.aliq_pis,
+            aliq_cofins: linha.aliq_cofins,
+            natureza_bc: linha.natureza_bc,
+        };
+
+        if let (Some(codigo_do_credito), Some(valor)) = (linha.cod_credito, linha.valor_bc) {
+            mapa.entry(chaves)
+                .or_default()
+                .atribuir(codigo_do_credito.rateio, valor);
+        }
+    }
+
+    mapa
+}
+
+/// Parcela por arquivo da consolidação (somas por chave; ver `AcumuladoNatureza`).
+pub fn acumular_natureza(linhas: &[DocsFiscais]) -> AcumuladoNatureza {
+    AcumuladoNatureza {
+        base: consolidar_registros(
+            linhas,
+            |line| line.entrada_de_credito() || line.saida_de_receita_bruta(),
+            obter_chaves_valores,
+        ),
+        rateio: acumular_rateio(linhas),
+        ajustes: distribuir_ajustes_rateados(linhas),
+        descontos: distribuir_descontos_rateados(linhas),
+    }
+}
+
 pub fn consolidar_natureza_da_base_de_calculo(
     config: &AppConfig,
     linhas: &[DocsFiscais],
 ) -> EFDResult<(Option<String>, Option<String>, Vec<AnaliseDosCreditos>)> {
-    // 1. Agregação Inicial (Map-Reduce Genérico)
-    let chaves_consolidadas: HashMap<Chaves, Valores> = consolidar_registros(
-        linhas,
-        |line| line.entrada_de_credito() || line.saida_de_receita_bruta(),
-        obter_chaves_valores,
-    );
+    finalizar_natureza(config, acumular_natureza(linhas))
+}
 
-    // 2. Pré-alocação Heurística
-    // Assume que nenhum grupo (Receitas ou Créditos) terá mais de 60% dos dados.
-    // O '+ 1' garante que não alocamos 0 se o mapa estiver vazio.
-    let capacity = chaves_consolidadas.len() / 2 + 1; // 50% + 1
+/// Etapas derivadas (rateio, créditos apurados, somas, saldos, tabelas)
+/// a partir do acumulador (de um arquivo ou fundido de vários).
+pub fn finalizar_natureza(
+    config: &AppConfig,
+    acumulado: AcumuladoNatureza,
+) -> EFDResult<(Option<String>, Option<String>, Vec<AnaliseDosCreditos>)> {
+    let AcumuladoNatureza {
+        base: chaves_consolidadas,
+        rateio,
+        ajustes,
+        descontos,
+    } = acumulado;
+
+    // Pré-alocação heurística: nenhum grupo terá mais de ~60% dos dados.
+    let capacity = chaves_consolidadas.len() / 2 + 1;
 
     let mut receita_bruta = HashMap::with_capacity(capacity); //  1 <= CST <= 49
     let mut base_creditos = HashMap::with_capacity(capacity); // 50 <= CST <= 66
 
-    // 3. Separação de Categorias (Partitioning via Move)
-    // Consome 'chaves_consolidadas' evitando clones de Strings (Zero-Copy para as chaves)
+    // Separação de categorias (move as chaves, sem clonar).
     for (k, v) in chaves_consolidadas {
         if k.cst.eh_receita_bruta(config.excluir_cst_49) {
             receita_bruta.insert(k, v);
         } else if k.cst.eh_base_de_credito() {
             base_creditos.insert(k, v);
         }
-        // Itens que não são nem receita nem crédito são descartados aqui, liberando memória.
     }
 
-    // 4. Processamento de Receita (Delegado para receita_bruta_segregada.rs)
-    distribuir_creditos_rateados(linhas, &mut base_creditos);
+    // Rateio dos créditos: só atinge chaves já existentes em base_creditos.
+    for (chaves, r) in &rateio {
+        if let Some(valores) = base_creditos.get_mut(chaves) {
+            r.aplicar(valores);
+        }
+    }
 
     let informacoes_de_receita_bruta = apurar_receita_bruta(&receita_bruta)?;
     let tabela_da_receita_bruta = gerar_tabela_rec(&informacoes_de_receita_bruta);
 
-    // 5. Ajustes e Descontos em Paralelo usando Rayon Scope
-    // Inicializamos as variáveis para capturar os resultados das threads
-    let mut bcparcial = HashMap::new();
-    let mut ajustes = HashMap::new();
-    let mut descontos = HashMap::new();
-
-    rayon::scope(|s| {
-        // Tarefa 1: Soma da base de cálculo parcial
-        // Nota: Passamos o borrow de base_creditos, que é seguro pois o scope garante
-        // que as threads terminem antes de base_creditos ser modificado novamente.
-        s.spawn(|_| bcparcial = somar_base_de_calculo_valor_parcial(&base_creditos));
-
-        // Tarefa 2: Ajustes rateados
-        s.spawn(|_| ajustes = distribuir_ajustes_rateados(linhas));
-
-        // Tarefa 3: Descontos rateados
-        s.spawn(|_| descontos = distribuir_descontos_rateados(linhas));
-    });
-
-    // 6. Merge dos resultados (Executado após o encerramento do scope)
-    // O extend consome os HashMaps temporários e move os dados para base_creditos
+    let bcparcial = somar_base_de_calculo_valor_parcial(&base_creditos);
     base_creditos.extend(bcparcial);
     base_creditos.extend(ajustes);
     base_creditos.extend(descontos);
 
-    // 7. Cálculos em Cadeia
+    // Cálculos em cadeia
     base_creditos.extend(apurar_credito_das_contribuicoes(&base_creditos));
     base_creditos.extend(calcular_credito_apos_ajustes(&base_creditos));
     base_creditos.extend(calcular_credito_apos_descontos(&base_creditos));
@@ -451,7 +571,7 @@ pub fn consolidar_natureza_da_base_de_calculo(
         &base_creditos,
     ));
 
-    // 8. Somas Trimestrais (usando função do utils.rs)
+    // Somas trimestrais (usando função do utils.rs)
     if verificar_periodo_multiplo(&base_creditos) {
         realizar_somas_trimestrais(&mut base_creditos);
     }
@@ -544,6 +664,7 @@ pub fn obter_chaves_valores(linha: &DocsFiscais) -> (Chaves, Valores) {
     (chaves, valores)
 }
 
+#[allow(dead_code)]
 fn distribuir_creditos_rateados(
     linhas: &[DocsFiscais],
     base_creditos: &mut HashMap<Chaves, Valores>,

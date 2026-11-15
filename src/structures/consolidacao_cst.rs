@@ -78,7 +78,7 @@ impl Keys {
 
 /// Estrutura intermediária para acumulação.
 #[derive(Debug, Default, PartialEq, PartialOrd, Copy, Clone, Serialize, Deserialize)]
-struct Values {
+pub struct Values {
     // O Default de Decimal é Zero.
     valor_item: Decimal,
     valor_bc: Decimal,
@@ -243,16 +243,29 @@ where
 // Lógica Principal de Processamento
 // ==============================================================================
 
-pub fn consolidar_operacoes_por_cst(
-    linhas: &[DocsFiscais],
-) -> EFDResult<(Option<String>, Vec<ConsolidacaoCST>)> {
-    // 1. Map-Reduce (Generic from Utils)
-    let mut resultado = consolidar_registros(
+pub type AcumuladoCST = HashMap<Keys, Values>;
+
+/// Parcela ADITIVA da consolidação por CST (somas por chave).
+/// Acumuladores de arquivos diferentes podem ser fundidos com `+=` por chave.
+pub fn acumular_cst(linhas: &[DocsFiscais]) -> AcumuladoCST {
+    consolidar_registros(
         linhas,
         |linha| linha.operacoes_de_entrada_ou_saida(),
         |linha| (Keys::from(linha), Values::from(linha)),
-    );
+    )
+}
 
+pub fn consolidar_operacoes_por_cst(
+    linhas: &[DocsFiscais],
+) -> EFDResult<(Option<String>, Vec<ConsolidacaoCST>)> {
+    finalizar_cst(acumular_cst(linhas))
+}
+
+/// Etapas derivadas (totais, somas trimestrais, ordenação e tabela) a partir
+/// do acumulador (de um arquivo ou fundido de vários).
+pub fn finalizar_cst(
+    mut resultado: AcumuladoCST,
+) -> EFDResult<(Option<String>, Vec<ConsolidacaoCST>)> {
     // 2. Somas Parciais (Totais por grupo)
     realizar_soma_parcial(&mut resultado);
 

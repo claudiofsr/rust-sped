@@ -160,44 +160,38 @@ fn segregar_receita_bruta(
     let mut hashmap: HashMap<PeriodoDeApuracao, ValorDaReceita> = HashMap::new();
 
     for (chaves, valores) in receita_bruta {
-        // Somar: RbncTot = RbnTrmi + RbnNtmi + RbnExpo
-        // Somar: RbTotal = RbncTot + RbCumul
-        let mut receitas = vec![Some(ReceitaBruta::RbTotal)];
-
-        if chaves.aliq_pis == Some(dec!(0.65)) && chaves.aliq_cofins == Some(dec!(3.0)) {
-            receitas.push(Some(ReceitaBruta::RbCumul));
-        } else {
-            receitas.push(Some(ReceitaBruta::RbncTot));
-
-            // Obtém a classificação da Receita Bruta Não Cumulativa baseada no CST
-            let rbnc = chaves.cst.and_then(|cst| cst.classificar_receita_bruta());
-
-            match rbnc {
-                Some(ReceitaBruta::RbnTrmi) => {
-                    receitas.push(Some(ReceitaBruta::RbnTrmi));
-                }
-                Some(ReceitaBruta::RbnNtmi) => {
-                    if chaves.cfop_de_exportacao_restritivo() {
-                        receitas.push(Some(ReceitaBruta::RbnExpo));
-                    } else {
-                        receitas.push(Some(ReceitaBruta::RbnNtmi));
+        // Até 3 categorias por chave: RbTotal, (RbCumul | RbncTot) e subtipo NC.
+        let (segunda, terceira) =
+            if chaves.aliq_pis == Some(dec!(0.65)) && chaves.aliq_cofins == Some(dec!(3.0)) {
+                (Some(ReceitaBruta::RbCumul), None)
+            } else {
+                // Obtém a classificação da Receita Bruta Não Cumulativa baseada no CST
+                let rbnc = chaves.cst.and_then(|cst| cst.classificar_receita_bruta());
+                let subtipo = match rbnc {
+                    Some(ReceitaBruta::RbnTrmi) => ReceitaBruta::RbnTrmi,
+                    Some(ReceitaBruta::RbnNtmi) => {
+                        if chaves.cfop_de_exportacao_restritivo() {
+                            ReceitaBruta::RbnExpo
+                        } else {
+                            ReceitaBruta::RbnNtmi
+                        }
                     }
-                }
-                Some(ReceitaBruta::RbnExpo) => {
-                    if chaves.cfop_de_exportacao_expansivo() {
-                        receitas.push(Some(ReceitaBruta::RbnExpo));
-                    } else {
-                        receitas.push(Some(ReceitaBruta::RbnNtmi));
+                    Some(ReceitaBruta::RbnExpo) => {
+                        if chaves.cfop_de_exportacao_expansivo() {
+                            ReceitaBruta::RbnExpo
+                        } else {
+                            ReceitaBruta::RbnNtmi
+                        }
                     }
-                }
-                _ => {
-                    // Retorna o erro específico
-                    return Err(EFDError::InvalidCstRBNC {
-                        cst: format!("{:?}", chaves.cst),
-                    });
-                }
-            }
-        }
+                    _ => {
+                        // Retorna o erro específico
+                        return Err(EFDError::InvalidCstRBNC {
+                            cst: format!("{:?}", chaves.cst),
+                        });
+                    }
+                };
+                (Some(ReceitaBruta::RbncTot), Some(subtipo))
+            };
 
         let rb = ValorDaReceita {
             valor: valores.valor_item,
@@ -205,13 +199,16 @@ fn segregar_receita_bruta(
             csts: vec![chaves.cst],
         };
 
-        for receita in receitas {
+        for receita in [Some(ReceitaBruta::RbTotal), segunda, terceira]
+            .into_iter()
+            .flatten()
+        {
             let pa = PeriodoDeApuracao {
                 cnpj_base: chaves.cnpj_base.clone(),
                 ano: chaves.ano,
                 trimestre: chaves.trimestre,
                 mes: chaves.mes,
-                rec_bruta: receita,
+                rec_bruta: Some(receita),
             };
 
             *hashmap.entry(pa).or_default() += rb.clone();
@@ -239,19 +236,31 @@ fn obter_informacoes_de_receita_bruta(
     });
 
     let mut lines: Vec<ReceitaBrutaSegregadaPorCST> = Vec::new();
+    let mut omitir_total_de = None;
 
     for (periodo, valor_receita) in sorted {
-        // Ao Remover valores nulos, evita-se divisão por Zero.
+        // Ao remover valores nulos, evita-se divisão por zero.
         if !valor_receita.valor.eh_maior_que_zero() {
             continue;
         }
 
-        // Busca o total para calcular percentual
+        let chave_pa = (
+            &periodo.cnpj_base,
+            periodo.ano,
+            periodo.trimestre,
+            periodo.mes,
+        );
+        if periodo.rec_bruta == Some(ReceitaBruta::RbTotal) && omitir_total_de == Some(chave_pa) {
+            continue;
+        }
+
+        // Busca o total para calcular percentual (protegido contra total == 0).
         let mut pa_total = periodo.clone();
         pa_total.rec_bruta = Some(ReceitaBruta::RbTotal);
 
         let pct = receita_bruta_segregada
             .get(&pa_total)
+            .filter(|v_total| !v_total.valor.is_zero())
             .map(|v_total| (valor_receita.valor / v_total.valor * dec!(100)).round_dp(4));
 
         lines.push(ReceitaBrutaSegregadaPorCST {
@@ -266,9 +275,10 @@ fn obter_informacoes_de_receita_bruta(
             pct,
         });
 
-        // Otimização: Se já chegou em 100% no RbncTot, pode parar (regra de negócio original)
+        // Se já chegou em 100% no RbncTot, omite apenas o RbTotal deste período
+        // (sem interromper os demais períodos/CNPJs).
         if periodo.rec_bruta == Some(ReceitaBruta::RbncTot) && pct == Some(dec!(100.0)) {
-            break;
+            omitir_total_de = Some(chave_pa);
         }
     }
 

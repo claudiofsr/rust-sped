@@ -96,29 +96,6 @@ impl SpedContext {
             return Ok(ctx);
         }
 
-        /*
-        // Usamos into_iter() para CONSUMIR o vetor.
-        // Cada 'registro_bloco_0' é movido para dentro do loop e destruído ao final de cada iteração.
-        for registro_bloco_0 in bloco_0.into_iter() {
-            // Match direto nas variantes do Enum Bloco0.
-            // Sem indireção de SpedRecord e sem verificações desnecessárias.
-            match registro_bloco_0 {
-                Bloco0::R0000(r) => ctx.handle_0000(&r),
-                Bloco0::R0110(r) => ctx.handle_0110(&r),
-                Bloco0::R0111(r) => ctx.handle_0111(&r),
-                Bloco0::R0140(r) => ctx.handle_0140(&r),
-                Bloco0::R0150(r) => ctx.handle_0150(&r),
-                Bloco0::R0190(r) => ctx.handle_0190(&r),
-                Bloco0::R0200(r) => ctx.handle_0200(&r),
-                Bloco0::R0400(r) => ctx.handle_0400(&r),
-                Bloco0::R0450(r) => ctx.handle_0450(&r),
-                Bloco0::R0500(r) => ctx.handle_0500(&r),
-                _ => {} // Registros ignorados para o contexto
-            }
-            // Aqui, cada 'registro_bloco_0' individual é dropado se não foi movido
-        }
-        */
-
         // 1. FASE SEQUENCIAL: Metadados Críticos (0000, 0110, 0111)
         // Processamos o que é global e único antes do paralelismo
         for reg in bloco_0.iter() {
@@ -360,7 +337,7 @@ impl SpedContext {
         source
             .par_iter() // 1. Paralelismo de dados: divide o BTreeMap entre os núcleos do i9
             // 2. Filtragem inicial (paralela)
-            .filter(|(doc, name)| doc.len() >= slice_len && !name.trim().is_empty())
+            .filter(|(doc, name)| doc.is_char_boundary(slice_len) && !name.trim().is_empty())
             // 3. Agregação em dois estágios: Fold (local) e Reduce (global)
             .fold(
                 HashMap::new, // Estado inicial para cada thread
@@ -421,7 +398,7 @@ impl SpedContext {
             .iter()
             // 1. Filtragem inicial: descarta chaves curtas ou nomes vazios
             //    Isso é o "Fail Fast" no pipeline.
-            .filter(|(doc, name)| doc.len() >= slice_len && !name.trim().is_empty())
+            .filter(|(doc, name)| doc.is_char_boundary(slice_len) && !name.trim().is_empty())
             // 2. Agregação (Reduce/Fold): Constrói o mapa de frequências
             //    Map<Base, Map<NomeNormalizado, (Contagem, NomeOriginal)>>
             .fold(
@@ -471,8 +448,8 @@ impl SpedContext {
         }
 
         // 2. Tenta match pela base (O(1) no HashMap)
-        if cnpj.len() >= 8 {
-            return self.cache_nomes_cnpj_base.get(&cnpj[0..8]).cloned();
+        if let Some(base) = cnpj.get(0..8) {
+            return self.cache_nomes_cnpj_base.get(base).cloned();
         }
 
         None
@@ -488,8 +465,8 @@ impl SpedContext {
         // 2. Tenta match pela base (se configurou slice_len=11, isso é redundante, mas seguro)
         // Se configurou slice_len=9, isso ajuda a achar o nome mesmo com digito verificador errado.
         let len_base = 9; // Deve bater com o configurado em `new`
-        if cpf.len() >= len_base {
-            return self.cache_nomes_cpf_base.get(&cpf[0..len_base]).cloned();
+        if let Some(base) = cpf.get(0..len_base) {
+            return self.cache_nomes_cpf_base.get(base).cloned();
         }
 
         None

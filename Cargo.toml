@@ -3,7 +3,7 @@ name = "efd_contribuicoes"
 authors = ["Claudio F S Rodrigues <claudiofsrodrigues@gmail.com>"]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.98.0"
+rust-version = "1.100.0"
 description = """
 Analisar informações contidas em arquivos de SPED EFD Contribuições
 https://github.com/claudiofsr/rust-sped
@@ -53,6 +53,8 @@ regex = "1.13"
 rust_decimal_macros = "1.40"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_derive = "1.0"
+sysinfo = { version = "0.40", default-features = false, features = ["system"] }
+serde_json = "1.0" # checkpoints do modo --stream
 serde-aux = "4.7"
 struct_iterable = "0.1"
 tabled = { version = "0.22", features = ["ansi"] }

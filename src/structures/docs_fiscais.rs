@@ -65,7 +65,10 @@ pub struct DocsFiscais {
     #[serde(rename = "Mês do Período de Apuração")]
     pub mes: Option<MesesDoAno>,
 
-    #[serde(rename = "Tipo de Operação")]
+    #[serde(
+        rename = "Tipo de Operação",
+        serialize_with = "TipoDeOperacao::serialize_agrupado"
+    )]
     pub tipo_de_operacao: Option<TipoDeOperacao>,
 
     #[serde(rename = "Indicador de Origem")]
@@ -380,12 +383,11 @@ impl DocsFiscais {
     ///
     /// `"12.345.678/0001-12" --> "12.345.678"`
     pub fn get_cnpj_base(&self) -> CompactString {
-        if self.estabelecimento_cnpj.len() >= 10 {
-            // Cria a CompactString a partir do slice, sem alocar String intermediária
-            CompactString::new(&self.estabelecimento_cnpj[0..10])
-        } else {
-            CompactString::new(&self.estabelecimento_cnpj)
-        }
+        let base = self
+            .estabelecimento_cnpj
+            .get(0..10)
+            .unwrap_or(&self.estabelecimento_cnpj);
+        CompactString::new(base)
     }
 
     /// Verifica se o campo CST está preenchido (se é um Enum válido).
@@ -425,9 +427,7 @@ impl DocsFiscais {
     pub fn entrada_de_credito(&self) -> bool {
         self.cst_de_credito()
             && self.natureza_da_base_de_calculo()
-            && self
-                .tipo_de_operacao
-                .is_some_and(|t| t == TipoDeOperacao::Entrada)
+            && self.tipo_de_operacao == Some(TipoDeOperacao::Entrada)
             && self.tipo_de_credito.is_some()
     }
 
@@ -443,8 +443,7 @@ impl DocsFiscais {
     }
 
     pub fn saida_de_receita_bruta(&self) -> bool {
-        self.tipo_de_operacao
-            .is_some_and(|t| t == TipoDeOperacao::Saida)
+        self.tipo_de_operacao == Some(TipoDeOperacao::Saida)
             && self.cst_de_receita_bruta()
             && !self.cfop_de_venda_de_imobilizado()
             && !self.aliquota_de_receita_financeira()
@@ -484,24 +483,30 @@ impl DocsFiscais {
         format_if_needed(
             &mut self.estabelecimento_cnpj,
             14,
-            char::is_alphanumeric,
+            |c| c.is_ascii_alphanumeric(),
             |s| s.format_cnpj(),
         );
         format_if_needed(
             &mut self.participante_cnpj,
             14,
-            char::is_alphanumeric,
+            |c| c.is_ascii_alphanumeric(),
             |s| s.format_cnpj(),
         );
-        format_if_needed(&mut self.participante_cpf, 11, char::is_alphanumeric, |s| {
-            s.format_cpf()
-        });
-        format_if_needed(&mut self.cod_ncm, 8, char::is_alphanumeric, |s| {
-            s.format_ncm()
-        });
+        format_if_needed(
+            &mut self.participante_cpf,
+            11,
+            |c| c.is_ascii_alphanumeric(),
+            |s| s.format_cpf(),
+        );
+        format_if_needed(
+            &mut self.cod_ncm,
+            8,
+            |c| c.is_ascii_alphanumeric(),
+            |s| s.format_ncm(),
+        );
 
         let chave = &self.chave_doc;
-        if chave.len() == 44 && chave.chars().all(char::is_numeric) {
+        if chave.len() == 44 && chave.bytes().all(|b| b.is_ascii_digit()) {
             let formatted = format!(
                 "{}-{}-{}.{}.{}/{}-{}-{}-{}-{}.{}.{}-{}.{}.{}-{}",
                 &chave[0..2],
@@ -523,8 +528,6 @@ impl DocsFiscais {
             );
             self.chave_doc = Arc::from(formatted);
             //self.verificacao_chave = Arc::from("Válida");
-        } else if !chave.is_empty() {
-            //self.verificacao_chave = Arc::from("Inválida/Tamanho Incorreto");
         }
     }
 }

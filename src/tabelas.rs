@@ -5,7 +5,7 @@ use std::{
     sync::LazyLock,
 };
 
-use rust_decimal::{Decimal, prelude::FromPrimitive};
+use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -194,9 +194,7 @@ impl fmt::Display for IndicadorDeOrigem {
 
 /// Define o tipo de operação para fins de apuração e ajustes.
 #[repr(u8)] // Opcional: Garante que o enum caiba em um u8 na memória
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize)]
-// Note: Não derivamos Serialize automaticamente aqui para ter controle
-// sobre o agrupamento de nomes (ex: AjusteAcrescimo -> "Ajuste")
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum TipoDeOperacao {
     Entrada = 1,
     Saida = 2,
@@ -207,47 +205,73 @@ pub enum TipoDeOperacao {
     Detalhamento = 7,
 }
 
-impl Serialize for TipoDeOperacao {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // Define a String de saída para cada variante
-        let nome = match self {
+impl TipoDeOperacao {
+    /// Converte um código numérico (`u8`) para a variante correspondente.
+    pub const fn from_u8(n: u8) -> Option<Self> {
+        match n {
+            1 => Some(Self::Entrada),
+            2 => Some(Self::Saida),
+            3 => Some(Self::AjusteAcrescimo),
+            4 => Some(Self::AjusteReducao),
+            5 => Some(Self::DescontoNoPeriodo),
+            6 => Some(Self::DescontoPosterior),
+            7 => Some(Self::Detalhamento),
+            _ => None,
+        }
+    }
+
+    /// Nome agrupado para exibição e serialização.
+    pub const fn as_str(&self) -> &'static str {
+        match self {
             Self::Entrada => "Entrada",
             Self::Saida => "Saída",
             Self::AjusteAcrescimo | Self::AjusteReducao => "Ajuste",
             Self::DescontoNoPeriodo | Self::DescontoPosterior => "Desconto",
             Self::Detalhamento => "Detalhamento",
-        };
-        serializer.serialize_str(nome)
+        }
     }
-}
 
-// Implementação de Deserialize manual caso precise ler de volta o nome "Ajuste"
-// para um ID específico (geralmente assume-se o padrão, ex: Acréscimo)
-// Se não for ler arquivos CSV gerados de volta para Struct, Deserialize pode ser omitido ou simplificado.
-
-impl fmt::Display for TipoDeOperacao {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.serialize(f)
-    }
-}
-
-impl TipoDeOperacao {
-    /// Operaçoes de Ajuste de Acréscimo ou de Redução
-    pub fn is_ajuste(&self) -> bool {
+    /// Operações de Ajuste de Acréscimo ou de Redução.
+    pub const fn is_ajuste(&self) -> bool {
         matches!(self, Self::AjusteAcrescimo | Self::AjusteReducao)
     }
 
-    /// Operaçoes de Desconto no Próprio Período ou em Período Posterior
-    pub fn is_desconto(&self) -> bool {
+    /// Operações de Desconto no Próprio Período ou em Período Posterior.
+    pub const fn is_desconto(&self) -> bool {
         matches!(self, Self::DescontoNoPeriodo | Self::DescontoPosterior)
     }
 
-    /// Operações de Entrada ou de Saída
-    pub fn is_entrada_ou_saida(&self) -> bool {
+    /// Operações de Entrada ou de Saída.
+    pub const fn is_entrada_ou_saida(&self) -> bool {
         matches!(self, Self::Entrada | Self::Saida)
+    }
+
+    /// Serializa `Option<TipoDeOperacao>` com o rótulo agrupado (para Excel/relatórios).
+    pub fn serialize_agrupado<S>(tipo_opt: &Option<Self>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        tipo_opt.as_ref().map(Self::as_str).serialize(serializer)
+    }
+}
+
+impl TryFrom<u8> for TipoDeOperacao {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value).ok_or(value)
+    }
+}
+
+impl From<TipoDeOperacao> for u8 {
+    fn from(value: TipoDeOperacao) -> Self {
+        value as u8
+    }
+}
+
+impl fmt::Display for TipoDeOperacao {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
@@ -677,25 +701,23 @@ impl fmt::Display for GrupoDeContas {
 static CORRELACAO_COFINS_PIS: LazyLock<HashMap<Decimal, Decimal>> = LazyLock::new(|| {
     // Aliq COFINS --> Aliq PIS/PASEP
     [
-        // (Aliq COFINS, Aliq PIS/PASEP)
-        (0.00, 1.6500), // Alíquotas Diferenciadas
-        (0.76, 0.1650),
-        (1.52, 0.3300),
-        (2.66, 0.5775),
-        (3.80, 0.8250),
-        (4.56, 0.9900),
-        (5.70, 1.2375), // PIS: 1,2375 % (1,65% x 75%) e. – COFINS: 5,70% (7,60% x 75%). Subcontratação Serviços de Transporte
-        (6.08, 1.3200),
-        (7.00, 1.6500),
-        (7.60, 1.6500),
-        (8.54, 1.8600), // venda pelo atacadista ao varejista ou ao consumidor final
-        (9.65, 2.1000),
-        (10.68, 2.3200),
-        (10.80, 2.3000),
-        (14.37, 2.1000),
+        (dec!(0.00), dec!(1.6500)), // Alíquotas Diferenciadas
+        (dec!(0.76), dec!(0.1650)),
+        (dec!(1.52), dec!(0.3300)),
+        (dec!(2.66), dec!(0.5775)),
+        (dec!(3.80), dec!(0.8250)),
+        (dec!(4.56), dec!(0.9900)),
+        (dec!(5.70), dec!(1.2375)), // PIS: 1,2375 % (1,65% x 75%) e – COFINS: 5,70% (7,60% x 75%). Subcontratação Serviços de Transporte
+        (dec!(6.08), dec!(1.3200)),
+        (dec!(7.00), dec!(1.6500)),
+        (dec!(7.60), dec!(1.6500)),
+        (dec!(8.54), dec!(1.8600)), // venda pelo atacadista ao varejista ou ao consumidor final
+        (dec!(9.65), dec!(2.1000)),
+        (dec!(10.68), dec!(2.3200)),
+        (dec!(10.80), dec!(2.3000)),
+        (dec!(14.37), dec!(2.1000)),
     ]
     .into_iter()
-    .filter_map(|(cof, pis)| Some((Decimal::from_f64(cof)?, Decimal::from_f64(pis)?)))
     .collect()
 });
 
@@ -705,16 +727,9 @@ pub fn obter_pis_da_tabela_estatica(pai: &RegistroM500, filho: &RegistroM505) ->
     match CORRELACAO_COFINS_PIS.get(&aliq_cofins) {
         Some(aliq_pis) => Some(*aliq_pis),
         None => {
-            eprintln!("tabelas.rs");
-            eprintln!("fn obter_aliquota_correlacionada_de_pis()");
-            eprintln!(
-                "Não foi possível obter por correlações a alíquota de PIS/PASEP relacionada à alíquota de COFINS: {aliq_cofins}"
+            log::warn!(
+                "tabelas::obter_pis_da_tabela_estatica: sem correlação para aliq_cofins={aliq_cofins}; pai={pai:?}; filho={filho:?}"
             );
-            eprintln!(
-                "A correlação entre as alíquotas de PIS/PASEP e COFINS será obtida consultando a tabela CORRELACAO_COFINS_PIS"
-            );
-            eprintln!("{pai:?}");
-            eprintln!("{filho:?}\n");
             None
         }
     }
