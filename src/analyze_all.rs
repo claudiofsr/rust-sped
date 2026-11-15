@@ -153,10 +153,10 @@ pub(crate) fn imprimir_resumo_periodo(dates: &[NaiveDate], write: &mut dyn Write
 
 fn analyze_all_files(
     config: &AppConfig,
-    mut write: &mut dyn Write,
+    write: &mut dyn Write,
 ) -> EFDResult<(Vec<NaiveDate>, Vec<DocsFiscais>)> {
     let arquivos_efd: &[PathBuf] = &config.all_files;
-    print_arquivos_selecionados(arquivos_efd, &mut write)?;
+    print_arquivos_selecionados(arquivos_efd, write)?;
 
     // indicatif ProgressBar + rayon
     let total_files_count: usize = arquivos_efd.len();
@@ -396,7 +396,6 @@ mod tests_analyze_all {
         let arquivo: PathBuf = PathBuf::from(filename);
 
         let mut write_buffer: Vec<u8> = vec![];
-        let mut write: Box<&mut dyn Write> = Box::new(&mut write_buffer);
 
         let config = AppConfig {
             app_name: "efd_contribuicoes".to_string(),
@@ -405,7 +404,7 @@ mod tests_analyze_all {
             ..Default::default()
         };
 
-        let all_lines: Vec<DocsFiscais> = executar_programa(&config, &mut write)?;
+        let all_lines: Vec<DocsFiscais> = executar_programa(&config, &mut write_buffer)?;
 
         // Imprimir todos os registros.
         // println!("all_lines:\n{all_lines:#?}");

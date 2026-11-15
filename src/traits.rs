@@ -377,8 +377,7 @@ fn collapse_multiple_spaces<B: StringBuilder>(s: &str) -> B {
     let mut start = 0;
     let mut last_was_space = false;
 
-    for i in 0..bytes.len() {
-        let byte = bytes[i];
+    for (i, &byte) in bytes.iter().enumerate() {
         if byte == b' ' {
             if last_was_space {
                 // 3. IDENTIFICAÇÃO DE "LIXO" (Espaço Duplicado):
@@ -830,11 +829,9 @@ impl<T: AsRef<str>> ToDecimal for Option<T> {
                         if cursor == 0 || caracter_invalido {
                             Decimal::from_str_exact(s)
                         } else {
-                            // PERFORMANCE: unsafe validado.
-                            // Garantimos manualmente que no buffer só existem:
-                            // ASCII '0'-'9', '.', '+' ou '-'. Logo, é UTF-8 válido.
-                            let cleaned_str =
-                                unsafe { std::str::from_utf8_unchecked(&buffer[..cursor]) };
+                            // O buffer só contém ASCII ('0'-'9', '.', '+', '-'); a validação
+                            // de UTF-8 sobre poucos bytes ASCII tem custo desprezível.
+                            let cleaned_str = std::str::from_utf8(&buffer[..cursor]).unwrap_or(s);
                             Decimal::from_str_exact(cleaned_str)
                         }
                     }
@@ -944,6 +941,17 @@ pub trait ToNaiveDate {
     ) -> EFDResult<NaiveDate>;
 }
 
+/// Faz o parse de uma data a partir de bytes ASCII (dígitos já filtrados pelo chamador).
+/// Se `bytes` não for UTF-8 válido (impossível aqui), usa o texto `original`,
+/// de modo que o Chrono reporte o erro de formato esperado.
+fn parse_date_bytes(
+    bytes: &[u8],
+    original: &str,
+    format: &str,
+) -> Result<NaiveDate, chrono::ParseError> {
+    NaiveDate::parse_from_str(std::str::from_utf8(bytes).unwrap_or(original), format)
+}
+
 // Otimizado: T: AsRef<str> evita alocações e permite trabalhar com &str, String ou CompactString.
 impl<T: AsRef<str>> ToNaiveDate for Option<T> {
     #[track_caller]
@@ -975,9 +983,7 @@ impl<T: AsRef<str>> ToNaiveDate for Option<T> {
                         buf[1] = b'1';
                         buf[2..8].copy_from_slice(bytes);
 
-                        // SAFETY: O buffer contém apenas '0', '1' e os dígitos ASCII originais.
-                        let cleaned = unsafe { std::str::from_utf8_unchecked(&buf) };
-                        NaiveDate::parse_from_str(cleaned, date_format)
+                        parse_date_bytes(&buf, s, date_format)
                     }
                 } else {
                     // 2. BRANCHLESS FILTERING (Caminho para strings "sujas" ou com separadores):
@@ -1000,8 +1006,7 @@ impl<T: AsRef<str>> ToNaiveDate for Option<T> {
                     match cursor {
                         8 => {
                             // Extraído DDMMYYYY (ex: de "10/02/2024").
-                            let cleaned = unsafe { std::str::from_utf8_unchecked(&digit_buf[..8]) };
-                            NaiveDate::parse_from_str(cleaned, date_format)
+                            parse_date_bytes(&digit_buf[..8], s, date_format)
                         }
                         6 => {
                             // Extraído MMYYYY (ex: de "02/2024").
@@ -1009,8 +1014,7 @@ impl<T: AsRef<str>> ToNaiveDate for Option<T> {
                             full_buf[0] = b'0';
                             full_buf[1] = b'1';
                             full_buf[2..8].copy_from_slice(&digit_buf[..6]);
-                            let cleaned = unsafe { std::str::from_utf8_unchecked(&full_buf) };
-                            NaiveDate::parse_from_str(cleaned, date_format)
+                            parse_date_bytes(&full_buf, s, date_format)
                         }
                         _ => {
                             // Se o número de dígitos for inválido, tenta o parse original

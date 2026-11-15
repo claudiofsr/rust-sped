@@ -7,12 +7,6 @@ use std::{
     sync::LazyLock,
 };
 
-#[cfg(feature = "prefetch")]
-use std::{
-    arch::x86_64::{_MM_HINT_T0, _mm_prefetch},
-    ptr,
-};
-
 // Testar quais das funções seguintes é a mais rápida
 
 // https://crates.io/crates/criterion
@@ -98,13 +92,7 @@ where
         }
         */
 
-        // SAFETY: the while condition means `size` is strictly positive, so
-        // `size/2 < size`. Thus `left + size/2 < left + size`, which
-        // coupled with the `left + size <= items.len()` invariant means
-        // we have `left + size/2 < items.len()`, and this is in-bounds.
-
-        let cmp = unsafe { items.get_unchecked(middle).cmp(&target) };
-        //let cmp = items[middle].cmp(&target);
+        let cmp = items[middle].cmp(&target);
 
         // The reason why we use if/else control flow rather than match
         // is because match reorders comparison operations, which is perf sensitive.
@@ -151,11 +139,6 @@ impl Eytzinger {
     pub fn binary_search_branchless(&self, target: u16) -> usize {
         let mut idx = 1;
         while idx < self.0.len() {
-            #[cfg(feature = "prefetch")]
-            unsafe {
-                let prefetch = self.0.as_ptr().wrapping_offset(2 * idx as isize);
-                _mm_prefetch::<_MM_HINT_T0>(ptr::addr_of!(prefetch) as *const i8);
-            }
             let el = self.0[idx];
             idx = 2 * idx + usize::from(el < target);
         }

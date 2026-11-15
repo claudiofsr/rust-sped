@@ -341,7 +341,7 @@ fn mapear(
 
     let proximo = AtomicUsize::new(0);
     let abortar = AtomicBool::new(false);
-    let primeiro_erro: Mutex<Option<EFDResult<()>>> = Mutex::new(None);
+    let primeiro_erro: Mutex<Option<EFDError>> = Mutex::new(None);
 
     thread::scope(|scope| {
         for _ in 0..workers {
@@ -356,10 +356,10 @@ fn mapear(
                         Ok(()) => {}
                         Err(error) => {
                             abortar.store(true, Ordering::Relaxed);
-                            let mut slot = primeiro_erro.lock().unwrap_or_else(|e| e.into_inner());
-                            if slot.is_none() {
-                                *slot = Some(Err(error));
-                            }
+                            primeiro_erro
+                                .lock()
+                                .unwrap_or_else(|e| e.into_inner())
+                                .get_or_insert(error);
                         }
                     }
                 }
@@ -367,13 +367,10 @@ fn mapear(
         }
     });
 
-    match primeiro_erro
+    primeiro_erro
         .into_inner()
         .unwrap_or_else(|e| e.into_inner())
-    {
-        Some(resultado) => resultado,
-        None => Ok(()),
-    }
+        .map_or(Ok(()), Err)
 }
 
 // ============================================================================
@@ -528,15 +525,13 @@ fn consolidar_itens(
         writeln!(write, "Write Excel xlsx file: {:?}\n", path_xlsx.display())?;
 
         // Somente as abas de consolidação: o detalhe fica nos CSV por arquivo.
-        if let Err(error) = write_xlsx(
+        write_xlsx(
             &path_xlsx,
             &[],
             &consolidacao_cst,
             &consolidacao_nat,
             config.memory_mode,
-        ) {
-            log::warn!("Falha ao gravar {}: {error:?}", path_xlsx.display());
-        }
+        )?;
     }
 
     Ok(())

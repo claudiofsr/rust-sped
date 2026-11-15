@@ -102,16 +102,9 @@ features = [
     "zlib",
 ]
 
-[features]
-default = []
-prefetch = [] # see binary_search.rs
-
-# To use prefetch features:
-# cargo clippy --features prefetch
-# cargo test --features prefetch
-# cargo run --features prefetch -- -f
-# cargo run --features prefetch -- -r 1 20
-# cargo b -r && cargo install --path=. --features prefetch
+# Proíbe `unsafe` em todos os alvos (lib, bin, testes, benches, examples).
+[lints.rust]
+unsafe_code = "forbid"
 
 # Make your Rust Binaries TINY!
 # https://www.youtube.com/watch?v=b2qe3L4BX-Y

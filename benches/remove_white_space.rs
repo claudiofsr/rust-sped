@@ -173,8 +173,8 @@ fn collapse_multiple_spaces_branchless(s: &str) -> String {
     // Converte de volta para String.
     // Como o input original era UTF-8 e só removemos bytes ASCII (espaço),
     // o resultado é garantidamente UTF-8 válido.
-    let result_str = unsafe { std::str::from_utf8_unchecked(&out[..write_idx]) };
-    result_str.to_string()
+    out.truncate(write_idx);
+    String::from_utf8(out).unwrap_or_else(|_| s.to_string())
 }
 
 #[inline]

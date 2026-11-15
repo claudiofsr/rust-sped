@@ -7,7 +7,7 @@ use efd_contribuicoes::{
 };
 use execution_time::ExecutionTime;
 use log::{LevelFilter, debug};
-use std::{io::Write, process};
+use std::{io::Write, process::ExitCode};
 
 /*
 Como armazenar as strings de forma mais eficiente possível nos registros?
@@ -65,23 +65,19 @@ Ao final, estas informações são padronizadas em Excel e CSV e escritas em arq
     cargo run -- -d -f
 */
 
-fn main() -> EFDResult<()> {
-    // 1. Parse inicial dos argumentos (Rápido)
-    // Build Arguments struct
+fn main() -> ExitCode {
     let args = Arguments::parse();
+    setup_logger(args.debug);
 
-    // 2. Configuração do Logger com padrão brasileiro
-    setup_logger(args.debug)?;
-
-    // 3. Execução do programa passando os argumentos já processados
-    // Padrão idiomático para lidar com erros no main
-    if let Err(error) = run(&args) {
-        log::error!("\n\n{}\n", format_error(&error).red().bold());
-        process::exit(1);
+    // ExitCode em vez de `process::exit`: o retorno normal permite que os
+    // destrutores (flush de buffers, barras de progresso) executem antes de sair.
+    match run(&args) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            log::error!("\n\n{}\n", format_error(&error).red().bold());
+            ExitCode::FAILURE
+        }
     }
-
-    // O Rust retorna exit code 0 automaticamente ao chegar ao fim do main
-    Ok(())
 }
 
 fn run(args: &Arguments) -> EFDResult<()> {
@@ -113,7 +109,7 @@ fn run(args: &Arguments) -> EFDResult<()> {
 }
 
 /// Configura o env_logger com filtros e formatos customizados.
-fn setup_logger(debug_mode: bool) -> EFDResult<()> {
+fn setup_logger(debug_mode: bool) {
     // Configuração do Logger
     let mut builder = env_logger::Builder::from_default_env();
 
@@ -137,8 +133,6 @@ fn setup_logger(debug_mode: bool) -> EFDResult<()> {
     }
 
     builder.init(); // <-- O Logger só "nasce" aqui
-
-    Ok(())
 }
 
 /// Gera o rodapé do relatório, imprime no console e salva em arquivo.

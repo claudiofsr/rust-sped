@@ -920,25 +920,34 @@ impl<'a> DocsBuilder<'a> {
         F: RegistroFilho + ?Sized,
         P: RegistroPai + ?Sized,
     {
-        // 1. Criação: Instancia o builder com dados básicos (Contexto Global)
-        // O header inicia vazio (Default) para economizar alocação prévia.
+        Self::from_child_and_header(ctx, filho, ParentHeader::from_record(pai), current_cnpj)
+    }
+
+    /// Núcleo comum de construção: o header do pai já vem resolvido.
+    ///
+    /// Pipeline funcional: cada etapa consome o builder, aplica regras de negócio
+    /// e o devolve modificado (prioridade das informações: Filho -> Pai).
+    fn from_child_and_header<F>(
+        ctx: &'a SpedContext,
+        filho: &F,
+        header: ParentHeader<'a>,
+        current_cnpj: Option<Arc<str>>,
+    ) -> Self
+    where
+        F: RegistroFilho + ?Sized,
+    {
         let mut builder = Self::new(
             ctx,
             filho.registro_name(),
             filho.line_number(),
             current_cnpj,
         );
+        builder.header = header;
 
-        // 2. Contexto: Extrai dados do Pai e move para dentro do Builder (Zero-Copy)
-        // Isso centraliza as referências do pai em um único struct otimizado (Stack).
-        builder.header = ParentHeader::from_record(pai);
-
-        // 3. Preenchimento: Pipeline funcional (Fluent API)
-        // Cada etapa consome o builder, aplica regras de negócio e o retorna modificado.
         builder
-            .with_header(filho) // Mescla dados de cabeçalho (Datas, Chaves)
-            .with_itens_and_participant(filho) // Resolve Itens e Participante
-            .with_values_and_classification(filho) // Aplica valores e CSTs
+            .with_header(filho)
+            .with_itens_and_participant(filho)
+            .with_values_and_classification(filho)
     }
 
     fn from_child<F>(ctx: &'a SpedContext, reg: &F, current_cnpj: Option<Arc<str>>) -> Self
@@ -1709,27 +1718,14 @@ impl<'a> BlocoCExtractor<'a> {
                     self.header.cod_inf = reg.cod_inf.as_deref();
                 }
                 BlocoC::RC170(filho) => {
-                    // 1. Criação: Instancia o builder com dados básicos (Contexto Global)
-                    // O header inicia vazio (Default) para economizar alocação prévia.
-                    let mut builder = DocsBuilder::new(
+                    let doc = DocsBuilder::from_child_and_header(
                         ctx,
-                        filho.registro_name(),
-                        filho.line_number(),
+                        filho,
+                        self.header,
                         self.current_cnpj.clone(),
-                    );
-
-                    // 2. Contexto: Extrai dados do Pai e move para dentro do Builder (Zero-Copy)
-                    // Isso centraliza as referências do pai em um único struct otimizado (Stack).
-                    builder.header = self.header;
-
-                    // 3. Preenchimento: Pipeline funcional (Fluent API)
-                    // Cada etapa consome o builder, aplica regras de negócio e o retorna modificado.
-                    let doc = builder
-                        .with_header(filho) // Mescla dados de cabeçalho (Datas, Chaves)
-                        .with_itens_and_participant(filho) // Resolve Itens e Participante
-                        .with_values_and_classification(filho) // Aplica valores e CSTs
-                        .resolve_pis_correlation(&mut self.correlacao, filho)
-                        .build();
+                    )
+                    .resolve_pis_correlation(&mut self.correlacao, filho)
+                    .build();
 
                     docs.push(doc)
                 }

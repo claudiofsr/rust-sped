@@ -806,10 +806,16 @@ fn somar_base_de_calculo_valor_parcial(
 
             Some((chaves_bc, valores_soma))
         })
-        .fold(HashMap::new(), |mut acc, (k, v)| {
-            *acc.entry(k).or_default() += v;
-            acc
-        })
+        .fold(HashMap::new(), somar_valores_por_chave)
+}
+
+/// Acumulador para `fold`: soma os `Valores` de chaves iguais.
+fn somar_valores_por_chave(
+    mut acc: HashMap<Chaves, Valores>,
+    (chaves, valores): (Chaves, Valores),
+) -> HashMap<Chaves, Valores> {
+    *acc.entry(chaves).or_default() += valores;
+    acc
 }
 
 // Assinatura alterada para retornar novo HashMap (Functional Style)
@@ -862,10 +868,7 @@ fn apurar_credito_das_contribuicoes(
                     Some((nova_chave, valor_apurado))
                 })
         })
-        .fold(HashMap::new(), |mut acc, (k, v)| {
-            *acc.entry(k).or_default() += v;
-            acc
-        })
+        .fold(HashMap::new(), somar_valores_por_chave)
 }
 
 fn calcular_credito_apos_ajustes(
@@ -900,10 +903,7 @@ fn calcular_credito_apos_ajustes(
             Some((chaves_bc, valores))
         })
         // Agrupamento (fold) permanece funcional e eficiente
-        .fold(HashMap::new(), |mut acc, (k, v)| {
-            *acc.entry(k).or_default() += v;
-            acc
-        })
+        .fold(HashMap::new(), somar_valores_por_chave)
 }
 
 fn calcular_credito_apos_descontos(
@@ -939,10 +939,7 @@ fn calcular_credito_apos_descontos(
             Some((nova_chave, valores))
         })
         // 4. Agrega os resultados somando os valores para chaves idênticas
-        .fold(HashMap::new(), |mut acc, (k, v)| {
-            *acc.entry(k).or_default() += v;
-            acc
-        })
+        .fold(HashMap::new(), somar_valores_por_chave)
 }
 
 fn somar_base_de_calculo_valor_total(
@@ -963,10 +960,7 @@ fn somar_base_de_calculo_valor_total(
 
             (bc_soma, valores)
         })
-        .fold(HashMap::new(), |mut acc, (k, v)| {
-            *acc.entry(k).or_default() += v;
-            acc
-        })
+        .fold(HashMap::new(), somar_valores_por_chave)
 }
 
 fn calcular_saldo_de_credito_passivel_de_ressarcimento(
@@ -999,10 +993,7 @@ fn calcular_saldo_de_credito_passivel_de_ressarcimento(
             }
             _ => None,
         })
-        .fold(HashMap::new(), |mut acc, (k, v)| {
-            *acc.entry(k).or_default() += v;
-            acc
-        })
+        .fold(HashMap::new(), somar_valores_por_chave)
 }
 
 // Em TipoDeCredito desejo que None (representa soma de valores totais) fique por último na ordenacao.

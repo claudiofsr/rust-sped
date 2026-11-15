@@ -13,7 +13,7 @@ use struct_iterable::Iterable;
 use crate::{
     CodigoDoCredito, CodigoSituacaoTributaria, ExcelExtension, FloatExt, GrupoDeContas,
     IndicadorDeOrigem, MesesDoAno, NaturezaBaseCalculo, TipoDeCredito, TipoDeOperacao,
-    TipoDeRateio, TipoDoItem, obter_descricao_do_cfop,
+    TipoDeRateio, TipoDoItem,
 };
 
 #[derive(Debug, Clone)]
@@ -98,7 +98,6 @@ pub struct DocsFiscais {
 
     #[serde(
         rename = "Código Fiscal de Operações e Prestações (CFOP)",
-        // serialize_with = "serialize_cfop_excel",
         deserialize_with = "csv::invalid_option"
     )]
     pub cfop: Option<u16>,
@@ -306,15 +305,6 @@ where
         .map(|tipo| tipo.descricao_com_codigo()) // Transforma em String formatada
         //.map(|tipo| format!("{:02}", tipo.code())) // Transforma em String formatada
         .serialize(serializer) // Serializa o Option resultante (Some ou None)
-}
-
-#[allow(dead_code)]
-fn serialize_cfop_excel<S>(val: &Option<u16>, s: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    // excel_alternative usa: obter_descricao_do_cfop(col.cfop)
-    val.map(|c| obter_descricao_do_cfop(Some(c))).serialize(s)
 }
 
 trait PrintOptionDecimal {

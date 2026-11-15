@@ -37,11 +37,9 @@ pub fn parse_sped_fields(
     // Unificamos a lógica: se for minúsculo, bitwise UP, senão mantém.
     // O SPED permite 0-9 e A-Z. Apenas 'a'-'z' (0x61-0x7A) precisa de fix.
     let registro_uppercase: &str = if bytes.len() == 4 && bytes[0].is_ascii_lowercase() {
-        reg_buffer[0] = bytes[0] & !0x20; // Trick bitwise: força maiúsculo
-        reg_buffer[1] = bytes[1]; // Mantém o dígito original
-        reg_buffer[2] = bytes[2]; // Mantém o dígito original
-        reg_buffer[3] = bytes[3]; // Mantém o dígito original
-        unsafe { std::str::from_utf8_unchecked(reg_buffer) }
+        reg_buffer.copy_from_slice(bytes);
+        reg_buffer[0].make_ascii_uppercase();
+        std::str::from_utf8(reg_buffer).unwrap_or(reg_id)
     } else {
         reg_id
     };
